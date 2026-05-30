@@ -30,3 +30,11 @@ Los contratos de lectura para UI no son tablas de Supabase ni modelos internos. 
 
 ### Primer candidato Supabase: `getProjectCards()`
 El primer candidato para salir de mock y leer desde Supabase será `getProjectCards()`, por ser una lectura simple, visible en dashboard y de bajo riesgo económico.
+
+## ProjectCard como primer diseño de esquema Supabase
+
+El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.
+
+Esta decisión evita introducir todavía presupuestos, costes, márgenes, compras, inventario u Odoo en la primera lectura real.
+
+`ProjectCard` se considera un candidato de bajo riesgo porque alimenta el dashboard, no contiene información económica sensible y permite validar el patrón `service -> repository -> Supabase` antes de abordar modelos más complejos.
