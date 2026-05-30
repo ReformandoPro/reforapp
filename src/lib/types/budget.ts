@@ -1,12 +1,4 @@
-export type BudgetStatus =
-  | "draft"
-  | "sent"
-  | "viewed"
-  | "change_requested"
-  | "approved"
-  | "rejected"
-  | "expired"
-  | "archived";
+import type { BudgetStatus } from "@/lib/domain/budgets/status";
 
 export type BudgetSummary = {
   id: string;
