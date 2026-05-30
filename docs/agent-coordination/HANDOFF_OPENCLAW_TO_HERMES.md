@@ -22,6 +22,13 @@ Se consolida la base del core para que Hermes pueda empezar UI base con mocks co
 - src/lib/services/dashboard.ts
 - src/lib/services/projects.ts
 - src/lib/services/budgets.ts
+- src/lib/repositories/dashboard-repository.ts
+- src/lib/repositories/projects-repository.ts
+- src/lib/repositories/budgets-repository.ts
+- src/lib/repositories/mock-dashboard-repository.ts
+- src/lib/repositories/mock-projects-repository.ts
+- src/lib/repositories/mock-budgets-repository.ts
+- src/lib/repositories/index.ts
 - src/lib/mock/dashboard.ts
 - src/lib/mock/project.ts
 - src/lib/mock/budget.ts
@@ -41,6 +48,15 @@ Se consolida la base del core para que Hermes pueda empezar UI base con mocks co
 - `getProjectCards()`
 - `getProjectOverview(projectId)`
 - `getBudgetSummary(budgetId)`
+- `getBudgetSummaries()`
+
+### Repositories disponibles
+- `DashboardRepository`
+- `ProjectsRepository`
+- `BudgetsRepository`
+- `MockDashboardRepository`
+- `MockProjectsRepository`
+- `MockBudgetsRepository`
 
 ### Tipos exportados
 Desde `src/lib/types/index.ts` están exportados:
@@ -68,7 +84,7 @@ Hermes puede seguir iterando sin backend real estas piezas:
 - Pantalla de resumen de presupuesto usando `BudgetSummary`
 - estados de carga, vacío y error para esas vistas
 
-Debe consumir contratos y servicios de `src/lib/services/*`, no importar mocks directamente.
+Debe consumir contratos y servicios de `src/lib/services/*`, no importar mocks ni repositories directamente.
 
 ### Qué datos pueden ser mock
 Pueden seguir siendo mock temporales, pero encapsulados en servicios:
@@ -87,6 +103,7 @@ Hermes no debe asumir todavía:
 - que la primera versión de estados/transiciones sea definitiva
 - que los contratos reflejen tablas crudas de Supabase
 - que pueda importar datos mock directamente desde `src/lib/mock/*`
+- que deba consumir repositories desde UI
 
 ### Bloqueos
 No hay bloqueos técnicos para empezar UI base con mocks controlados.
@@ -98,5 +115,5 @@ No hay bloqueos técnicos para empezar UI base con mocks controlados.
 
 ### Pendientes para Openclaw
 - Añadir más tests del motor presupuestario cuando entren materiales, mermas, redondeos y compra
-- Sustituir gradualmente servicios mock por lectura real cuando se defina la capa de datos
+- Sustituir gradualmente mock repositories por repositories reales cuando se defina la capa de datos
 - Preparar modelo inicial de Supabase cuando se cierre el conjunto mínimo de entidades

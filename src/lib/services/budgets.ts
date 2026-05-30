@@ -1,10 +1,13 @@
-import { mockBudgetSummaries } from "@/lib/mock/budget";
 import type { BudgetSummary } from "@/lib/types";
 
+import { MockBudgetsRepository } from "@/lib/repositories";
+
+const budgetsRepository = new MockBudgetsRepository();
+
 export function getBudgetSummary(budgetId: string): BudgetSummary | undefined {
-  return mockBudgetSummaries.find((budget) => budget.id === budgetId);
+  return budgetsRepository.getBudgetSummary(budgetId);
 }
 
 export function getBudgetSummaries(): BudgetSummary[] {
-  return mockBudgetSummaries;
+  return budgetsRepository.getBudgetSummaries();
 }
