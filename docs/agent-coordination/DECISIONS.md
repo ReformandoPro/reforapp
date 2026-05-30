@@ -27,3 +27,6 @@ Los servicios de aplicación no deben depender directamente de mocks. Deben depe
 
 ### Los contratos de lectura para UI son DTOs/view models
 Los contratos de lectura para UI no son tablas de Supabase ni modelos internos. Son DTOs/view models orientados a las necesidades de cada pantalla y rol. Deben separar con claridad información interna, información visible para cliente y datos temporales de mock.
+
+### Primer candidato Supabase: `getProjectCards()`
+El primer candidato para salir de mock y leer desde Supabase será `getProjectCards()`, por ser una lectura simple, visible en dashboard y de bajo riesgo económico.
