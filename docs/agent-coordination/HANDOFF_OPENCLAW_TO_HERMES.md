@@ -19,6 +19,13 @@ Se consolida la base del core para que Hermes pueda empezar UI base con mocks co
 - docs/agent-coordination/HANDOFF_OPENCLAW_TO_HERMES.md
 - src/lib/types/dashboard.ts
 - src/lib/types/index.ts
+- src/lib/services/dashboard.ts
+- src/lib/services/projects.ts
+- src/lib/services/budgets.ts
+- src/lib/mock/dashboard.ts
+- src/lib/mock/project.ts
+- src/lib/mock/budget.ts
+- src/app/page.tsx
 
 ### Contratos disponibles
 - `ProjectCard`
@@ -28,6 +35,12 @@ Se consolida la base del core para que Hermes pueda empezar UI base con mocks co
 - `BudgetLine`
 - `BudgetStatus` (fuente de verdad en dominio)
 - `ProjectStatus` (fuente de verdad en dominio)
+
+### Servicios disponibles para UI
+- `getDashboardSummary()`
+- `getProjectCards()`
+- `getProjectOverview(projectId)`
+- `getBudgetSummary(budgetId)`
 
 ### Tipos exportados
 Desde `src/lib/types/index.ts` están exportados:
@@ -47,7 +60,7 @@ Las transiciones viven en:
 - `src/lib/domain/budgets/transitions.ts`
 
 ### Qué puede hacer Hermes ahora
-Hermes puede empezar sin backend real estas piezas:
+Hermes puede seguir iterando sin backend real estas piezas:
 - AppShell móvil-first
 - Home temporal
 - Dashboard placeholder del reformista usando `DashboardSummary`
@@ -55,8 +68,10 @@ Hermes puede empezar sin backend real estas piezas:
 - Pantalla de resumen de presupuesto usando `BudgetSummary`
 - estados de carga, vacío y error para esas vistas
 
+Debe consumir contratos y servicios de `src/lib/services/*`, no importar mocks directamente.
+
 ### Qué datos pueden ser mock
-Pueden ser mock temporales:
+Pueden seguir siendo mock temporales, pero encapsulados en servicios:
 - listas de `ProjectCard`
 - listas de `BudgetSummary`
 - estructura completa de `DashboardSummary`
@@ -71,6 +86,7 @@ Hermes no debe asumir todavía:
 - edición real de presupuestos
 - que la primera versión de estados/transiciones sea definitiva
 - que los contratos reflejen tablas crudas de Supabase
+- que pueda importar datos mock directamente desde `src/lib/mock/*`
 
 ### Bloqueos
 No hay bloqueos técnicos para empezar UI base con mocks controlados.
@@ -82,5 +98,5 @@ No hay bloqueos técnicos para empezar UI base con mocks controlados.
 
 ### Pendientes para Openclaw
 - Añadir más tests del motor presupuestario cuando entren materiales, mermas, redondeos y compra
-- Formalizar servicios/API mínimos cuando Hermes pida datos concretos por handoff
+- Sustituir gradualmente servicios mock por lectura real cuando se defina la capa de datos
 - Preparar modelo inicial de Supabase cuando se cierre el conjunto mínimo de entidades

@@ -18,3 +18,6 @@ Los estados y transiciones de presupuesto y proyecto viven en `src/lib/domain/*`
 
 ### Primera versión revisable del flujo de estados
 La versión actual de estados y transiciones es una primera aproximación revisable. No debe bloquear la evolución del flujo de negocio hasta validar de forma completa presupuesto, obra, tareas, extras y aprobaciones.
+
+### Las pantallas consumen servicios, no mocks directos
+Las pantallas no deben consumir mocks directamente. Deben consumir servicios de aplicación en `src/lib/services/*` que hoy devuelven datos mock y mañana podrán leer de Supabase sin obligar a rediseñar las pantallas.

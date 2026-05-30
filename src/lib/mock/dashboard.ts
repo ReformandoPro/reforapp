@@ -5,14 +5,14 @@
  */
 import type { DashboardSummary } from "@/lib/types";
 
-import { mockBudgetSummary } from "./budget";
-import { mockProjectCard } from "./project";
+import { mockBudgetSummaries } from "./budget";
+import { mockProjectCards } from "./project";
 
 export const mockDashboardSummary: DashboardSummary = {
   activeProjectsCount: 4,
   delayedTasksCount: 7,
   blockedTasksCount: 2,
   pendingApprovalsCount: 5,
-  projects: [mockProjectCard],
-  budgetsRequiringAction: [mockBudgetSummary],
+  projects: mockProjectCards,
+  budgetsRequiringAction: mockBudgetSummaries,
 };

@@ -18,3 +18,5 @@ export const mockBudgetSummary: BudgetSummary = {
   contingencyAmount: 3000,
   clientVisibleTotal: 85714.2857,
 };
+
+export const mockBudgetSummaries: BudgetSummary[] = [mockBudgetSummary];
