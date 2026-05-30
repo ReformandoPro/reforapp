@@ -58,9 +58,13 @@ export function ReformistDashboardScreen({
       </Card>
 
       <Card>
-        <h3 className="text-base font-semibold">Presupuestos que requieren acción</h3>
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="text-base font-semibold">Alertas y presupuestos pendientes</h3>
+          <Badge tone="danger">{summary.openIncidentsCount} incidencias</Badge>
+        </div>
+
         <ul className="mt-4 space-y-3">
-          {summary.budgetsRequiringAction.map((budget) => (
+          {summary.pendingBudgets.map((budget) => (
             <li key={budget.id} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-medium text-slate-900">{budget.projectId}</span>
@@ -69,6 +73,20 @@ export function ReformistDashboardScreen({
               <p className="mt-2 text-sm text-slate-600">
                 Venta prevista: {budget.salePrice.toLocaleString("es-ES")} €
               </p>
+            </li>
+          ))}
+        </ul>
+
+        <ul className="mt-4 space-y-3 border-t border-slate-200 pt-4">
+          {summary.operationalAlerts.map((alert) => (
+            <li key={alert.id} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium text-slate-900">{alert.title}</span>
+                <Badge tone={alert.level === "danger" ? "danger" : alert.level === "warning" ? "warning" : "info"}>
+                  {alert.level}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm text-slate-600">{alert.description}</p>
             </li>
           ))}
         </ul>

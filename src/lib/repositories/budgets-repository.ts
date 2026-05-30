@@ -1,6 +1,6 @@
-import type { BudgetSummary } from "@/lib/types";
+import type { BudgetSummary, BudgetView } from "@/lib/types";
 
 export interface BudgetsRepository {
-  getBudgetSummary(budgetId: string): BudgetSummary | undefined;
+  getBudgetSummary(budgetId: string): BudgetView | undefined;
   getBudgetSummaries(): BudgetSummary[];
 }

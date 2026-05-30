@@ -36,7 +36,9 @@ Se consolida la base del core para que Hermes pueda empezar UI base con mocks co
 
 ### Contratos disponibles
 - `ProjectCard`
+- `ProjectOverview`
 - `BudgetSummary`
+- `BudgetView`
 - `DashboardSummary`
 - `BudgetDetail`
 - `BudgetLine`
@@ -50,6 +52,8 @@ Se consolida la base del core para que Hermes pueda empezar UI base con mocks co
 - `getBudgetSummary(budgetId)`
 - `getBudgetSummaries()`
 
+Estos servicios exponen contratos de lectura orientados a pantalla, no modelos internos.
+
 ### Repositories disponibles
 - `DashboardRepository`
 - `ProjectsRepository`
@@ -61,7 +65,9 @@ Se consolida la base del core para que Hermes pueda empezar UI base con mocks co
 ### Tipos exportados
 Desde `src/lib/types/index.ts` están exportados:
 - `BudgetSummary`
+- `BudgetView`
 - `ProjectCard`
+- `ProjectOverview`
 - `DashboardSummary`
 - `BudgetDetail`
 - `BudgetLine`
@@ -80,8 +86,8 @@ Hermes puede seguir iterando sin backend real estas piezas:
 - AppShell móvil-first
 - Home temporal
 - Dashboard placeholder del reformista usando `DashboardSummary`
-- Pantalla de resumen de obra usando `ProjectCard`
-- Pantalla de resumen de presupuesto usando `BudgetSummary`
+- Pantalla de obra usando `ProjectOverview`
+- Pantalla de presupuesto usando `BudgetView`
 - estados de carga, vacío y error para esas vistas
 
 Debe consumir contratos y servicios de `src/lib/services/*`, no importar mocks ni repositories directamente.
@@ -89,9 +95,11 @@ Debe consumir contratos y servicios de `src/lib/services/*`, no importar mocks n
 ### Qué datos pueden ser mock
 Pueden seguir siendo mock temporales, pero encapsulados en servicios:
 - listas de `ProjectCard`
+- detalles de `ProjectOverview`
 - listas de `BudgetSummary`
+- detalles de `BudgetView`
 - estructura completa de `DashboardSummary`
-- contadores de tareas bloqueadas, retrasadas y aprobaciones pendientes
+- contadores de tareas bloqueadas, retrasadas, incidencias y aprobaciones pendientes
 
 ### Qué NO debe asumir Hermes
 Hermes no debe asumir todavía:
@@ -104,6 +112,7 @@ Hermes no debe asumir todavía:
 - que los contratos reflejen tablas crudas de Supabase
 - que pueda importar datos mock directamente desde `src/lib/mock/*`
 - que deba consumir repositories desde UI
+- que todo lo visible en `BudgetView` pueda mostrarse al cliente sin revisar el subobjeto `client`
 
 ### Bloqueos
 No hay bloqueos técnicos para empezar UI base con mocks controlados.
@@ -117,3 +126,4 @@ No hay bloqueos técnicos para empezar UI base con mocks controlados.
 - Añadir más tests del motor presupuestario cuando entren materiales, mermas, redondeos y compra
 - Sustituir gradualmente mock repositories por repositories reales cuando se defina la capa de datos
 - Preparar modelo inicial de Supabase cuando se cierre el conjunto mínimo de entidades
+- Decidir más adelante si `ProjectOverview` y `BudgetView` necesitan versiones separadas por rol o por contexto (interno/cliente)

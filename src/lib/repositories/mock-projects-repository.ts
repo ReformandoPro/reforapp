@@ -1,4 +1,4 @@
-import { mockProjectCards } from "@/lib/mock/project";
+import { mockProjectCards, mockProjectOverview } from "@/lib/mock/project";
 
 import type { ProjectsRepository } from "./projects-repository";
 
@@ -8,6 +8,6 @@ export class MockProjectsRepository implements ProjectsRepository {
   }
 
   getProjectOverview(projectId: string) {
-    return mockProjectCards.find((project) => project.id === projectId);
+    return projectId === mockProjectOverview.id ? mockProjectOverview : undefined;
   }
 }

@@ -1,4 +1,4 @@
-import type { ProjectCard } from "@/lib/types";
+import type { ProjectCard, ProjectOverview } from "@/lib/types";
 
 import { MockProjectsRepository } from "@/lib/repositories";
 
@@ -8,6 +8,8 @@ export function getProjectCards(): ProjectCard[] {
   return projectsRepository.getProjectCards();
 }
 
-export function getProjectOverview(projectId: string): ProjectCard | undefined {
+export function getProjectOverview(
+  projectId: string
+): ProjectOverview | undefined {
   return projectsRepository.getProjectOverview(projectId);
 }
