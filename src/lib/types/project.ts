@@ -1,14 +1,4 @@
-export type ProjectStatus =
-  | "lead"
-  | "budgeting"
-  | "approved"
-  | "scheduled"
-  | "in_progress"
-  | "paused"
-  | "completed"
-  | "delivered"
-  | "closed"
-  | "cancelled";
+import type { ProjectStatus } from "@/lib/domain/projects/status";
 
 export type ProjectCard = {
   id: string;
