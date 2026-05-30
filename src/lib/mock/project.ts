@@ -14,3 +14,5 @@ export const mockProjectCard: ProjectCard = {
   blockedTasksCount: 1,
   pendingApprovalsCount: 3,
 };
+
+export const mockProjectCards: ProjectCard[] = [mockProjectCard];

@@ -5,13 +5,21 @@ import { ReformistDashboardScreen } from "@/components/screens/ReformistDashboar
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { mockBudgetSummary } from "@/lib/mock/budget";
-import { mockDashboardSummary } from "@/lib/mock/dashboard";
-import { mockProjectCard } from "@/lib/mock/project";
+import { getBudgetSummary } from "@/lib/services/budgets";
+import { getDashboardSummary } from "@/lib/services/dashboard";
+import { getProjectOverview } from "@/lib/services/projects";
 
 const placeholderLinks = ["Dashboard", "Obra", "Presupuesto"];
 
 export default function Home() {
+  const dashboardSummary = getDashboardSummary();
+  const projectOverview = getProjectOverview("project_obra_centro");
+  const budgetSummary = getBudgetSummary("budget_obra_centro_v1");
+
+  if (!projectOverview || !budgetSummary) {
+    throw new Error("Missing temporary UI data contracts");
+  }
+
   return (
     <AppShell>
       <Card className="bg-slate-900 text-white">
@@ -41,11 +49,11 @@ export default function Home() {
         </div>
       </Card>
 
-      <ReformistDashboardScreen summary={mockDashboardSummary} />
+      <ReformistDashboardScreen summary={dashboardSummary} />
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <ProjectOverviewScreen project={mockProjectCard} />
-        <BudgetSummaryScreen budget={mockBudgetSummary} />
+        <ProjectOverviewScreen project={projectOverview} />
+        <BudgetSummaryScreen budget={budgetSummary} />
       </div>
     </AppShell>
   );
