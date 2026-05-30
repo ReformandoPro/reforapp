@@ -24,3 +24,6 @@ Las pantallas no deben consumir mocks directamente. Deben consumir servicios de 
 
 ### Los servicios consumen repositories, no mocks directos
 Los servicios de aplicación no deben depender directamente de mocks. Deben depender de interfaces de repository. Hoy se implementan con mock repositories; mañana podrán implementarse con Supabase repositories sin obligar a reescribir la capa de servicios ni las pantallas.
+
+### Los contratos de lectura para UI son DTOs/view models
+Los contratos de lectura para UI no son tablas de Supabase ni modelos internos. Son DTOs/view models orientados a las necesidades de cada pantalla y rol. Deben separar con claridad información interna, información visible para cliente y datos temporales de mock.
