@@ -21,3 +21,6 @@ La versión actual de estados y transiciones es una primera aproximación revisa
 
 ### Las pantallas consumen servicios, no mocks directos
 Las pantallas no deben consumir mocks directamente. Deben consumir servicios de aplicación en `src/lib/services/*` que hoy devuelven datos mock y mañana podrán leer de Supabase sin obligar a rediseñar las pantallas.
+
+### Los servicios consumen repositories, no mocks directos
+Los servicios de aplicación no deben depender directamente de mocks. Deben depender de interfaces de repository. Hoy se implementan con mock repositories; mañana podrán implementarse con Supabase repositories sin obligar a reescribir la capa de servicios ni las pantallas.

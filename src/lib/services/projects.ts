@@ -1,10 +1,13 @@
-import { mockProjectCards } from "@/lib/mock/project";
 import type { ProjectCard } from "@/lib/types";
 
+import { MockProjectsRepository } from "@/lib/repositories";
+
+const projectsRepository = new MockProjectsRepository();
+
 export function getProjectCards(): ProjectCard[] {
-  return mockProjectCards;
+  return projectsRepository.getProjectCards();
 }
 
 export function getProjectOverview(projectId: string): ProjectCard | undefined {
-  return mockProjectCards.find((project) => project.id === projectId);
+  return projectsRepository.getProjectOverview(projectId);
 }
