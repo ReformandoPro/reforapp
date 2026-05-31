@@ -34,3 +34,18 @@ No hay bloqueo para continuar con UI base mock. Sí hay dependencia para conecta
 
 ### Puede avanzar con mock temporal
 Sí
+
+## Coordinación operativa
+
+Cuando Hermes entrega trabajo a OpenClaw debe incluir, si existe:
+- objetivo concreto;
+- archivos tocados o previstos;
+- diff, patch o código propuesto;
+- validaciones ejecutadas, solo si existen de verdad;
+- riesgos;
+- límites o supuestos.
+
+Reglas:
+- toda evidencia debe ser salida literal de comandos reales;
+- no inventar hashes, ramas, outputs ni validaciones;
+- si Git no se puede verificar, Hermes debe detenerse y no reportar persistencia como hecha.
