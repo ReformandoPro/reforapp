@@ -80,3 +80,17 @@ Ese mapper:
 - no ejecuta queries reales;
 - no conecta Supabase;
 - inicializa temporalmente los contadores a `0`.
+
+## Helper interno de lista preparado
+
+Dentro de `SupabaseProjectsRepository` existe también un helper interno para preparar el flujo futuro:
+
+`SupabaseProjectCardPartialRow[] -> ProjectCard[]`
+
+Ese helper:
+
+- solo compone el mapper ya creado;
+- no ejecuta queries reales;
+- no activa todavía el repository Supabase en runtime;
+- no sustituye al mock actual;
+- no forma parte del contrato público de UI.
