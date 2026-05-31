@@ -58,6 +58,9 @@ La primera migración Supabase futura se diseñará alrededor de `organizations`
 ### Primer query plan de `SupabaseProjectsRepository.getProjectCards()`
 El primer query plan de `SupabaseProjectsRepository.getProjectCards()` leerá `projects` con join a `clients`, filtrado por `organization_id`, y seguirá devolviendo `ProjectCard[]` mediante mapper interno.
 
+### Organization scope se resolverá antes del repository
+El primer diseño real de Supabase tratará `organization_id` como obligatorio para `clients` y `projects`, pero la obtención de la organización activa se resolverá fuera de la UI y antes del repository. La UI seguirá consumiendo `ProjectCard` vía services.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.
