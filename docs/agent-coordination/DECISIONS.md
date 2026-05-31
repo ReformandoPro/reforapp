@@ -64,6 +64,9 @@ El primer diseño real de Supabase tratará `organization_id` como obligatorio p
 ### Application context resolverá organization scope antes del repository
 El contexto de organización para futuros reads reales de Supabase se resolverá en una capa `application/repository gateway` antes del repository. `organizationId` no formará parte de `ProjectCard` ni será pasado por componentes UI.
 
+### El proyecto usará application/repository gateway para composición
+El proyecto usará una capa `application/repository gateway` para resolver contexto de aplicación, seleccionar fuente de datos y construir repositories. La UI seguirá consumiendo `services` y no conocerá `organizationId`, Supabase ni mocks.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.
