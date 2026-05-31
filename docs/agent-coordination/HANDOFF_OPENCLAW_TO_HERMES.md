@@ -148,3 +148,17 @@ No hay bloqueos técnicos para empezar UI base con mocks controlados.
 - Sustituir gradualmente mock repositories por repositories reales cuando se defina la capa de datos
 - Preparar modelo inicial de Supabase cuando se cierre el conjunto mínimo de entidades
 - Decidir más adelante si `ProjectOverview` y `BudgetView` necesitan versiones separadas por rol o por contexto (interno/cliente)
+
+## Coordinación operativa
+
+Cuando OpenClaw entrega contexto o trabajo a Hermes debe incluir:
+- estado real de `origin/main`;
+- ramas integradas o verificadas;
+- archivos disponibles para trabajar;
+- límites técnicos y de alcance;
+- advertencias sobre mocks, runtime o piezas no activas.
+
+Reglas:
+- toda evidencia debe ser salida literal de comandos reales;
+- si una rama o reporte previo no coincide con Git real, debe tratarse como no fiable;
+- Hermes debe trabajar sobre el estado verificado que OpenClaw entregue, no sobre supuestos no confirmados.
