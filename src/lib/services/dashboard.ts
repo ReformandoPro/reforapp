@@ -1,8 +1,7 @@
+import { createDashboardRepository } from "@/lib/application";
 import type { DashboardSummary } from "@/lib/types";
 
-import { MockDashboardRepository } from "@/lib/repositories";
-
-const dashboardRepository = new MockDashboardRepository();
+const dashboardRepository = createDashboardRepository({ dataSource: "mock" });
 
 export function getDashboardSummary(): DashboardSummary {
   return dashboardRepository.getDashboardSummary();
