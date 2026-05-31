@@ -92,7 +92,7 @@ Hermes puede seguir iterando sin backend real estas piezas:
 
 Debe consumir contratos y servicios de `src/lib/services/*`, no importar mocks ni repositories directamente.
 
-Hermes puede usar `ProjectCard` para tarjetas/listados de obra, pero no debe asumir todavía persistencia real en Supabase ni campos adicionales que no estén expuestos por el contrato. El primer candidato previsto para salir de mock será `getProjectCards()`; hasta que Openclaw implemente el repository real, sigue siendo dato mock encapsulado.
+Hermes puede usar `ProjectCard` para tarjetas/listados de obra, pero no debe asumir todavía persistencia real en Supabase ni campos adicionales que no estén expuestos por el contrato. El primer candidato previsto para salir de mock será `getProjectCards()`; ya existe un esqueleto futuro de `SupabaseProjectsRepository`, pero el mock sigue siendo la implementación activa y el dato sigue encapsulado en `service -> repository`.
 
 ### Qué datos pueden ser mock
 Pueden seguir siendo mock temporales, pero encapsulados en servicios:
@@ -102,6 +102,8 @@ Pueden seguir siendo mock temporales, pero encapsulados en servicios:
 - detalles de `BudgetView`
 - estructura completa de `DashboardSummary`
 - contadores de tareas bloqueadas, retrasadas, incidencias y aprobaciones pendientes
+
+En particular, `delayedTasksCount`, `blockedTasksCount` y `pendingApprovalsCount` siguen fuera de Supabase real hasta una segunda iteración.
 
 ### Qué NO debe asumir Hermes
 Hermes no debe asumir todavía:
@@ -114,6 +116,7 @@ Hermes no debe asumir todavía:
 - que los contratos reflejen tablas crudas de Supabase
 - que pueda importar datos mock directamente desde `src/lib/mock/*`
 - que deba consumir repositories desde UI
+- que dependa de nombres de tablas de Supabase
 - que `ProjectCard` tenga más campos de los expuestos actualmente
 - que todo lo visible en `BudgetView` pueda mostrarse al cliente sin revisar el subobjeto `client`
 
