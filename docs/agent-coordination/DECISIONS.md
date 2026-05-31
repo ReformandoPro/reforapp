@@ -67,6 +67,11 @@ El contexto de organización para futuros reads reales de Supabase se resolverá
 ### El proyecto usará application/repository gateway para composición
 El proyecto usará una capa `application/repository gateway` para resolver contexto de aplicación, seleccionar fuente de datos y construir repositories. La UI seguirá consumiendo `services` y no conocerá `organizationId`, Supabase ni mocks.
 
+### Sistema visual dark mode documentado antes de implementación UI
+Reformando.app adopta como objetivo un sistema visual dark mode basado en tokens documentados en `docs/design/hermes-ui-guidelines.md` y sus archivos fuente asociados en `docs/design/`.
+
+Esta decisión fija la referencia visual antes de implementar pantallas reales, pero su aplicación al código, a Tailwind runtime y a la configuración visual activa se hará en tareas posteriores.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.
