@@ -10,7 +10,8 @@ import type { EntityId } from "@/lib/types";
  *
  * It is intentionally not connected to runtime yet:
  * - `services/projects.ts` does not use it;
- * - `createProjectsRepository()` does not receive it yet;
+ * - `createProjectsRepository()` may accept it, but does not use it yet to
+ *   select a real repository path;
  * - `SupabaseProjectsRepository` remains inactive.
  */
 export interface ProjectsApplicationContext {

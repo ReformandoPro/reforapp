@@ -55,10 +55,22 @@ describe("createProjectsRepository", () => {
     expectMockProjectCards(repository);
   });
 
-  it("returns the current mock implementation with context and dataSource mock", () => {
+  it("returns the current mock implementation with context and implicit mock datasource", () => {
     const options: CreateProjectsRepositoryOptions = {
       context: {
         organizationId: "org_456",
+      },
+    };
+
+    const repository = createProjectsRepository(options);
+
+    expectMockProjectCards(repository);
+  });
+
+  it("returns the current mock implementation with context and dataSource mock", () => {
+    const options: CreateProjectsRepositoryOptions = {
+      context: {
+        organizationId: "org_789",
       },
       dataSource: "mock",
     };
@@ -91,14 +103,20 @@ describe("createProjectsRepository", () => {
       const repositoryWithMockOptions = createProjectsRepository({
         dataSource: "mock",
       });
-      const repositoryWithContextAndMockOptions = createProjectsRepository({
+      const repositoryWithContextOnlyOptions = createProjectsRepository({
         context: { organizationId: "org_demo" },
+      });
+      const repositoryWithContextAndMockOptions = createProjectsRepository({
+        context: { organizationId: "org_stage" },
         dataSource: "mock",
       });
 
       expect(() => expectMockProjectCards(repositoryWithoutArguments)).not.toThrow();
       expect(() => expectMockProjectCards(repositoryWithContext)).not.toThrow();
       expect(() => expectMockProjectCards(repositoryWithMockOptions)).not.toThrow();
+      expect(() =>
+        expectMockProjectCards(repositoryWithContextOnlyOptions)
+      ).not.toThrow();
       expect(() =>
         expectMockProjectCards(repositoryWithContextAndMockOptions)
       ).not.toThrow();
