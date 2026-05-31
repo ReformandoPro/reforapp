@@ -1,3 +1,30 @@
+## Hermes session handoff - 2026-05-31
+Confirmed state:
+- `origin/main` is at `21c72ff`, merge commit: `merge: add agent operating protocol`.
+- Previous stable UI merge: `e30de98`, `merge: add base app shell`.
+- AppShell was persisted by OpenClaw through branch `openclaw/app-shell-layout`.
+- Agent protocol was persisted through branch `openclaw/agent-operating-protocol`.
+- AppShell integration validations: lint OK, build OK, test OK, 55 tests passed.
+- Current operating rule is documented: Hermes proposes, OpenClaw persists.
+Integrated AppShell files:
+- `src/app/layout.tsx`
+- `src/components/layout/AppShell.tsx`
+- `src/components/layout/index.ts`
+Hermes responsibilities:
+- UI/UX/frontend proposals.
+- Components, screens, navigation proposals.
+- Patches/diffs/code for OpenClaw to apply.
+OpenClaw responsibilities:
+- Apply changes.
+- Validate.
+- Commit.
+- Push.
+- Merge to main.
+- Verify real GitHub state.
+Critical rule:
+- Do not invent hashes, branches, outputs or validations.
+- All Git evidence must be literal command output.
+
 # Handoff — Openclaw → Hermes
 
 Este archivo registra traspasos de Openclaw a Hermes.
