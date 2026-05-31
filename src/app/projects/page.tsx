@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -69,7 +71,7 @@ export default function ProjectsPage() {
               key={project.id}
               className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
             >
-              <a
+              <Link
                 href={`/projects/${project.id}`}
                 className="block p-5 transition-colors hover:bg-[var(--bg-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-300)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-surface)]"
               >
@@ -113,7 +115,7 @@ export default function ProjectsPage() {
                     </p>
                   </div>
                 </div>
-              </a>
+              </Link>
             </Card>
           ))}
         </div>
