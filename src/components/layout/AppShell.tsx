@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ReactNode } from "react";
 
 const navigationItems: Array<{
@@ -31,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-t-[var(--border-subtle)] bg-[var(--bg-surface)]/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-around px-2 py-2 sm:px-6 lg:px-8">
           {navigationItems.map((item) => (
-            <a
+            <Link
               key={item.label}
               href={item.href}
               className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:text-sm ${
@@ -41,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               }`}
             >
               <span>{item.label}</span>
-            </a>
+            </Link>
           ))}
 
           <span
