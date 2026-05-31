@@ -136,6 +136,12 @@ Esto es necesario para:
 - preparar multiempresa desde el primer read real;
 - dejar el camino listo para RLS posterior.
 
+Decisión actual de diseño:
+
+- en la primera implementación real, `organizationId` vendrá de una capa superior o contexto de aplicación;
+- no se resolverá todavía dentro del repository desde Auth;
+- más adelante podrá derivarse desde sesión/Auth, organización activa y `memberships`.
+
 El origen definitivo de `organizationId` sigue pendiente y dependerá de cerrar:
 
 - Auth;
