@@ -163,6 +163,8 @@ El origen definitivo de `organizationId` sigue pendiente y dependerá de cerrar:
 ## Notas arquitectónicas
 
 - Este documento no implementa la query real.
+- Existe un stub no conectado en `SupabaseProjectsRepository.getProjectCards()` para reflejar este flujo futuro.
+- Ese stub sigue lanzando `SupabaseProjectsRepository is not connected yet`.
 - Este documento no activa `SupabaseProjectsRepository` en runtime.
 - El mock sigue siendo la implementación activa.
 - `ProjectCard` sigue siendo el contrato estable de UI.
