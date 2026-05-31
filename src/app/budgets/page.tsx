@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -83,67 +85,72 @@ export default function BudgetsPage() {
           {budgets.map((budget) => (
             <Card
               key={budget.id}
-              className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 text-[var(--text-primary)] shadow-none"
+              className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    {formatBudgetTitle(budget.id)}
-                  </p>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    {budget.id}
-                  </h2>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Obra: {budget.projectId}
-                  </p>
+              <Link
+                href={`/budgets/${budget.id}`}
+                className="block p-5 transition-colors hover:bg-[var(--bg-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-300)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-surface)]"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      {formatBudgetTitle(budget.id)}
+                    </p>
+                    <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                      {budget.id}
+                    </h2>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Obra: {budget.projectId}
+                    </p>
+                  </div>
+                  <Badge tone={statusTones[budget.status]}>
+                    {statusLabels[budget.status]}
+                  </Badge>
                 </div>
-                <Badge tone={statusTones[budget.status]}>
-                  {statusLabels[budget.status]}
-                </Badge>
-              </div>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Coste estimado
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                    {currencyFormatter.format(budget.estimatedCost)}
-                  </p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Coste estimado
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+                      {currencyFormatter.format(budget.estimatedCost)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Precio de venta
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+                      {currencyFormatter.format(budget.salePrice)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Margen objetivo
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+                      {percentageFormatter.format(budget.targetMarginRate)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Margen actual
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+                      {percentageFormatter.format(budget.actualMarginRate)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Total visible cliente
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+                      {currencyFormatter.format(budget.clientVisibleTotal)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Precio de venta
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                    {currencyFormatter.format(budget.salePrice)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Margen objetivo
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                    {percentageFormatter.format(budget.targetMarginRate)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Margen actual
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                    {percentageFormatter.format(budget.actualMarginRate)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Total visible cliente
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                    {currencyFormatter.format(budget.clientVisibleTotal)}
-                  </p>
-                </div>
-              </div>
+              </Link>
             </Card>
           ))}
         </div>
