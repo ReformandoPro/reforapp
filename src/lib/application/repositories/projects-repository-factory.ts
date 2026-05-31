@@ -9,10 +9,36 @@ export type CreateProjectsRepositoryOptions = {
   dataSource?: ProjectsRepositoryDataSource;
 };
 
+type CreateProjectsRepositoryInput =
+  | ProjectsApplicationContext
+  | CreateProjectsRepositoryOptions
+  | undefined;
+
+type NormalizedProjectsRepositoryFactoryInput = {
+  context?: ProjectsApplicationContext;
+  dataSource: ProjectsRepositoryDataSource;
+};
+
 function isCreateProjectsRepositoryOptions(
-  input: ProjectsApplicationContext | CreateProjectsRepositoryOptions | undefined
+  input: CreateProjectsRepositoryInput
 ): input is CreateProjectsRepositoryOptions {
   return input !== undefined && "dataSource" in input;
+}
+
+function normalizeProjectsRepositoryFactoryInput(
+  input: CreateProjectsRepositoryInput
+): NormalizedProjectsRepositoryFactoryInput {
+  if (isCreateProjectsRepositoryOptions(input)) {
+    return {
+      context: input.context,
+      dataSource: input.dataSource ?? "mock",
+    };
+  }
+
+  return {
+    context: input,
+    dataSource: "mock",
+  };
 }
 
 /**
@@ -46,14 +72,10 @@ export function createProjectsRepository(
   options: CreateProjectsRepositoryOptions
 ): ProjectsRepository;
 export function createProjectsRepository(
-  input?: ProjectsApplicationContext | CreateProjectsRepositoryOptions
+  input?: CreateProjectsRepositoryInput
 ): ProjectsRepository {
-  const options = isCreateProjectsRepositoryOptions(input)
-    ? input
-    : { context: input, dataSource: "mock" as const };
-
-  const dataSource = options.dataSource ?? "mock";
-  void options.context;
+  const { context, dataSource } = normalizeProjectsRepositoryFactoryInput(input);
+  void context;
 
   if (dataSource === "supabase") {
     throw new Error(
