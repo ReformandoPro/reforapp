@@ -47,6 +47,17 @@ Flujo obligatorio:
 
 La UI no debe importar mocks ni clientes Supabase directamente.
 
+## Esqueleto actual
+
+Existe un esqueleto de `SupabaseProjectsRepository`, pero el mock sigue siendo la implementación activa en runtime.
+
+Ese esqueleto solo prepara el punto de extensión para la futura sustitución del mock y todavía no:
+
+- se conecta a Supabase real;
+- ejecuta queries reales;
+- requiere variables de entorno nuevas;
+- sustituye al repository activo.
+
 ## Futuro SupabaseProjectsRepository
 
 El futuro `SupabaseProjectsRepository` deberá implementar la misma interfaz que el mock repository actual.

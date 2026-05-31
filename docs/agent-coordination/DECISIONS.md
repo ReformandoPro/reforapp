@@ -49,6 +49,9 @@ Esta decisión reduce riesgo, permite validar primero el patrón `service -> rep
 ### Contrato técnico previo al primer read parcial de `getProjectCards()`
 Antes de conectar Supabase real, se mantendrá `ProjectCard` como contrato de UI y se preparará el read parcial `projects + clients` en la capa `repository/service`, sin exponer detalles de base de datos a la UI.
 
+### Esqueleto previo de `SupabaseProjectsRepository`
+Antes de conectar Supabase real, existe un esqueleto de `SupabaseProjectsRepository` como punto de extensión futuro. El mock sigue siendo la implementación activa y la UI debe seguir consumiendo `service -> repository`, sin depender de mocks ni de Supabase directamente.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.

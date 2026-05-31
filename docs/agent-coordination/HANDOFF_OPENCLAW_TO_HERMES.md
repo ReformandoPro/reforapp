@@ -92,7 +92,7 @@ Hermes puede seguir iterando sin backend real estas piezas:
 
 Debe consumir contratos y servicios de `src/lib/services/*`, no importar mocks ni repositories directamente.
 
-Hermes puede usar `ProjectCard` para tarjetas/listados de obra, pero no debe asumir todavía persistencia real en Supabase ni campos adicionales que no estén expuestos por el contrato. `ProjectCard` sigue siendo el contrato estable de UI. El primer candidato previsto para salir de mock será `getProjectCards()`; su primera lectura real se ha decidido como **parcial**, alimentada inicialmente solo desde `projects` y `clients`. Antes de conectar Supabase real, Openclaw prepara ese read parcial dentro de `service -> repository`, no en UI, y hasta que exista el repository real sigue siendo dato mock encapsulado.
+Hermes puede usar `ProjectCard` para tarjetas/listados de obra, pero no debe asumir todavía persistencia real en Supabase ni campos adicionales que no estén expuestos por el contrato. `ProjectCard` sigue siendo el contrato estable de UI. El primer candidato previsto para salir de mock será `getProjectCards()`; su primera lectura real se ha decidido como **parcial**, alimentada inicialmente solo desde `projects` y `clients`. Ya existe un esqueleto futuro de `SupabaseProjectsRepository`, pero el mock sigue siendo la implementación activa. Antes de conectar Supabase real, Openclaw prepara ese read parcial dentro de `service -> repository`, no en UI, y el dato sigue encapsulado en esa capa.
 
 ### Qué datos pueden ser mock
 Pueden seguir siendo mock temporales, pero encapsulados en servicios:
@@ -103,7 +103,7 @@ Pueden seguir siendo mock temporales, pero encapsulados en servicios:
 - estructura completa de `DashboardSummary`
 - contadores de tareas bloqueadas, retrasadas, incidencias y aprobaciones pendientes
 
-En particular, `delayedTasksCount`, `blockedTasksCount` y `pendingApprovalsCount` pueden seguir siendo mock o valores controlados hasta una segunda iteración con `tasks` y `approvals`.
+En particular, `delayedTasksCount`, `blockedTasksCount` y `pendingApprovalsCount` pueden seguir siendo mock o valores controlados y siguen fuera de Supabase real hasta una segunda iteración con `tasks` y `approvals`.
 
 ### Qué NO debe asumir Hermes
 Hermes no debe asumir todavía:
