@@ -55,6 +55,9 @@ Antes de conectar Supabase real, existe un esqueleto de `SupabaseProjectsReposit
 ### Primera migración Supabase futura para `ProjectCard` será mínima
 La primera migración Supabase futura se diseñará alrededor de `organizations`, `clients` y `projects`, suficiente para el primer read parcial de `ProjectCard`, dejando `tasks`, `approvals` y RLS para fases posteriores.
 
+### Primer query plan de `SupabaseProjectsRepository.getProjectCards()`
+El primer query plan de `SupabaseProjectsRepository.getProjectCards()` leerá `projects` con join a `clients`, filtrado por `organization_id`, y seguirá devolviendo `ProjectCard[]` mediante mapper interno.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.

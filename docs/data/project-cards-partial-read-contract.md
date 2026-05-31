@@ -94,3 +94,14 @@ Ese helper:
 - no activa todavía el repository Supabase en runtime;
 - no sustituye al mock actual;
 - no forma parte del contrato público de UI.
+
+## Query plan documental preparado
+
+Existe además un query plan documental para la futura primera lectura real de `getProjectCards()`.
+
+Ese plan documenta:
+
+- la lectura parcial de `projects + clients`;
+- el filtro por `organization_id`;
+- el shape intermedio esperado para el mapper;
+- el flujo interno hasta devolver `ProjectCard[]`.
