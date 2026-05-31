@@ -121,6 +121,20 @@ Hermes no debe asumir todavía:
 - que la primera lectura real de `ProjectCard` incluya ya contadores derivados desde `tasks` o `approvals`
 - que todo lo visible en `BudgetView` pueda mostrarse al cliente sin revisar el subobjeto `client`
 
+### Guía visual persistente para Hermes
+
+Queda documentado un sistema visual objetivo en:
+- `docs/design/hermes-ui-guidelines.md`
+- `docs/design/source-sistema-de-diseno.md`
+- `docs/design/source-tokens.css`
+- `docs/design/source-tokens.json`
+- `docs/design/source-tailwind.config.js`
+
+Regla de coordinación:
+- Hermes debe leer `docs/design/hermes-ui-guidelines.md` antes de implementar UI.
+- Los tokens y el `source-tailwind.config.js` son referencia documental, no configuración activa.
+- Este sistema visual todavía no se ha aplicado al runtime.
+
 ### Bloqueos
 No hay bloqueos técnicos para empezar UI base con mocks controlados.
 
