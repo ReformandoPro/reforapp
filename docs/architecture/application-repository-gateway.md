@@ -137,9 +137,10 @@ Esa factory:
 
 - devuelve hoy `MockProjectsRepository`;
 - está tipada contra `ProjectsRepository`;
+- acepta ahora opcionalmente `ProjectsApplicationContext`;
 - no activa `SupabaseProjectsRepository`;
 - no cambia el runtime actual;
-- no resuelve todavía `organizationId`;
+- no usa todavía `organizationId` para seleccionar implementación;
 - no debe ser consumida directamente por UI.
 
 Su valor actual es preparar el punto de composición futuro sin tocar todavía `services/projects.ts`.
@@ -154,7 +155,8 @@ Ese contexto:
 - reutiliza el tipo común `EntityId`;
 - documenta que el contexto se resolverá fuera de UI;
 - sigue sin conectarse a runtime;
-- todavía no se pasa a la factory;
+- puede pasarse ya de forma opcional a la factory como firma futura;
+- todavía no se usa realmente para seleccionar repository;
 - todavía no se usa desde `services/projects.ts`.
 
 ## Notas arquitectónicas
