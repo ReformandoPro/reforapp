@@ -86,7 +86,10 @@ Para el primer read real previsto:
 2. el repository recibirá ese contexto de organización;
 3. la query sobre `projects` se filtrará por `organization_id`;
 4. el resultado se mapeará al shape intermedio del repository;
-5. el repository devolverá `ProjectCard[]`.
+5. el helper interno de lista mapeará ese resultado;
+6. el repository devolverá `ProjectCard[]`.
+
+Actualmente existe ya un stub no conectado en `SupabaseProjectsRepository.getProjectCards()` para reflejar este flujo futuro sin cambiar el runtime actual.
 
 Esto permite:
 
