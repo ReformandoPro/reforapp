@@ -123,10 +123,28 @@ Motivo:
 - ¿Qué organización fija usaremos en modo demo/local?
 - ¿Cuándo entra Auth real?
 
+## Primer paso ya implementado
+
+Ya existe una estructura mínima no conectada en:
+
+- `src/lib/application/`
+- `src/lib/application/repositories/projects-repository-factory.ts`
+
+Esa factory:
+
+- devuelve hoy `MockProjectsRepository`;
+- está tipada contra `ProjectsRepository`;
+- no activa `SupabaseProjectsRepository`;
+- no cambia el runtime actual;
+- no resuelve todavía `organizationId`;
+- no debe ser consumida directamente por UI.
+
+Su valor actual es preparar el punto de composición futuro sin tocar todavía `services/projects.ts`.
+
 ## Notas arquitectónicas
 
-- Este documento no implementa el gateway.
-- Este documento no cambia runtime.
+- Este documento no implementa el gateway completo.
+- La factory mínima no cambia runtime.
 - Este documento no cambia firmas públicas de `services` ni `repositories`.
 - El mock sigue siendo la implementación activa.
 - `SupabaseProjectsRepository` sigue sin activarse en runtime.
