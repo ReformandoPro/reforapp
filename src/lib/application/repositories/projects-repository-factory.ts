@@ -2,6 +2,19 @@ import type { ProjectsApplicationContext } from "../context/projects-application
 import { MockProjectsRepository } from "../../repositories/mock-projects-repository";
 import type { ProjectsRepository } from "../../repositories/projects-repository";
 
+export type ProjectsRepositoryDataSource = "mock" | "supabase";
+
+export type CreateProjectsRepositoryOptions = {
+  context?: ProjectsApplicationContext;
+  dataSource?: ProjectsRepositoryDataSource;
+};
+
+function isCreateProjectsRepositoryOptions(
+  input: ProjectsApplicationContext | CreateProjectsRepositoryOptions | undefined
+): input is CreateProjectsRepositoryOptions {
+  return input !== undefined && "dataSource" in input;
+}
+
 /**
  * Minimal application-layer composition point for project repositories.
  *
@@ -19,11 +32,34 @@ import type { ProjectsRepository } from "../../repositories/projects-repository"
  * The optional `context` parameter is accepted now only to stabilize the future
  * composition signature. It is intentionally not used yet because runtime must
  * remain mock-backed until a later iteration wires real repository selection.
+ *
+ * The `dataSource` option is also intentionally limited for now:
+ * - `mock` is the only operational datasource;
+ * - `supabase` fails explicitly until the application factory can build a real
+ *   repository path without implying that Supabase is already active.
  */
+export function createProjectsRepository(): ProjectsRepository;
 export function createProjectsRepository(
-  context?: ProjectsApplicationContext
+  context: ProjectsApplicationContext
+): ProjectsRepository;
+export function createProjectsRepository(
+  options: CreateProjectsRepositoryOptions
+): ProjectsRepository;
+export function createProjectsRepository(
+  input?: ProjectsApplicationContext | CreateProjectsRepositoryOptions
 ): ProjectsRepository {
-  void context;
+  const options = isCreateProjectsRepositoryOptions(input)
+    ? input
+    : { context: input, dataSource: "mock" as const };
+
+  const dataSource = options.dataSource ?? "mock";
+  void options.context;
+
+  if (dataSource === "supabase") {
+    throw new Error(
+      "SupabaseProjectsRepository is not available from the application factory yet"
+    );
+  }
 
   return new MockProjectsRepository();
 }
