@@ -12,6 +12,8 @@ import type { ProjectsRepository } from "./projects-repository";
  * model backed by `projects` + `clients` and map it into the `ProjectCard`
  * UI contract without exposing database details to the UI.
  *
+ * That mapping is prepared in the internal `supabase-projects-mapper` module.
+ *
  * Until a second iteration introduces `tasks` and `approvals`, the counters
  * `delayedTasksCount`, `blockedTasksCount` and `pendingApprovalsCount` must
  * stay as controlled values inside the repository layer, never in UI.
