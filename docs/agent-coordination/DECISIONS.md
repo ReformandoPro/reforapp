@@ -46,6 +46,9 @@ Los contadores `delayedTasksCount`, `blockedTasksCount` y `pendingApprovalsCount
 
 Esta decisión reduce riesgo, permite validar primero el patrón `service -> repository -> Supabase`, evita diseñar prematuramente contadores derivados y mantiene `ProjectCard` como contrato de UI sin acoplar la pantalla a detalles de base de datos.
 
+### Contrato técnico previo al primer read parcial de `getProjectCards()`
+Antes de conectar Supabase real, se mantendrá `ProjectCard` como contrato de UI y se preparará el read parcial `projects + clients` en la capa `repository/service`, sin exponer detalles de base de datos a la UI.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.
