@@ -114,3 +114,4 @@ Esto permite:
 - Esta decisión no cambia el contrato `ProjectCard`.
 - Esta decisión no activa `SupabaseProjectsRepository` en runtime.
 - El mock sigue siendo la implementación activa.
+- El detalle de dónde vivirá este contexto antes del repository queda ampliado en `docs/data/project-cards-application-context-decision.md`.
