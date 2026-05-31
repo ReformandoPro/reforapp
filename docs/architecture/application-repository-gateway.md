@@ -130,33 +130,37 @@ Ya existe una estructura mínima en:
 - `src/lib/application/`
 - `src/lib/application/repositories/projects-repository-factory.ts`
 - `src/lib/application/repositories/dashboard-repository-factory.ts`
+- `src/lib/application/repositories/budgets-repository-factory.ts`
 - `src/lib/application/context/projects-application-context.ts`
 
 ### Factories mínimas de repository
 
-Actualmente existen dos factories de application:
+Actualmente existen tres factories de application:
 
 - `createProjectsRepository(...)`
 - `createDashboardRepository(...)`
+- `createBudgetsRepository(...)`
 
 Estado actual:
 
-- ambas devuelven hoy repositories mock;
-- ambas están tipadas contra sus interfaces de repository;
+- las tres devuelven hoy repositories mock;
+- las tres están tipadas contra sus interfaces de repository;
 - la de `projects` acepta opcionalmente `ProjectsApplicationContext`;
-- ambas exponen una opción conceptual de `dataSource` (`mock` | `supabase`);
+- las tres exponen una opción conceptual de `dataSource` (`mock` | `supabase`);
 - ninguna activa repositories Supabase reales;
 - no cambian el runtime actual;
 - la de `projects` no usa todavía `organizationId` para seleccionar implementación;
-- ambas fallan explícitamente si se pide `supabase` desde la factory;
+- ninguna usa todavía `organizationId` en runtime;
+- las tres fallan explícitamente si se pide `supabase` desde la factory;
 - no deben ser consumidas directamente por UI.
 
 Su valor actual ya incluye el primer encaje real en:
 
 - `services/projects.ts`
 - `services/dashboard.ts`
+- `services/budgets.ts`
 
-ambos consumiendo la factory correspondiente con `dataSource: "mock"` sin cambiar el comportamiento visible de la app.
+los tres consumiendo la factory correspondiente con `dataSource: "mock"` sin cambiar el comportamiento visible de la app.
 
 ### Shape mínimo de application context
 
@@ -180,6 +184,7 @@ Ese contexto:
 - `mock` es la única ruta operativa desde la factory por ahora.
 - `supabase` falla de forma explícita para no aparentar soporte activo antes de tiempo.
 - Este documento no cambia firmas públicas de `services` ni `repositories`.
-- `services/projects.ts` y `services/dashboard.ts` ya entran por la capa application, pero siguen forzando `mock`.
+- `services/projects.ts`, `services/dashboard.ts` y `services/budgets.ts` ya entran por la capa application, pero siguen forzando `mock`.
 - El mock sigue siendo la implementación activa.
 - Los repositories Supabase siguen sin activarse en runtime.
+- El motor presupuestario permanece fuera de esta capa y no ha sido tocado por este cambio.
