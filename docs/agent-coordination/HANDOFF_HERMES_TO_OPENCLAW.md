@@ -49,3 +49,13 @@ Reglas:
 - toda evidencia debe ser salida literal de comandos reales;
 - no inventar hashes, ramas, outputs ni validaciones;
 - si Git no se puede verificar, Hermes debe detenerse y no reportar persistencia como hecha.
+
+## Coordination message format
+When ChatGPT coordinates between Jorge, Hermes and OpenClaw:
+- Lines intended only for Jorge may start with `J:`.
+- Copy/paste blocks for agents should not include extra commentary before or after the actionable instruction.
+- If a message is intended for multiple agents, it should use explicit sections:
+  - `[Hermes]`
+  - `[OpenClaw]`
+- Agents should answer with concise literal evidence when asked for verification.
+- Agents should avoid narrative confirmations when command output was requested.
