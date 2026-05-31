@@ -28,13 +28,34 @@ El contrato actual usado por la UI contiene:
 - no expone márgenes, costes ni información sensible de presupuesto;
 - permite probar el patrón service -> repository -> Supabase con bajo riesgo.
 
+## Decisión para la primera iteración real
+
+El primer read real de Supabase para `getProjectCards()` será **parcial**.
+
+En esa primera iteración, `ProjectCard` se alimentará inicialmente desde `projects` y `clients`. Los contadores `delayedTasksCount`, `blockedTasksCount` y `pendingApprovalsCount` se mantendrán en mock o en valor controlado temporal hasta una segunda iteración con `tasks` y `approvals`.
+
 ## Tablas candidatas mínimas
 
-El diseño mínimo futuro podría apoyarse en estas tablas:
+### Primera iteración real
 
-- `organizations`
-- `clients`
+Las tablas necesarias para la primera iteración real son:
+
 - `projects`
+- `clients`
+
+Campos mínimos necesarios:
+
+- `projects.id`
+- `projects.name`
+- `projects.status`
+- `projects.client_id`
+- `clients.id`
+- `clients.display_name`
+
+### Segunda iteración
+
+En una segunda iteración entrarían además:
+
 - `tasks`
 - `approvals`
 
@@ -98,13 +119,21 @@ Uso: calcular `pendingApprovalsCount`.
 
 ## Cómo se calcula ProjectCard
 
+### Primera iteración real
+
 - `id` viene de `projects.id`.
 - `name` viene de `projects.name`.
 - `clientName` viene de `clients.display_name`.
 - `status` viene de `projects.status`.
-- `delayedTasksCount` se deriva de tareas vencidas no completadas.
-- `blockedTasksCount` se deriva de tareas bloqueadas.
-- `pendingApprovalsCount` se deriva de aprobaciones pendientes.
+- `delayedTasksCount` se mantiene temporalmente en mock o valor controlado.
+- `blockedTasksCount` se mantiene temporalmente en mock o valor controlado.
+- `pendingApprovalsCount` se mantiene temporalmente en mock o valor controlado.
+
+### Segunda iteración
+
+- `delayedTasksCount` se derivará de `tasks`.
+- `blockedTasksCount` se derivará de `tasks`.
+- `pendingApprovalsCount` se derivará de `approvals`.
 
 ## Datos derivados
 
@@ -114,12 +143,20 @@ Estos campos deberían ser derivados, no necesariamente columnas persistidas en 
 - `blockedTasksCount`
 - `pendingApprovalsCount`
 
-Opciones futuras:
+En la primera iteración no se resuelven todavía desde Supabase real. Quedan para una segunda iteración, en la que habrá que decidir si se calculan mediante:
 
 - query agregada en repository;
 - vista SQL;
 - función SQL;
 - materialización posterior si hay problemas de rendimiento.
+
+## Por qué empezar de forma parcial
+
+- Reduce riesgo.
+- Permite validar primero el patrón `service -> repository -> Supabase`.
+- Evita diseñar prematuramente contadores derivados.
+- Mantiene `ProjectCard` como contrato de UI.
+- Evita contaminar la UI con detalles de base de datos.
 
 ## Qué no entra todavía
 
@@ -198,9 +235,12 @@ Esta fase no implementa:
 - integración Odoo;
 - cambios visuales.
 
+Además, en esta fase no se debe:
+
+- conectar Supabase real;
+- añadir presupuestos ni datos económicos;
+- acoplar la UI a nombres de tablas.
+
 ## Próximo paso recomendado
 
-El siguiente paso debería ser decidir si el primer Supabase read será:
-
-1. `ProjectCard` parcial, solo con proyecto y cliente; o
-2. `ProjectCard` completo, incluyendo contadores derivados de tareas y aprobaciones.
+El siguiente paso debería ser preparar la implementación técnica de esa primera lectura parcial, manteniendo `ProjectCard` como contrato de UI y dejando la estrategia de contadores para una segunda iteración.

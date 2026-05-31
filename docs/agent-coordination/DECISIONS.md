@@ -31,6 +31,21 @@ Los contratos de lectura para UI no son tablas de Supabase ni modelos internos. 
 ### Primer candidato Supabase: `getProjectCards()`
 El primer candidato para salir de mock y leer desde Supabase será `getProjectCards()`, por ser una lectura simple, visible en dashboard y de bajo riesgo económico.
 
+### Primer read real de `getProjectCards()` será parcial
+La primera lectura real de Supabase para `getProjectCards()` será parcial.
+
+En la primera iteración, `ProjectCard` se alimentará solo desde `projects` y `clients`, usando estos campos mínimos:
+- `projects.id`
+- `projects.name`
+- `projects.status`
+- `projects.client_id`
+- `clients.id`
+- `clients.display_name`
+
+Los contadores `delayedTasksCount`, `blockedTasksCount` y `pendingApprovalsCount` no entran en esta primera lectura real. Se mantendrán temporalmente en mock o en valores controlados hasta una segunda iteración con `tasks` y `approvals`.
+
+Esta decisión reduce riesgo, permite validar primero el patrón `service -> repository -> Supabase`, evita diseñar prematuramente contadores derivados y mantiene `ProjectCard` como contrato de UI sin acoplar la pantalla a detalles de base de datos.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.
