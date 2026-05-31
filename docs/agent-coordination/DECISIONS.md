@@ -52,6 +52,9 @@ Antes de conectar Supabase real, se mantendrá `ProjectCard` como contrato de UI
 ### Esqueleto previo de `SupabaseProjectsRepository`
 Antes de conectar Supabase real, existe un esqueleto de `SupabaseProjectsRepository` como punto de extensión futuro. El mock sigue siendo la implementación activa y la UI debe seguir consumiendo `service -> repository`, sin depender de mocks ni de Supabase directamente.
 
+### Primera migración Supabase futura para `ProjectCard` será mínima
+La primera migración Supabase futura se diseñará alrededor de `organizations`, `clients` y `projects`, suficiente para el primer read parcial de `ProjectCard`, dejando `tasks`, `approvals` y RLS para fases posteriores.
+
 ## ProjectCard como primer diseño de esquema Supabase
 
 El primer diseño de esquema Supabase se hará alrededor de `ProjectCard`, empezando por organizaciones, clientes, proyectos, tareas y aprobaciones.
