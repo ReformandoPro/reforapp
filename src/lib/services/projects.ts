@@ -1,12 +1,11 @@
+import { createProjectsRepository } from "@/lib/application";
 import type { ProjectCard, ProjectOverview } from "@/lib/types";
-
-import { MockProjectsRepository } from "@/lib/repositories";
 
 /**
  * Application service boundary for project read models.
  * UI must consume this service, not mocks or Supabase clients directly.
  */
-const projectsRepository = new MockProjectsRepository();
+const projectsRepository = createProjectsRepository({ dataSource: "mock" });
 
 export function getProjectCards(): ProjectCard[] {
   return projectsRepository.getProjectCards();

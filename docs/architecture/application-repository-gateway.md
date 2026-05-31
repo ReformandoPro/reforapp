@@ -145,7 +145,7 @@ Esa factory:
 - falla explícitamente si se pide `supabase` desde la factory;
 - no debe ser consumida directamente por UI.
 
-Su valor actual es preparar el punto de composición futuro sin tocar todavía `services/projects.ts`.
+Su valor actual ya incluye el primer encaje real en `services/projects.ts`, que consume la factory usando `dataSource: "mock"` sin cambiar el comportamiento visible de la app.
 
 ### Shape mínimo de application context
 
@@ -169,5 +169,6 @@ Ese contexto:
 - `mock` es la única ruta operativa desde la factory por ahora.
 - `supabase` falla de forma explícita para no aparentar soporte activo antes de tiempo.
 - Este documento no cambia firmas públicas de `services` ni `repositories`.
+- `services/projects.ts` ya entra por la capa application, pero sigue forzando `mock`.
 - El mock sigue siendo la implementación activa.
 - `SupabaseProjectsRepository` sigue sin activarse en runtime.
