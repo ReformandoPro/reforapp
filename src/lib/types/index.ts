@@ -6,3 +6,4 @@ export * from "./budget-detail";
 export * from "./dashboard";
 export * from "./project-overview";
 export * from "./budget-view";
+export * from "./project-task";
