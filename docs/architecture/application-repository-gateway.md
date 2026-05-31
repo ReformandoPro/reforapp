@@ -123,12 +123,15 @@ Motivo:
 - ¿Qué organización fija usaremos en modo demo/local?
 - ¿Cuándo entra Auth real?
 
-## Primer paso ya implementado
+## Primeros pasos ya implementados
 
 Ya existe una estructura mínima no conectada en:
 
 - `src/lib/application/`
 - `src/lib/application/repositories/projects-repository-factory.ts`
+- `src/lib/application/context/projects-application-context.ts`
+
+### Factory mínima de repository
 
 Esa factory:
 
@@ -140,6 +143,19 @@ Esa factory:
 - no debe ser consumida directamente por UI.
 
 Su valor actual es preparar el punto de composición futuro sin tocar todavía `services/projects.ts`.
+
+### Shape mínimo de application context
+
+Ahora también existe un shape mínimo `ProjectsApplicationContext` con su helper puro `createProjectsApplicationContext(...)`.
+
+Ese contexto:
+
+- contiene por ahora solo `organizationId`;
+- reutiliza el tipo común `EntityId`;
+- documenta que el contexto se resolverá fuera de UI;
+- sigue sin conectarse a runtime;
+- todavía no se pasa a la factory;
+- todavía no se usa desde `services/projects.ts`.
 
 ## Notas arquitectónicas
 
