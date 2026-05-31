@@ -65,5 +65,18 @@ El futuro `SupabaseProjectsRepository` deberá implementar la misma interfaz que
 Su responsabilidad será:
 
 - leer el modelo parcial `projects + clients`;
-- mapearlo al contrato `ProjectCard`;
+- delegar el mapeo a un mapper interno del repository;
+- mapear ese resultado al contrato `ProjectCard`;
 - mantener los contadores como valores temporales controlados hasta la segunda iteración.
+
+## Mapper interno preparado
+
+Existe un mapper interno para preparar la transformación de la fila parcial futura de Supabase a `ProjectCard`.
+
+Ese mapper:
+
+- es interno de la capa repository;
+- no lo usa directamente la UI;
+- no ejecuta queries reales;
+- no conecta Supabase;
+- inicializa temporalmente los contadores a `0`.
