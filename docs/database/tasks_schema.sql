@@ -22,7 +22,7 @@ create table if not exists public.tasks (
   status text not null check (status in ('todo', 'in_progress', 'blocked', 'done', 'cancelled')),
   priority text not null check (priority in ('low', 'medium', 'high', 'urgent')),
   assignee_name text,
-  due_date date,
+  due_date date null,
   blocked_reason text,
   section_label text,
   sort_order integer,
