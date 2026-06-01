@@ -102,6 +102,8 @@ Based on the reported ZIP requirements, we likely **do not** have these as first
 - **Visual drift:** we already adopted `MetricCard/ListItem/ProgressBar` as token-based primitives; overwriting them could regress.
 - **Maintenance:** copying a design system wholesale without mapping tokens creates a second styling language.
 
+> This analysis is based on the ZIP file manifest. Final validation of `className`, exact token dependencies, and any micro-adjustments will be done during the implementation of each component.
+
 ## 7) Proposed incremental adoption (3 small branches)
 
 ### Branch 1 (recommended first): Token compatibility layer only (minimal)
