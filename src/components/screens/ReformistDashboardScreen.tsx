@@ -75,10 +75,10 @@ export function ReformistDashboardScreen({
 }: ReformistDashboardScreenProps) {
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-1 sm:px-6 xl:px-0">
-      <Card className="overflow-hidden p-6 shadow-none sm:p-7">
+      <Card variant="raised" padding="lg" shadow="none" className="overflow-hidden">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
-            <Badge tone="info" className="bg-[var(--primary-900)] text-[var(--primary-100)]">
+            <Badge status="info">
               Dashboard operativo
             </Badge>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
