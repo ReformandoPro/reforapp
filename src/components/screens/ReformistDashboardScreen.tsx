@@ -4,6 +4,7 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
+import { MetricCard } from "../ui/MetricCard";
 
 type ReformistDashboardScreenProps = {
   summary: DashboardSummary;
@@ -101,18 +102,12 @@ export function ReformistDashboardScreen({
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
-          <Card
+          <MetricCard
             key={metric.key}
-            className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 text-[var(--text-primary)] shadow-none"
-          >
-            <p className="text-sm font-medium text-[var(--text-secondary)]">
-              {metric.label}
-            </p>
-            <p className="mt-3 text-3xl font-semibold">{summary[metric.key]}</p>
-            <p className="mt-2 text-sm text-[var(--text-tertiary)]">
-              {metric.helper}
-            </p>
-          </Card>
+            label={metric.label}
+            value={summary[metric.key]}
+            description={metric.helper}
+          />
         ))}
       </div>
 
