@@ -70,8 +70,8 @@ export function ReformistDashboardScreen({
   summary,
 }: ReformistDashboardScreenProps) {
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-1 sm:px-6 xl:px-0">
+      <Card className="overflow-hidden p-6 shadow-none sm:p-7">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <Badge tone="info" className="bg-[var(--primary-900)] text-[var(--primary-100)]">
@@ -80,40 +80,36 @@ export function ReformistDashboardScreen({
             <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
               Reformando.app
             </h1>
-            <p className="mt-3 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">
               Vista priorizada para controlar obras activas, tareas críticas,
               aprobaciones y presupuestos pendientes sin salir del contrato real
               del dashboard.
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Card className="border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none">
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px] lg:max-w-[360px]">
+            <Card className="bg-[var(--bg-base)] p-4 shadow-none">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
                 Presupuestos pendientes
               </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">
-                {summary.pendingBudgetsCount}
-              </p>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              <p className="mt-2 text-3xl font-semibold">{summary.pendingBudgetsCount}</p>
+              <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
                 Revisión comercial o envío pendiente.
               </p>
             </Card>
-            <Card className="border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none">
+            <Card className="bg-[var(--bg-base)] p-4 shadow-none">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
                     Incidencias abiertas
                   </p>
-                  <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">
-                    {summary.openIncidentsCount}
-                  </p>
+                  <p className="mt-2 text-3xl font-semibold">{summary.openIncidentsCount}</p>
                 </div>
                 <Badge tone={summary.openIncidentsCount > 0 ? "danger" : "success"}>
                   {summary.openIncidentsCount > 0 ? "Atención" : "Al día"}
                 </Badge>
               </div>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
                 Señales operativas que requieren seguimiento.
               </p>
             </Card>
@@ -132,16 +128,16 @@ export function ReformistDashboardScreen({
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
-          <div className="flex items-start justify-between gap-4">
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-start">
+        <Card className="p-6 shadow-none">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold">Obras activas</h2>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
                 Tarjetas resumidas con el contrato existente de proyecto.
               </p>
             </div>
-            <Button variant="secondary">Ver todas</Button>
+            <Button variant="secondary" className="w-full sm:w-auto">Ver todas</Button>
           </div>
 
           {summary.activeProjects.length > 0 ? (
@@ -152,12 +148,10 @@ export function ReformistDashboardScreen({
 
                 return (
                   <li key={project.id}>
-                    <Card className="border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none">
+                    <Card className="bg-[var(--bg-base)] p-4 shadow-none">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className="text-base font-semibold text-[var(--text-primary)]">
-                            {project.name}
-                          </p>
+                          <p className="text-base font-semibold">{project.name}</p>
                           <p className="mt-1 text-sm text-[var(--text-secondary)]">
                             Cliente: {project.clientName}
                           </p>
@@ -165,17 +159,17 @@ export function ReformistDashboardScreen({
                         <Badge tone="info">{project.status}</Badge>
                       </div>
 
-                      <div className="mt-4">
+                      <div className="mt-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]/40 p-4">
                         <ProgressBar
                           value={projectHealthProgress}
                           label="Salud operativa estimada"
-                          helperText="Indicador visual readonly derivado de retrasos y bloqueos." 
+                          helperText="Indicador visual readonly derivado de retrasos y bloqueos."
                           showValue
                           tone={projectHealthTone}
                         />
                       </div>
 
-                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <div className="mt-5 grid gap-3 sm:grid-cols-3">
                         <div>
                           <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
                             Retrasos
@@ -211,11 +205,11 @@ export function ReformistDashboardScreen({
         </Card>
 
         <div className="flex flex-col gap-6">
-          <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+          <Card className="p-6 shadow-none">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold">Presupuestos pendientes</h2>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
                   Oportunidades comerciales pendientes de mover.
                 </p>
               </div>
@@ -226,7 +220,7 @@ export function ReformistDashboardScreen({
               <ul className="mt-5 space-y-3">
                 {summary.pendingBudgets.map((budget) => (
                   <li key={budget.id}>
-                    <Card className="border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none">
+                    <Card className="bg-[var(--bg-base)] p-4 shadow-none">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold text-[var(--text-primary)]">
@@ -252,11 +246,11 @@ export function ReformistDashboardScreen({
             )}
           </Card>
 
-          <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+          <Card className="p-6 shadow-none">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold">Alertas operativas</h2>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                <p className="mt-1 text-sm leading-5 text-[var(--text-secondary)]">
                   Alertas priorizadas con el contrato real del dashboard.
                 </p>
               </div>
