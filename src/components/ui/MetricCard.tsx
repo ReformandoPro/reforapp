@@ -37,9 +37,21 @@ export function MetricCard({
   ...props
 }: MetricCardProps) {
   return (
-    <Card shadow="none" className={cn("border p-5", toneClasses[tone], className)} {...props}>
+    <Card
+      className={cn(
+        "bg-[var(--bg-surface-raised)]",
+        toneClasses[tone],
+        className
+      )}
+      {...props}
+    >
       <p className="text-sm font-medium text-[var(--text-secondary)]">{label}</p>
-      <p className={cn("mt-3 text-3xl font-semibold tracking-tight", valueToneClasses[tone])}>
+      <p
+        className={cn(
+          "mt-3 text-3xl font-semibold tracking-tight",
+          valueToneClasses[tone]
+        )}
+      >
         {value}
       </p>
       {description ? (
