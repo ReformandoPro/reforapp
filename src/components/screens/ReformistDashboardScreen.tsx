@@ -6,6 +6,7 @@ import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { ListItem } from "../ui/ListItem";
 import { MetricCard } from "../ui/MetricCard";
+import { ProgressBar } from "../ui/ProgressBar";
 
 type ReformistDashboardScreenProps = {
   summary: DashboardSummary;
@@ -44,6 +45,25 @@ function mapAlertTone(level: OperationalAlertLevel): "info" | "warning" | "dange
   }
 
   return "info";
+}
+
+function getProjectHealthProgress(project: DashboardSummary["activeProjects"][number]): number {
+  const delayedPenalty = project.delayedTasksCount * 12;
+  const blockedPenalty = project.blockedTasksCount * 18;
+
+  return Math.max(0, Math.min(100, 100 - delayedPenalty - blockedPenalty));
+}
+
+function mapProjectHealthTone(progress: number): "success" | "warning" | "danger" {
+  if (progress < 50) {
+    return "danger";
+  }
+
+  if (progress < 75) {
+    return "warning";
+  }
+
+  return "success";
 }
 
 export function ReformistDashboardScreen({
@@ -126,44 +146,59 @@ export function ReformistDashboardScreen({
 
           {summary.activeProjects.length > 0 ? (
             <ul className="mt-5 space-y-3">
-              {summary.activeProjects.map((project) => (
-                <li key={project.id}>
-                  <Card className="border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-base font-semibold text-[var(--text-primary)]">
-                          {project.name}
-                        </p>
-                        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                          Cliente: {project.clientName}
-                        </p>
-                      </div>
-                      <Badge tone="info">{project.status}</Badge>
-                    </div>
+              {summary.activeProjects.map((project) => {
+                const projectHealthProgress = getProjectHealthProgress(project);
+                const projectHealthTone = mapProjectHealthTone(projectHealthProgress);
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                          Retrasos
-                        </p>
-                        <p className="mt-1 text-lg font-semibold">{project.delayedTasksCount}</p>
+                return (
+                  <li key={project.id}>
+                    <Card className="border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-base font-semibold text-[var(--text-primary)]">
+                            {project.name}
+                          </p>
+                          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                            Cliente: {project.clientName}
+                          </p>
+                        </div>
+                        <Badge tone="info">{project.status}</Badge>
                       </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                          Bloqueos
-                        </p>
-                        <p className="mt-1 text-lg font-semibold">{project.blockedTasksCount}</p>
+
+                      <div className="mt-4">
+                        <ProgressBar
+                          value={projectHealthProgress}
+                          label="Salud operativa estimada"
+                          helperText="Indicador visual readonly derivado de retrasos y bloqueos." 
+                          showValue
+                          tone={projectHealthTone}
+                        />
                       </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                          Aprobaciones
-                        </p>
-                        <p className="mt-1 text-lg font-semibold">{project.pendingApprovalsCount}</p>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                            Retrasos
+                          </p>
+                          <p className="mt-1 text-lg font-semibold">{project.delayedTasksCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                            Bloqueos
+                          </p>
+                          <p className="mt-1 text-lg font-semibold">{project.blockedTasksCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                            Aprobaciones
+                          </p>
+                          <p className="mt-1 text-lg font-semibold">{project.pendingApprovalsCount}</p>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                </li>
-              ))}
+                    </Card>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <div className="mt-5">
