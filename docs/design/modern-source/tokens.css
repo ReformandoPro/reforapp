@@ -1,0 +1,97 @@
+/* ============================================================
+   Sistema de Diseño — App Gestión de Reformas
+   Design tokens · CSS custom properties
+   Tema base: dark mode
+   ============================================================ */
+
+:root {
+  /* ---- Superficies / fondos ---- */
+  --bg-base:            #0A0F1A;
+  --bg-surface:         #0E1626;
+  --bg-surface-raised:  #162132;
+  --bg-overlay:         #1C2940;
+
+  /* ---- Texto ---- */
+  --text-primary:       #F4F7FC;
+  --text-secondary:     #A8B2C4;
+  --text-tertiary:      #6B7689;
+  --text-disabled:      #4A5366;
+
+  /* ---- Primario (azul) ---- */
+  --primary-50:   #E8F1FE;
+  --primary-100:  #C7DEFD;
+  --primary-300:  #6FA8F6;
+  --primary-500:  #2D7FF9;  /* base */
+  --primary-600:  #1E66D6;
+  --primary-700:  #1850AB;
+  --primary-900:  #0C2F6B;
+
+  /* ---- Éxito / dinero (verde) ---- */
+  --success-100:  #9FE1CB;
+  --success-300:  #5DCAA5;
+  --success-500:  #1D9E75;  /* base */
+  --success-700:  #0F6E56;
+  --success-900:  #04342C;
+
+  /* ---- Aviso / pendiente (ámbar) ---- */
+  --warning-100:  #FAC775;
+  --warning-500:  #EF9F27;  /* base */
+  --warning-700:  #854F0B;
+  --warning-900:  #412402;
+
+  /* ---- Error / destructivo (rojo) ---- */
+  --danger-100:   #F09595;
+  --danger-500:   #E24B4A;  /* base */
+  --danger-700:   #A32D2D;
+  --danger-900:   #501313;
+
+  /* ---- Gremios (neutro, sin color propio) ---- */
+  --guild-chip-bg:      rgba(136, 135, 128, 0.18);
+  --guild-chip-text:    #C9CDD6;
+  --guild-chip-border:  rgba(136, 135, 128, 0.28);
+
+  /* ---- Bordes ---- */
+  --border-subtle:   1px solid rgba(255, 255, 255, 0.06);
+  --border-default:  1px solid rgba(255, 255, 255, 0.10);
+  --border-strong:   1px solid rgba(255, 255, 255, 0.16);
+  --border-dashed:   1px dashed rgba(255, 255, 255, 0.18);
+
+  /* ---- Radios ---- */
+  --radius-sm:    8px;
+  --radius-md:    12px;   /* botones, inputs */
+  --radius-lg:    16px;   /* tarjetas */
+  --radius-xl:    20px;   /* hojas modales */
+  --radius-full:  9999px; /* avatares, FAB */
+
+  /* ---- Espaciado (base 4px) ---- */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+
+  /* ---- Elevación ---- */
+  --shadow-fab:    0 8px 24px rgba(45, 127, 249, 0.35);
+  --shadow-sheet:  0 -8px 32px rgba(0, 0, 0, 0.45);
+  --focus-ring:    0 0 0 3px rgba(45, 127, 249, 0.45);
+
+  /* ---- Tipografía ---- */
+  --font-ui:   "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num:  "Space Grotesk", "Inter", system-ui, sans-serif;
+
+  --fs-display:  34px;  --lh-display:  40px;
+  --fs-h1:       28px;  --lh-h1:       34px;
+  --fs-h2:       22px;  --lh-h2:       28px;
+  --fs-h3:       18px;  --lh-h3:       24px;
+  --fs-body:     16px;  --lh-body:     24px;
+  --fs-label:    14px;  --lh-label:    20px;
+  --fs-caption:  13px;  --lh-caption:  18px;
+  --fs-overline: 12px;  --lh-overline: 16px;
+
+  --fw-regular:   400;
+  --fw-medium:    500;
+  --fw-semibold:  600;
+  --fw-bold:      700;
+}
