@@ -40,6 +40,37 @@
 
   /* Used by focus-visible:ring-[var(--primary-300)] today; kept as a separate token for future use. */
   --focus-ring: #7db3ff;
+
+  /* ---------------------------------------------------------------------
+   * Compatibility layer (design-system ZIP)
+   *
+   * These aliases aim to reduce risk when integrating the external component
+   * library later. They are intentionally additive (no renames/removals) and
+   * are not wired to any UI changes in this branch.
+   * --------------------------------------------------------------------- */
+
+  /* Semantic color aliases (expected by ZIP docs): primary/success/warning/danger */
+  --primary: var(--primary-500);
+  --success: var(--success-500);
+  --warning: var(--warning-500);
+  --danger: var(--danger-500);
+
+  /* Semantic families used by the ZIP: bg/content */
+  --bg: var(--bg-base);
+  --content: var(--text-primary);
+
+  /* ZIP token names */
+  --ring-focus: var(--focus-ring);
+  --shadow-fab: 0 16px 32px rgba(0, 0, 0, 0.35);
+
+  /* Placeholder guild color family (can be re-aligned once ZIP is integrated) */
+  --guild: var(--primary-500);
+
+  /* Radius scale (kept as CSS vars to avoid Tailwind config changes) */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
 }
 
 @theme inline {
@@ -47,6 +78,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Numeric font alias requested by the ZIP (defaults to mono for now). */
+  --font-num: var(--font-geist-mono);
 }
 
 /* Keep prefers-color-scheme behavior (no .dark class yet). */
