@@ -1,5 +1,8 @@
 import type { HTMLAttributes } from "react";
 
+import { Card } from "./Card";
+import { cn } from "./cn";
+
 type MetricCardTone = "neutral" | "info" | "success" | "warning" | "danger";
 
 type MetricCardProps = HTMLAttributes<HTMLDivElement> & {
@@ -10,16 +13,11 @@ type MetricCardProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const toneClasses: Record<MetricCardTone, string> = {
-  neutral:
-    "border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)]",
-  info:
-    "border-[var(--primary-500)] bg-[var(--bg-surface)] text-[var(--text-primary)]",
-  success:
-    "border-[var(--success-500)] bg-[var(--bg-surface)] text-[var(--text-primary)]",
-  warning:
-    "border-[var(--warning-500)] bg-[var(--bg-surface)] text-[var(--text-primary)]",
-  danger:
-    "border-[var(--danger-500)] bg-[var(--bg-surface)] text-[var(--text-primary)]",
+  neutral: "border-[var(--border-subtle)]",
+  info: "border-[var(--primary-500)]",
+  success: "border-[var(--success-500)]",
+  warning: "border-[var(--warning-500)]",
+  danger: "border-[var(--danger-500)]",
 };
 
 const valueToneClasses: Record<MetricCardTone, string> = {
@@ -35,27 +33,18 @@ export function MetricCard({
   value,
   description,
   tone = "neutral",
-  className = "",
+  className,
   ...props
 }: MetricCardProps) {
   return (
-    <div
-      className={[
-        "rounded-2xl border p-5 shadow-none",
-        toneClasses[tone],
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    >
+    <Card shadow="none" className={cn("border p-5", toneClasses[tone], className)} {...props}>
       <p className="text-sm font-medium text-[var(--text-secondary)]">{label}</p>
-      <p className={["mt-3 text-3xl font-semibold tracking-tight", valueToneClasses[tone]].join(" ")}>
+      <p className={cn("mt-3 text-3xl font-semibold tracking-tight", valueToneClasses[tone])}>
         {value}
       </p>
       {description ? (
         <p className="mt-2 text-sm text-[var(--text-tertiary)]">{description}</p>
       ) : null}
-    </div>
+    </Card>
   );
 }
