@@ -48,7 +48,7 @@ export function MetricCard({
     <Card
       className={cn(
         "relative overflow-hidden bg-[var(--bg-surface-raised)]",
-        "before:absolute before:inset-x-0 before:top-0 before:h-1",
+        "before:absolute before:inset-x-0 before:top-0 before:h-2",
         accentClasses[tone],
         toneClasses[tone],
         className
