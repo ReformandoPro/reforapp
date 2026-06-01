@@ -17,21 +17,25 @@ const metrics = [
     key: "activeProjectsCount",
     label: "Obras activas",
     helper: "Seguimiento operativo en curso",
+    tone: "info",
   },
   {
     key: "delayedTasksCount",
     label: "Tareas retrasadas",
     helper: "Pendientes a replanificar",
+    tone: "warning",
   },
   {
     key: "blockedTasksCount",
     label: "Bloqueos",
     helper: "Incidencias que frenan avance",
+    tone: "danger",
   },
   {
     key: "pendingApprovalsCount",
     label: "Aprobaciones",
     helper: "Decisiones pendientes del equipo",
+    tone: "info",
   },
 ] as const;
 
@@ -124,6 +128,7 @@ export function ReformistDashboardScreen({
             label={metric.label}
             value={summary[metric.key]}
             description={metric.helper}
+            tone={metric.tone}
           />
         ))}
       </div>
