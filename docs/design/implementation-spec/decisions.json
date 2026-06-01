@@ -1,0 +1,93 @@
+{
+  "project": "Reformando.app",
+  "artifact": "implementation-spec",
+  "sourceOfTruth": "docs/design/modern-source/",
+  "relationship": "counterpart to docs/design/style-review-package (review described state + open questions; this resolves them)",
+  "decisions": [
+    {
+      "id": 1,
+      "topic": "integration-model",
+      "resolution": "adopt-semantic-tailwind-config",
+      "rejected": "keep-arbitrary-css-var-values",
+      "rationale": "ZIP components are authored against semantic classes; adopting the config lets them drop in without rewrites.",
+      "migration": "non-breaking; config + --ds-* shim coexist, migrate screen by screen, then delete shim."
+    },
+    {
+      "id": 2,
+      "topic": "typography",
+      "resolution": "wire-inter-and-space-grotesk-in-layout-tsx",
+      "replaces": "geist-and-geist-mono",
+      "rules": {
+        "ui": "Inter (font-sans), default everywhere",
+        "num": "Space Grotesk (font-num), large numerals only — KPI values, amounts, display size"
+      }
+    },
+    {
+      "id": 3,
+      "topic": "component-convergence",
+      "resolution": {
+        "replace": ["MetricCard (use ZIP, drop accent bar)"],
+        "adapt": ["Card (radius lg, drop --ds-*)", "Button", "Badge", "EmptyState", "ProgressBar", "ListItem"],
+        "keep": ["ErrorState", "LoadingState"],
+        "add-from-zip": ["Avatar", "Donut", "GuildChip", "SegmentedControl", "TabBar", "Timeline", "Checkbox", "Input"]
+      }
+    },
+    {
+      "id": 4,
+      "topic": "dashboard-kpi-language",
+      "resolution": {
+        "kpiCard": "Card + overline label + large numeric value (font-num)",
+        "statusBadge": "localized Spanish label (EN CURSO / AVISO / BLOQUEO), not the raw semantic enum",
+        "accentBar": "dropped"
+      }
+    }
+  ],
+  "conflictsResolved": [
+    {
+      "name": "duplicate-ds-alias-layer",
+      "fix": "canonical = unprefixed names; --ds-* become temporary aliases, then deleted"
+    },
+    {
+      "name": "border-type-mismatch",
+      "detail": "design tokens are 1px-solid shorthands; app used them as colors in border-[var(--…)]",
+      "fix": "use Tailwind borderColor utilities (subtle/DEFAULT/strong); expose a separate *-rule token only if raw CSS needs the shorthand"
+    },
+    {
+      "name": "focus-ring-type-mismatch",
+      "detail": "design --focus-ring is a box-shadow; app treated it as color + added --ds-focus-ring-shadow",
+      "fix": "standardize on ring utilities (ring-focus); delete --ds-focus-ring-shadow"
+    },
+    {
+      "name": "card-geometry-drift",
+      "detail": "rounded-2xl hard-coded vs system radius/lg = 16px",
+      "fix": "use rounded-lg"
+    },
+    {
+      "name": "off-system-raw-tailwind",
+      "detail": "tasks screens use slate-*/rose-* stock palette",
+      "fix": "retoken to content-* and danger-*"
+    }
+  ],
+  "tokensToAdd": [
+    "--primary-50", "--primary-600", "--primary-700",
+    "--success-300", "--success-700", "--warning-700", "--danger-700",
+    "--border-dashed", "--radius-full",
+    "--space-1", "--space-2", "--space-3", "--space-4", "--space-5", "--space-6", "--space-8",
+    "--shadow-sheet",
+    "--font-ui", "--font-num",
+    "--fs-display", "--fs-h1", "--fs-h2", "--fs-h3", "--fs-body", "--fs-label", "--fs-caption", "--fs-overline",
+    "--fw-regular", "--fw-medium", "--fw-semibold", "--fw-bold"
+  ],
+  "systemInvariants": [
+    "guilds-have-no-color",
+    "green-is-money-and-validation-only",
+    "exactly-four-semantic-states-info-success-warning-danger",
+    "scales-ordered-low-to-high"
+  ],
+  "outOfScope": [
+    "runtime/supabase/data changes",
+    "introducing new tokens with conflicting types under existing names",
+    "copying ZIP components before Phase 1 lands",
+    "ad-hoc per-screen patching outside the migration order"
+  ]
+}
