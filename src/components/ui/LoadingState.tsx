@@ -8,10 +8,10 @@ export function LoadingState({
   description = "Estamos preparando la información para esta vista.",
 }: LoadingStateProps) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
-      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700" />
-      <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-      <p className="mt-2 text-sm text-slate-600">{description}</p>
+    <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] p-6 text-center">
+      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--border-default)] border-t-[var(--primary-300)]" />
+      <h3 className="text-base font-semibold text-[var(--text-primary)]">{title}</h3>
+      <p className="mt-2 text-sm text-[var(--text-secondary)]">{description}</p>
     </div>
   );
 }
