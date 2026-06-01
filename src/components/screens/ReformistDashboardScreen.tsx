@@ -4,6 +4,7 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
+import { ListItem } from "../ui/ListItem";
 import { MetricCard } from "../ui/MetricCard";
 
 type ReformistDashboardScreenProps = {
@@ -233,22 +234,17 @@ export function ReformistDashboardScreen({
               <ul className="mt-5 space-y-3">
                 {summary.operationalAlerts.map((alert) => (
                   <li key={alert.id}>
-                    <Card className="border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-[var(--text-primary)]">{alert.title}</p>
-                          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                            {alert.description}
-                          </p>
-                          {alert.relatedProjectId ? (
-                            <p className="mt-2 text-xs text-[var(--text-tertiary)]">
-                              Proyecto relacionado: {alert.relatedProjectId}
-                            </p>
-                          ) : null}
-                        </div>
-                        <Badge tone={mapAlertTone(alert.level)}>{alert.level}</Badge>
-                      </div>
-                    </Card>
+                    <ListItem
+                      title={alert.title}
+                      description={alert.description}
+                      eyebrow={
+                        alert.relatedProjectId
+                          ? `Proyecto relacionado: ${alert.relatedProjectId}`
+                          : undefined
+                      }
+                      trailing={<Badge tone={mapAlertTone(alert.level)}>{alert.level}</Badge>}
+                      tone={mapAlertTone(alert.level)}
+                    />
                   </li>
                 ))}
               </ul>
