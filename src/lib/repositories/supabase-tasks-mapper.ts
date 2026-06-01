@@ -31,7 +31,12 @@ function normalizeDateInput(date: Date): Date {
 }
 
 function isIsoDateBefore(isoDate: string, now: Date): boolean {
-  // Lexicographical compare works for YYYY-MM-DD.
+  /**
+   * MVP derivation:
+   * - `due_date` is treated as an ISO date (YYYY-MM-DD)
+   * - we compare to "today" derived from `now`
+   * - this avoids timezone-heavy logic for the first iteration
+   */
   const todayIso = now.toISOString().slice(0, 10);
   return isoDate < todayIso;
 }
