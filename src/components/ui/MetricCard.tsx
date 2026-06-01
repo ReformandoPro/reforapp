@@ -20,6 +20,14 @@ const toneClasses: Record<MetricCardTone, string> = {
   danger: "border-[var(--danger-500)]",
 };
 
+const accentClasses: Record<MetricCardTone, string> = {
+  neutral: "before:bg-[var(--border-default)]",
+  info: "before:bg-[var(--primary-500)]",
+  success: "before:bg-[var(--success-500)]",
+  warning: "before:bg-[var(--warning-500)]",
+  danger: "before:bg-[var(--danger-500)]",
+};
+
 const valueToneClasses: Record<MetricCardTone, string> = {
   neutral: "text-[var(--text-primary)]",
   info: "text-[var(--primary-100)]",
@@ -39,7 +47,9 @@ export function MetricCard({
   return (
     <Card
       className={cn(
-        "bg-[var(--bg-surface-raised)]",
+        "relative overflow-hidden bg-[var(--bg-surface-raised)]",
+        "before:absolute before:inset-x-0 before:top-0 before:h-1",
+        accentClasses[tone],
         toneClasses[tone],
         className
       )}
