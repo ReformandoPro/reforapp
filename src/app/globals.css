@@ -71,6 +71,71 @@
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
+
+  /* ---------------------------------------------------------------------
+   * Modern design system token aliases (docs/design/modern-source)
+   *
+   * Goal: make the modern system tokens addressable in this app *without*
+   * changing the current runtime token contracts.
+   *
+   * Key conflicts resolved here:
+   * - Modern borders are shorthands ("1px solid ..."); our app uses
+   *   --border-* as COLORS. We keep --border-* as-is and add --ds-border-*.
+   * - Modern focus ring is a BOX-SHADOW; our app uses --focus-ring as a
+   *   COLOR. We keep --focus-ring as-is and add --ds-focus-ring-shadow.
+   * --------------------------------------------------------------------- */
+
+  /* Surfaces */
+  --ds-bg-base: var(--bg-base);
+  --ds-bg-surface: var(--bg-surface);
+  --ds-bg-surface-raised: var(--bg-surface-raised);
+  --ds-bg-overlay: var(--bg-overlay);
+
+  /* Content */
+  --ds-content-primary: var(--text-primary);
+  --ds-content-secondary: var(--text-secondary);
+  --ds-content-tertiary: var(--text-tertiary);
+  --ds-content-disabled: var(--text-disabled);
+
+  /* Primary (blue) */
+  --ds-primary-100: var(--primary-100);
+  --ds-primary-300: var(--primary-300);
+  --ds-primary-500: var(--primary-500);
+  --ds-primary-900: var(--primary-900);
+
+  /* Success (money / confirmation) */
+  --ds-success-100: var(--success-100);
+  --ds-success-500: var(--success-500);
+  --ds-success-900: var(--success-900);
+
+  /* Warning (pending) */
+  --ds-warning-100: var(--warning-100);
+  --ds-warning-500: var(--warning-500);
+  --ds-warning-900: var(--warning-900);
+
+  /* Danger (error / destructive) */
+  --ds-danger-100: var(--danger-100);
+  --ds-danger-500: var(--danger-500);
+  --ds-danger-900: var(--danger-900);
+
+  /* Guild chip (neutral) */
+  --ds-guild-chip-bg: var(--guild-chip-bg, rgba(136, 135, 128, 0.18));
+  --ds-guild-chip-text: var(--guild-chip-text, #c9cdd6);
+  --ds-guild-chip-border: var(--guild-chip-border, rgba(136, 135, 128, 0.28));
+
+  /* Border shorthands (modern system) */
+  --ds-border-subtle: 1px solid rgba(255, 255, 255, 0.06);
+  --ds-border-default: 1px solid rgba(255, 255, 255, 0.10);
+  --ds-border-strong: 1px solid rgba(255, 255, 255, 0.16);
+  --ds-border-dashed: 1px dashed rgba(255, 255, 255, 0.18);
+
+  /* Focus ring (box-shadow) */
+  --ds-focus-ring-shadow: 0 0 0 3px rgba(45, 127, 249, 0.45);
+
+  /* Elevation */
+  --ds-shadow-fab: 0 8px 24px rgba(45, 127, 249, 0.35);
+  --ds-shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.45);
+
 }
 
 @theme inline {
@@ -81,6 +146,18 @@
 
   /* Numeric font alias requested by the ZIP (defaults to mono for now). */
   --font-num: var(--font-geist-mono);
+
+  /* Modern design system (DS) color hooks (additive; not used by UI yet). */
+  --color-ds-bg-base: var(--ds-bg-base);
+  --color-ds-bg-surface: var(--ds-bg-surface);
+  --color-ds-bg-surface-raised: var(--ds-bg-surface-raised);
+  --color-ds-content-primary: var(--ds-content-primary);
+  --color-ds-content-secondary: var(--ds-content-secondary);
+  --color-ds-primary-500: var(--ds-primary-500);
+  --color-ds-success-500: var(--ds-success-500);
+  --color-ds-warning-500: var(--ds-warning-500);
+  --color-ds-danger-500: var(--ds-danger-500);
+
 }
 
 /* Keep prefers-color-scheme behavior (no .dark class yet). */
