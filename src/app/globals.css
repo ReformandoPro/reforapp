@@ -1,8 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base primitives used by the existing Tailwind v4 @theme mapping */
+  --background: #0a0f1a;
+  --foreground: #f4f7fc;
+
+  /* Runtime design tokens (minimal set for existing var(--...) usage) */
+  --bg-base: #0a0f1a;
+  --bg-surface: #0e1626;
+  --bg-surface-raised: #162132;
+  --bg-overlay: #1c2940;
+
+  --text-primary: #f4f7fc;
+  --text-secondary: #a8b2c4;
+  --text-tertiary: #6b7689;
+  --text-disabled: #4a5366;
+
+  /* Border tokens must be colors (not 1px solid shorthands) */
+  --border-subtle: #1f2a3d;
+  --border-default: #2d3a52;
+  --border-strong: #43516a;
+
+  --primary-100: #dbeafe;
+  --primary-300: #7db3ff;
+  --primary-500: #2d7ff9;
+  --primary-900: #12315f;
+
+  --success-100: #d8f3e9;
+  --success-500: #1d9e75;
+  --success-900: #0f3d31;
+
+  --warning-100: #fff1cc;
+  --warning-500: #d99a16;
+  --warning-900: #4a3108;
+
+  --danger-100: #ffe1e1;
+  --danger-500: #e5484d;
+  --danger-900: #4a1114;
+
+  /* Used by focus-visible:ring-[var(--primary-300)] today; kept as a separate token for future use. */
+  --focus-ring: #7db3ff;
 }
 
 @theme inline {
@@ -12,15 +49,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Keep prefers-color-scheme behavior (no .dark class yet). */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0a0f1a;
+    --foreground: #f4f7fc;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
