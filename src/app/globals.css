@@ -21,22 +21,22 @@
   --border-default: #2d3a52;
   --border-strong: #43516a;
 
-  --primary-100: #dbeafe;
-  --primary-300: #7db3ff;
+  --primary-100: #c7defd;
+  --primary-300: #6fa8f6;
   --primary-500: #2d7ff9;
-  --primary-900: #12315f;
+  --primary-900: #0c2f6b;
 
-  --success-100: #d8f3e9;
+  --success-100: #9fe1cb;
   --success-500: #1d9e75;
-  --success-900: #0f3d31;
+  --success-900: #04342c;
 
-  --warning-100: #fff1cc;
-  --warning-500: #d99a16;
-  --warning-900: #4a3108;
+  --warning-100: #fac775;
+  --warning-500: #ef9f27;
+  --warning-900: #412402;
 
-  --danger-100: #ffe1e1;
-  --danger-500: #e5484d;
-  --danger-900: #4a1114;
+  --danger-100: #f09595;
+  --danger-500: #e24b4a;
+  --danger-900: #501313;
 
   /* Used by focus-visible:ring-[var(--primary-300)] today; kept as a separate token for future use. */
   --focus-ring: #7db3ff;
@@ -61,7 +61,7 @@
 
   /* ZIP token names */
   --ring-focus: var(--focus-ring);
-  --shadow-fab: 0 16px 32px rgba(0, 0, 0, 0.35);
+  --shadow-fab: 0 8px 24px rgba(45, 127, 249, 0.35);
 
   /* Placeholder guild color family (can be re-aligned once ZIP is integrated) */
   --guild: var(--primary-500);
@@ -71,6 +71,62 @@
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
+
+  /* ---------------------------------------------------------------------
+   * Missing modern-source tokens (added to complete the system)
+   * --------------------------------------------------------------------- */
+
+  --primary-50: #e8f1fe;
+  --primary-600: #1e66d6;
+  --primary-700: #1850ab;
+
+  --success-300: #5dcaa5;
+  --success-700: #0f6e56;
+
+  --warning-700: #854f0b;
+
+  --danger-700: #a32d2d;
+
+  /* System dashed border shorthand (do not use in border-[...]; use as `border: var(...)` if needed) */
+  --border-dashed: 1px dashed rgba(255, 255, 255, 0.18);
+
+  --radius-full: 9999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.45);
+
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num: "Space Grotesk", "Inter", system-ui, sans-serif;
+
+  --fs-display: 34px;
+  --lh-display: 40px;
+  --fs-h1: 28px;
+  --lh-h1: 34px;
+  --fs-h2: 22px;
+  --lh-h2: 28px;
+  --fs-h3: 18px;
+  --lh-h3: 24px;
+  --fs-body: 16px;
+  --lh-body: 24px;
+  --fs-label: 14px;
+  --lh-label: 20px;
+  --fs-caption: 13px;
+  --lh-caption: 18px;
+  --fs-overline: 12px;
+  --lh-overline: 16px;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
 
   /* ---------------------------------------------------------------------
    * Modern design system token aliases (docs/design/modern-source)
@@ -141,11 +197,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-space-grotesk);
 
   /* Numeric font alias requested by the ZIP (defaults to mono for now). */
-  --font-num: var(--font-geist-mono);
+  --font-num: var(--font-space-grotesk);
 
   /* Modern design system (DS) color hooks (additive; not used by UI yet). */
   --color-ds-bg-base: var(--ds-bg-base);
@@ -171,5 +227,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
