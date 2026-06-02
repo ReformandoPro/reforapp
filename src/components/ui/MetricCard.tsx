@@ -13,27 +13,27 @@ type MetricCardProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const toneClasses: Record<MetricCardTone, string> = {
-  neutral: "border-[var(--border-subtle)]",
-  info: "border-[var(--primary-500)]",
-  success: "border-[var(--success-500)]",
-  warning: "border-[var(--warning-500)]",
-  danger: "border-[var(--danger-500)]",
+  neutral: "border-subtle",
+  info: "border-primary-500",
+  success: "border-success-500",
+  warning: "border-warning-500",
+  danger: "border-danger-500",
 };
 
 const accentClasses: Record<MetricCardTone, string> = {
-  neutral: "before:bg-[var(--border-default)]",
-  info: "before:bg-[var(--primary-500)]",
-  success: "before:bg-[var(--success-500)]",
-  warning: "before:bg-[var(--warning-500)]",
-  danger: "before:bg-[var(--danger-500)]",
+  neutral: "before:bg-content-tertiary",
+  info: "before:bg-primary-500",
+  success: "before:bg-success-500",
+  warning: "before:bg-warning-500",
+  danger: "before:bg-danger-500",
 };
 
 const valueToneClasses: Record<MetricCardTone, string> = {
-  neutral: "text-[var(--text-primary)]",
-  info: "text-[var(--primary-100)]",
-  success: "text-[var(--success-100)]",
-  warning: "text-[var(--warning-100)]",
-  danger: "text-[var(--danger-100)]",
+  neutral: "text-content-primary",
+  info: "text-primary-100",
+  success: "text-success-100",
+  warning: "text-warning-100",
+  danger: "text-danger-100",
 };
 
 export function MetricCard({
@@ -47,7 +47,7 @@ export function MetricCard({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden bg-[var(--bg-surface-raised)]",
+        "relative overflow-hidden bg-bg-raised",
         "before:absolute before:inset-x-0 before:top-0 before:h-2",
         accentClasses[tone],
         toneClasses[tone],
@@ -55,18 +55,9 @@ export function MetricCard({
       )}
       {...props}
     >
-      <p className="text-sm font-medium text-[var(--text-secondary)]">{label}</p>
-      <p
-        className={cn(
-          "mt-3 text-3xl font-semibold tracking-tight",
-          valueToneClasses[tone]
-        )}
-      >
-        {value}
-      </p>
-      {description ? (
-        <p className="mt-2 text-sm text-[var(--text-tertiary)]">{description}</p>
-      ) : null}
+      <p className="text-sm font-medium text-content-secondary">{label}</p>
+      <p className={cn("mt-3 text-3xl font-semibold tracking-tight", valueToneClasses[tone])}>{value}</p>
+      {description ? <p className="mt-2 text-sm text-content-tertiary">{description}</p> : null}
     </Card>
   );
 }

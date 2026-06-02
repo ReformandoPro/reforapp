@@ -16,4 +16,4 @@ What is intentionally NOT done yet:
 
 Note on border/focus type mismatches:
 - The semantic Tailwind config introduces `borderColor` + `ringColor.focus` to enable the target model.
-- Code migration away from `border-[var(--border-*)]` and towards `border-subtle` etc. will happen in Phase 2/3.
+- Code migration away from `border-[var(--border-subtle)]` (and similar) and towards `border-subtle` etc. will happen in Phase 2/3.

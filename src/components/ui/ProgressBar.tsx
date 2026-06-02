@@ -11,19 +11,19 @@ type ProgressBarProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const trackClasses: Record<ProgressBarTone, string> = {
-  neutral: "bg-[var(--bg-surface-raised)] border-[var(--border-subtle)]",
-  info: "bg-[var(--bg-surface-raised)] border-[var(--border-subtle)]",
-  success: "bg-[var(--bg-surface-raised)] border-[var(--border-subtle)]",
-  warning: "bg-[var(--bg-surface-raised)] border-[var(--border-subtle)]",
-  danger: "bg-[var(--bg-surface-raised)] border-[var(--border-subtle)]",
+  neutral: "bg-bg-raised border-subtle",
+  info: "bg-bg-raised border-subtle",
+  success: "bg-bg-raised border-subtle",
+  warning: "bg-bg-raised border-subtle",
+  danger: "bg-bg-raised border-subtle",
 };
 
 const fillClasses: Record<ProgressBarTone, string> = {
-  neutral: "bg-[var(--text-secondary)]",
-  info: "bg-[var(--primary-500)]",
-  success: "bg-[var(--success-500)]",
-  warning: "bg-[var(--warning-500)]",
-  danger: "bg-[var(--danger-500)]",
+  neutral: "bg-content-secondary",
+  info: "bg-primary-500",
+  success: "bg-success-500",
+  warning: "bg-warning-500",
+  danger: "bg-danger-500",
 };
 
 export function ProgressBar({
@@ -41,8 +41,8 @@ export function ProgressBar({
     <div className={["w-full", className].filter(Boolean).join(" ")} {...props}>
       {label || showValue ? (
         <div className="mb-2 flex items-center justify-between gap-3">
-          {label ? <p className="text-xs font-medium text-[var(--text-secondary)]">{label}</p> : <span />}
-          {showValue ? <p className="text-xs font-medium text-[var(--text-tertiary)]">{clampedValue}%</p> : null}
+          {label ? <p className="text-xs font-medium text-content-secondary">{label}</p> : <span />}
+          {showValue ? <p className="text-xs font-medium text-content-tertiary">{clampedValue}%</p> : null}
         </div>
       ) : null}
 
@@ -63,7 +63,7 @@ export function ProgressBar({
         />
       </div>
 
-      {helperText ? <p className="mt-2 text-xs text-[var(--text-tertiary)]">{helperText}</p> : null}
+      {helperText ? <p className="mt-2 text-xs text-content-tertiary">{helperText}</p> : null}
     </div>
   );
 }

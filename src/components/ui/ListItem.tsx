@@ -11,19 +11,19 @@ type ListItemProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const accentClasses: Record<ListItemTone, string> = {
-  neutral: "before:bg-[var(--border-subtle)]",
-  info: "before:bg-[var(--primary-500)]",
-  success: "before:bg-[var(--success-500)]",
-  warning: "before:bg-[var(--warning-500)]",
-  danger: "before:bg-[var(--danger-500)]",
+  neutral: "before:bg-content-tertiary",
+  info: "before:bg-primary-500",
+  success: "before:bg-success-500",
+  warning: "before:bg-warning-500",
+  danger: "before:bg-danger-500",
 };
 
 const eyebrowClasses: Record<ListItemTone, string> = {
-  neutral: "text-[var(--text-tertiary)]",
-  info: "text-[var(--primary-100)]",
-  success: "text-[var(--success-100)]",
-  warning: "text-[var(--warning-100)]",
-  danger: "text-[var(--danger-100)]",
+  neutral: "text-content-tertiary",
+  info: "text-primary-100",
+  success: "text-success-100",
+  warning: "text-warning-100",
+  danger: "text-danger-100",
 };
 
 export function ListItem({
@@ -38,7 +38,7 @@ export function ListItem({
   return (
     <div
       className={[
-        "relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-none before:absolute before:inset-y-0 before:left-0 before:w-1",
+        "relative overflow-hidden rounded-lg border border-subtle bg-bg-base p-4 shadow-none before:absolute before:inset-y-0 before:left-0 before:w-1",
         accentClasses[tone],
         className,
       ]
@@ -58,10 +58,8 @@ export function ListItem({
               {eyebrow}
             </p>
           ) : null}
-          <p className="font-semibold text-[var(--text-primary)]">{title}</p>
-          {description ? (
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>
-          ) : null}
+          <p className="font-semibold text-content-primary">{title}</p>
+          {description ? <p className="mt-1 text-sm text-content-secondary">{description}</p> : null}
         </div>
         {trailing ? <div className="shrink-0">{trailing}</div> : null}
       </div>

@@ -17,24 +17,19 @@ type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
 };
 
 const toneClasses: Record<BadgeTone, string> = {
-  neutral:
-    "bg-[var(--ds-bg-surface-raised,var(--bg-surface-raised))] text-[var(--ds-content-secondary,var(--text-secondary))]",
-  success:
-    "bg-[var(--ds-success-900,var(--success-900))] text-[var(--ds-success-100,var(--success-100))]",
-  warning:
-    "bg-[var(--ds-warning-900,var(--warning-900))] text-[var(--ds-warning-100,var(--warning-100))]",
-  danger:
-    "bg-[var(--ds-danger-900,var(--danger-900))] text-[var(--ds-danger-100,var(--danger-100))]",
-  info:
-    "bg-[var(--ds-primary-900,var(--primary-900))] text-[var(--ds-primary-100,var(--primary-100))]",
+  neutral: "bg-bg-raised text-content-secondary border border-subtle",
+  success: "bg-success-900 text-success-100",
+  warning: "bg-warning-900 text-warning-100",
+  danger: "bg-danger-900 text-danger-100",
+  info: "bg-primary-900 text-primary-100",
 };
 
 const dotClasses: Record<BadgeTone, string> = {
-  neutral: "bg-[var(--ds-content-tertiary,var(--text-tertiary))]",
-  success: "bg-[var(--ds-success-500,var(--success-500))]",
-  warning: "bg-[var(--ds-warning-500,var(--warning-500))]",
-  danger: "bg-[var(--ds-danger-500,var(--danger-500))]",
-  info: "bg-[var(--ds-primary-300,var(--primary-300))]",
+  neutral: "bg-content-tertiary",
+  success: "bg-success-500",
+  warning: "bg-warning-500",
+  danger: "bg-danger-500",
+  info: "bg-primary-300",
 };
 
 export function Badge({
