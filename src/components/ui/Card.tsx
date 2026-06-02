@@ -32,15 +32,10 @@ const paddingClasses: Record<CardPadding, string> = {
 };
 
 const variantClasses: Record<CardVariant, string> = {
-  // Prefer DS vars, but fall back to existing runtime vars.
-  surface:
-    "border border-[var(--border-subtle)] bg-[var(--ds-bg-surface,var(--bg-surface))] text-[var(--ds-content-primary,var(--text-primary))]",
-  raised:
-    "border border-[var(--border-default)] bg-[var(--ds-bg-surface-raised,var(--bg-surface-raised))] text-[var(--ds-content-primary,var(--text-primary))]",
-  active:
-    "border border-[var(--ds-primary-500,var(--primary-500))] bg-[var(--ds-primary-500,var(--primary-500))] text-white",
-  dashed:
-    "bg-transparent border border-dashed border-[var(--border-strong)] text-[var(--ds-content-primary,var(--text-primary))]",
+  surface: "bg-bg-surface border border-subtle text-content-primary",
+  raised: "bg-bg-raised border text-content-primary",
+  active: "bg-primary-500 border border-primary-500 text-white",
+  dashed: "bg-transparent border border-dashed border-strong text-content-primary",
 };
 
 export function Card({
@@ -55,8 +50,7 @@ export function Card({
   return (
     <Tag
       className={cn(
-        // Keep current rounding to avoid a visual reset.
-        "rounded-2xl",
+        "rounded-lg",
         paddingClasses[padding],
         variantClasses[variant],
         shadowClasses[shadow],
