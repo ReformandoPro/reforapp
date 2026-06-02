@@ -1,8 +1,5 @@
-import { ReformistDashboardScreen } from "@/components/screens/ReformistDashboardScreen";
-import { getDashboardSummary } from "@/lib/services/dashboard";
+import { DesignReferenceScreen } from "@/components/screens/DesignReferenceScreen";
 
 export default function Home() {
-  const dashboardSummary = getDashboardSummary();
-
-  return <ReformistDashboardScreen summary={dashboardSummary} />;
+  return <DesignReferenceScreen />;
 }

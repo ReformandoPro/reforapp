@@ -74,12 +74,14 @@ export function ProjectTasksClient({ tasks }: ProjectTasksClientProps) {
           <Card key={task.id} className={isDone ? "opacity-90" : ""}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm text-slate-500">{task.sectionLabel ?? "Sin sección"}</p>
+                <p className="text-overline text-content-tertiary">
+                  {task.sectionLabel ?? "Sin sección"}
+                </p>
                 <h2
                   className={
                     isDone
-                      ? "text-lg font-semibold text-slate-900 line-through decoration-slate-400"
-                      : "text-lg font-semibold text-slate-900"
+                      ? "text-h3 text-content-primary line-through decoration-content-tertiary"
+                      : "text-h3 text-content-primary"
                   }
                 >
                   {task.title}
@@ -139,23 +141,23 @@ export function ProjectTasksClient({ tasks }: ProjectTasksClientProps) {
                 </Button>
 
                 {errorMessage ? (
-                  <p className="text-xs text-rose-600">{errorMessage}</p>
+                  <p className="text-xs text-danger-100">{errorMessage}</p>
                 ) : null}
               </div>
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Responsable</p>
-                <p className="mt-1 text-sm text-slate-900">{task.assigneeName ?? "Sin asignar"}</p>
+                <p className="text-overline text-content-tertiary">Responsable</p>
+                <p className="mt-1 text-body text-content-primary">{task.assigneeName ?? "Sin asignar"}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Fecha objetivo</p>
-                <p className="mt-1 text-sm text-slate-900">{task.dueDate ?? "Sin fecha"}</p>
+                <p className="text-overline text-content-tertiary">Fecha objetivo</p>
+                <p className="mt-1 text-body text-content-primary">{task.dueDate ?? "Sin fecha"}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Bloqueo</p>
-                <p className="mt-1 text-sm text-slate-900">
+                <p className="text-overline text-content-tertiary">Bloqueo</p>
+                <p className="mt-1 text-body text-content-primary">
                   {task.blockedReason ?? "Sin bloqueo activo"}
                 </p>
               </div>

@@ -18,7 +18,7 @@ export default async function ProjectDetailPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/projects"
-        className="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a obras
       </Link>
@@ -28,7 +28,7 @@ export default async function ProjectDetailPage({
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/projects/${id}/tasks`}
-              className="inline-flex text-sm font-medium text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline"
+              className="inline-flex text-sm font-medium text-primary-300 underline-offset-4 hover:text-content-primary hover:underline"
             >
               Ver tareas de la obra
             </Link>

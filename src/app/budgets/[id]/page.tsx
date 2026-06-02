@@ -18,7 +18,7 @@ export default async function BudgetDetailPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/budgets"
-        className="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a presupuestos
       </Link>

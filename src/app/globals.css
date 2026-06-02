@@ -1,3 +1,5 @@
+@import "@fontsource/inter/latin.css";
+@import "@fontsource/space-grotesk/latin.css";
 @import "tailwindcss";
 
 :root {
@@ -38,7 +40,6 @@
   --danger-500: #e24b4a;
   --danger-900: #501313;
 
-  /* Used by focus-visible:ring-[var(--primary-300)] today; kept as a separate token for future use. */
   --focus-ring: #7db3ff;
 
   /* ---------------------------------------------------------------------
@@ -102,6 +103,8 @@
 
   --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.45);
 
+  --font-inter: "Inter";
+  --font-space-grotesk: "Space Grotesk";
   --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-num: "Space Grotesk", "Inter", system-ui, sans-serif;
 
