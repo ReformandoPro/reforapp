@@ -1,12 +1,10 @@
-import { createBudgetsRepository } from "@/lib/application";
+import { getBudgetById, getBudgets } from "@/lib/data";
 import type { BudgetSummary, BudgetView } from "@/lib/types";
 
-const budgetsRepository = createBudgetsRepository({ dataSource: "mock" });
-
 export function getBudgetSummary(budgetId: string): BudgetView | undefined {
-  return budgetsRepository.getBudgetSummary(budgetId);
+  return getBudgetById(budgetId);
 }
 
 export function getBudgetSummaries(): BudgetSummary[] {
-  return budgetsRepository.getBudgetSummaries();
+  return getBudgets();
 }

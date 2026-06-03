@@ -1,17 +1,18 @@
 import type { TaskStatus } from "@/lib/domain/tasks/status";
 
-import { createTasksRepository } from "@/lib/application";
+import {
+  getProjectTasks as getProjectTasksFromData,
+  updateProjectTaskStatus,
+} from "@/lib/data";
 import type { ProjectTaskListItem } from "@/lib/types";
 
-const tasksRepository = createTasksRepository({ dataSource: "mock" });
-
 export function getProjectTasks(projectId: string): ProjectTaskListItem[] {
-  return tasksRepository.getProjectTasks(projectId);
+  return getProjectTasksFromData(projectId);
 }
 
 export function updateTaskStatus(
   taskId: string,
   status: TaskStatus
 ): ProjectTaskListItem | null {
-  return tasksRepository.updateTaskStatus(taskId, status);
+  return updateProjectTaskStatus(taskId, status);
 }
