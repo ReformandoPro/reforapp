@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { createOptionalSupabaseClient } from "./client";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -11,15 +12,7 @@ function requireEnv(name: string): string {
 }
 
 export function createServerSupabaseClient() {
-  const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const supabaseAnonKey = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  return createOptionalSupabaseClient();
 }
 
 export function createServiceRoleSupabaseClient() {
