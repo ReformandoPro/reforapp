@@ -14,6 +14,7 @@ import type {
   ProjectOverview,
   ProjectTaskListItem,
 } from "@/lib/types";
+import { getProjectsPageCards } from "./projects";
 
 export type DataAdapterMode =
   | "mock"
@@ -34,6 +35,12 @@ export function getDashboardSummary(): DashboardSummary {
 
 export function getProjects(): ProjectCard[] {
   return projectsRepository.getProjectCards();
+}
+
+export async function getProjectsPageCardsFromSupabaseOrMock(): Promise<
+  ProjectCard[]
+> {
+  return getProjectsPageCards();
 }
 
 export function getProjectById(projectId: string): ProjectOverview | undefined {
