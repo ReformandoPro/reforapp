@@ -136,7 +136,11 @@ Behavior:
 - If either var is missing, it returns `null`.
 - It does not throw.
 
-This branch does not use `SUPABASE_SERVICE_ROLE_KEY`.
+This branch does not read or use `SUPABASE_SERVICE_ROLE_KEY`.
+
+Server-only/service-role operations are explicitly outside this foundation. If
+they become necessary later, they should be introduced in a separate reviewed
+branch with a clear server-only boundary, tests and documentation.
 
 ## 5. Safe Supabase client behavior
 

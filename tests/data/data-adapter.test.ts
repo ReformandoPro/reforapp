@@ -8,6 +8,7 @@ import {
   getProjectById,
   getProjects,
   getProjectTasks,
+  updateProjectTaskStatus,
 } from "../../src/lib/data";
 import { mockBudgetSummaries, mockBudgetView } from "../../src/lib/mock/budget";
 import { mockDashboardSummary } from "../../src/lib/mock/dashboard";
@@ -58,5 +59,38 @@ describe("data adapter foundation", () => {
     expect(getProjectTasks("project_obra_centro")).toEqual(mockProjectTasks);
     expect(getBudgets()).toEqual(mockBudgetSummaries);
     expect(getBudgetById(mockBudgetView.id)).toEqual(mockBudgetView);
+  });
+
+  it("updates task status through mock fallback without Supabase env vars", () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    const taskId = "task_demolicion_remates";
+
+    expect(getDataAdapterMode()).toBe("mock");
+
+    const updated = updateProjectTaskStatus(taskId, "done");
+
+    expect(updated).toMatchObject({
+      id: taskId,
+      projectId: "project_obra_centro",
+      title: "Cerrar remates de demolición en cocina",
+      status: "done",
+      priority: "medium",
+    });
+
+    expect(getProjectTasks("project_obra_centro")).toContainEqual(
+      expect.objectContaining({
+        id: taskId,
+        status: "done",
+      })
+    );
+
+    const reopened = updateProjectTaskStatus(taskId, "todo");
+
+    expect(reopened).toMatchObject({
+      id: taskId,
+      status: "todo",
+    });
   });
 });
