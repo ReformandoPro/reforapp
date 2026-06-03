@@ -199,3 +199,13 @@ This branch is acceptable if:
 - no other routes are migrated
 - no service role appears
 - lint/build/test pass
+
+## Debug logging
+
+Fallback warnings are disabled by default.
+
+To enable them temporarily (staging/demo), set:
+
+- `NEXT_PUBLIC_SUPABASE_DEBUG=1`
+
+This only affects console warnings; it does not change data access rules or security.

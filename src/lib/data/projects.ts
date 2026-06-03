@@ -6,6 +6,7 @@ import type { ProjectCard } from "@/lib/types";
 const projectsRepository = createProjectsRepository({ dataSource: "mock" });
 
 const PROJECTS_ORGANIZATION_ENV = "NEXT_PUBLIC_SUPABASE_ORGANIZATION_ID";
+const PROJECTS_DEBUG_ENV = "NEXT_PUBLIC_SUPABASE_DEBUG";
 const SUPABASE_PROJECTS_LOG_PREFIX = "[supabase-projects-first-read]";
 
 type SupabaseProjectCardQueryRow = {
@@ -45,13 +46,23 @@ function readProjectsOrganizationId(): string | null {
   return value && value.length > 0 ? value : null;
 }
 
-function logProjectsFallback(reason: string, error?: unknown) {
-  if (error) {
-    console.warn(`${SUPABASE_PROJECTS_LOG_PREFIX} ${reason}`, error);
+function shouldLogProjectsFallback(): boolean {
+  return process.env[PROJECTS_DEBUG_ENV] === "1";
+}
+
+function warnProjectsFallback(reason: string, error?: unknown) {
+  if (!shouldLogProjectsFallback()) {
     return;
   }
 
-  console.warn(`${SUPABASE_PROJECTS_LOG_PREFIX} ${reason}`);
+  const message = `${SUPABASE_PROJECTS_LOG_PREFIX} ${reason}`;
+
+  if (error) {
+    console.warn(message, error);
+    return;
+  }
+
+  console.warn(message);
 }
 
 export function mapSupabaseProjectRowToProjectCard(
@@ -88,7 +99,7 @@ export async function getProjectsPageCards(): Promise<ProjectCard[]> {
   const organizationId = readProjectsOrganizationId();
 
   if (!organizationId) {
-    logProjectsFallback(
+    warnProjectsFallback(
       `missing ${PROJECTS_ORGANIZATION_ENV}; using mock fallback`
     );
     return getMockProjectCardsFallback();
@@ -113,12 +124,12 @@ export async function getProjectsPageCards(): Promise<ProjectCard[]> {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      logProjectsFallback("query failed; using mock fallback", error);
+      warnProjectsFallback("query failed; using mock fallback", error);
       return getMockProjectCardsFallback();
     }
 
     if (!data || data.length === 0) {
-      logProjectsFallback("query returned no rows; using mock fallback");
+      warnProjectsFallback("query returned no rows; using mock fallback");
       return getMockProjectCardsFallback();
     }
 
@@ -126,7 +137,7 @@ export async function getProjectsPageCards(): Promise<ProjectCard[]> {
       mapSupabaseProjectRowToProjectCard(row as unknown as SupabaseProjectCardQueryRow)
     );
   } catch (error) {
-    logProjectsFallback("unexpected query error; using mock fallback", error);
+    warnProjectsFallback("unexpected query error; using mock fallback", error);
     return getMockProjectCardsFallback();
   }
 }
