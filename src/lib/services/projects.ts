@@ -1,4 +1,8 @@
-import { getProjectById, getProjects } from "@/lib/data";
+import {
+  getProjectById,
+  getProjects,
+  getProjectsPageCardsFromSupabaseOrMock,
+} from "@/lib/data";
 import type { ProjectCard, ProjectOverview } from "@/lib/types";
 
 /**
@@ -7,6 +11,10 @@ import type { ProjectCard, ProjectOverview } from "@/lib/types";
  */
 export function getProjectCards(): ProjectCard[] {
   return getProjects();
+}
+
+export async function getProjectCardsForProjectsPage(): Promise<ProjectCard[]> {
+  return getProjectsPageCardsFromSupabaseOrMock();
 }
 
 export function getProjectOverview(
