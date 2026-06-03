@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getProjectCards } from "@/lib/services/projects";
+import { getProjectCardsForProjectsPage } from "@/lib/services/projects";
 import type { ProjectStatus } from "@/lib/domain/projects/status";
 
 const statusLabels: Record<ProjectStatus, string> = {
@@ -36,8 +36,8 @@ const statusTones: Record<
   cancelled: "danger",
 };
 
-export default function ProjectsPage() {
-  const projects = getProjectCards();
+export default async function ProjectsPage() {
+  const projects = await getProjectCardsForProjectsPage();
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">

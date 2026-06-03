@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { mockProjectCards, mockProjectOverview } from "../../src/lib/mock/project";
-import { getProjectCards, getProjectOverview } from "../../src/lib/services/projects";
+import {
+  getProjectCards,
+  getProjectCardsForProjectsPage,
+  getProjectOverview,
+} from "../../src/lib/services/projects";
 
 describe("projects service", () => {
   it("returns the same project cards currently provided by the mock repository", () => {
@@ -39,5 +43,12 @@ describe("projects service", () => {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = previousAnonKey;
       }
     }
+  });
+
+  it("keeps an async projects-page helper without breaking the sync service contract", async () => {
+    await expect(getProjectCardsForProjectsPage()).resolves.toEqual(
+      mockProjectCards
+    );
+    expect(getProjectCards()).toEqual(mockProjectCards);
   });
 });
