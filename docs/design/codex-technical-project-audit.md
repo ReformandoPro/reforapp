@@ -79,12 +79,12 @@ The audit itself is docs-only and does not require runtime changes.
 | Area | Classification | Evidence | Notes |
 |---|---|---|---|
 | Dashboard real `/` | OK | `src/app/page.tsx` imports `ReformistDashboardScreen` and `getDashboardSummary()` | Main keeps the real dashboard contract. Rescue replaces this; main does not. |
-| Project list route `/projects` | OK | `src/app/projects/page.tsx` uses `getProjectCards()` | Functional path intact; visually still uses arbitrary `var(...)` classes. |
+| Project list route `/projects` | OK | `src/app/projects/page.tsx` uses `getProjectCards()` | Functional path intact; visually still uses arbitrary `var(--token)` classes. |
 | Project detail route `/projects/[id]` | Partial | `src/app/projects/[id]/page.tsx` uses `getProjectOverview(id)` and `ProjectOverviewScreen` | Data flow intact, but screen uses off-system `slate-*` classes. |
 | Project tasks route `/projects/[id]/tasks` | Partial | `src/app/projects/[id]/tasks/page.tsx` uses `getProjectOverview()` and `getProjectTasks()`; client uses `updateTaskStatusAction()` | Functional route and mutation flow exist; UI still has light Tailwind classes and local optimistic state. |
 | Budget list route `/budgets` | OK | `src/app/budgets/page.tsx` uses `getBudgetSummaries()` | Functional path intact; visual layer still partially legacy. |
 | Budget detail route `/budgets/[id]` | Partial | `src/app/budgets/[id]/page.tsx` uses `getBudgetSummary(id)` and `BudgetSummaryScreen` | Data flow intact, but detail screen uses off-system `slate-*` cards. |
-| AppShell | Partial | `src/components/layout/AppShell.tsx` remains server-compatible and wraps all routes | It is structurally intact, but still uses arbitrary `bg-[var(...)]` / `text-[var(...)]` classes and a hardcoded active nav item. |
+| AppShell | Partial | `src/components/layout/AppShell.tsx` remains server-compatible and wraps all routes | It is structurally intact, but still uses arbitrary `bg-[var(--token)]` / `text-[var(--token)]` classes and a hardcoded active nav item. |
 | Root layout | OK | `src/app/layout.tsx` uses `next/font/google` for Inter and Space Grotesk and wraps children in `AppShell` | Correct foundation. Rescue removes this font wiring and should not be merged. |
 | Supabase/data layer | OK, intentionally inactive | Services use mock repositories; Supabase repositories are explicit skeletons and not connected at runtime | Good separation: UI consumes services, not Supabase clients directly. Do not touch in visual work. |
 
@@ -138,7 +138,7 @@ src/app/globals.css:207..215 @theme inline --color-ds-* hooks
 
 Classification: partial, intentional.
 
-### Arbitrary `var(...)` usage
+### Arbitrary `var(--token)` usage
 
 Main still contains direct arbitrary variable classes in:
 
@@ -462,6 +462,6 @@ Pattern checks confirmed:
 
 - `var(--` remains in AppShell, project list and budget list, plus globals.
 - `--ds-*` is currently limited to `src/app/globals.css`.
-- `bg-[var(--...)]`, `text-[var(--...)]`, `border-[var(--...)]` remain in AppShell, project list and budget list.
+- `bg-[var(--token)]`, `text-[var(--token)]`, `border-[var(--token)]` remain in AppShell, project list and budget list.
 - `MetricCard` exists but is not used by current app routes/screens in the grep scope.
 - `lucide-react`, `@fontsource/*` and `DesignReferenceScreen` are not present in package/source code on main; they are only mentioned in audit documentation.

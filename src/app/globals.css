@@ -1,6 +1,10 @@
+/* Tailwind v4: restrict scanning sources to avoid generating placeholder utilities like var(--...) */
+/* NOTE: globs are relative to this file (src/app/globals.css). */
+@source "../**/*.{ts,tsx,js,jsx}";
+
 @import "tailwindcss";
 
-:root {
+:root { 
   /* Base primitives used by the existing Tailwind v4 @theme mapping */
   --background: #0a0f1a;
   --foreground: #f4f7fc;

@@ -5,6 +5,24 @@ import type { ProjectCard } from "@/lib/types";
 
 const projectsRepository = createProjectsRepository({ dataSource: "mock" });
 
+export type ProjectsPageCardsResult =
+  | {
+      ok: true;
+      source: "supabase" | "mock";
+      cards: ProjectCard[];
+    }
+  | {
+      ok: false;
+      source: "supabase";
+      reason:
+        | "missing_supabase_config"
+        | "missing_organization_id"
+        | "query_failed"
+        | "invalid_status"
+        | "mapping_failed"
+        | "unexpected_error";
+    };
+
 const PROJECTS_ORGANIZATION_ENV = "NEXT_PUBLIC_SUPABASE_ORGANIZATION_ID";
 const PROJECTS_DEBUG_ENV = "NEXT_PUBLIC_SUPABASE_DEBUG";
 const SUPABASE_PROJECTS_LOG_PREFIX = "[supabase-projects-first-read]";
@@ -38,6 +56,14 @@ function normalizeJoinedClient(
 
 function getMockProjectCardsFallback(): ProjectCard[] {
   return projectsRepository.getProjectCards();
+}
+
+function getMockProjectsPageCardsResult(): ProjectsPageCardsResult {
+  return {
+    ok: true,
+    source: "mock",
+    cards: getMockProjectCardsFallback(),
+  };
 }
 
 function readProjectsOrganizationId(): string | null {
@@ -89,20 +115,24 @@ export function mapSupabaseProjectRowToProjectCard(
   };
 }
 
-export async function getProjectsPageCards(): Promise<ProjectCard[]> {
+export async function getProjectsPageCardsResult(): Promise<ProjectsPageCardsResult> {
   const client = createOptionalSupabaseClient();
 
+  // If Supabase is not configured at all, mock mode is expected.
   if (!client) {
-    return getMockProjectCardsFallback();
+    return getMockProjectsPageCardsResult();
   }
 
   const organizationId = readProjectsOrganizationId();
 
   if (!organizationId) {
-    warnProjectsFallback(
-      `missing ${PROJECTS_ORGANIZATION_ENV}; using mock fallback`
-    );
-    return getMockProjectCardsFallback();
+    warnProjectsFallback(`missing ${PROJECTS_ORGANIZATION_ENV}`);
+
+    return {
+      ok: false,
+      source: "supabase",
+      reason: "missing_organization_id",
+    };
   }
 
   try {
@@ -124,20 +154,63 @@ export async function getProjectsPageCards(): Promise<ProjectCard[]> {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      warnProjectsFallback("query failed; using mock fallback", error);
-      return getMockProjectCardsFallback();
+      warnProjectsFallback("query failed", error);
+
+      return {
+        ok: false,
+        source: "supabase",
+        reason: "query_failed",
+      };
     }
 
-    if (!data || data.length === 0) {
-      warnProjectsFallback("query returned no rows; using mock fallback");
-      return getMockProjectCardsFallback();
+    // No rows is a valid state. Do not fall back silently.
+    if (!data) {
+      return {
+        ok: true,
+        source: "supabase",
+        cards: [],
+      };
     }
 
-    return data.map((row) =>
-      mapSupabaseProjectRowToProjectCard(row as unknown as SupabaseProjectCardQueryRow)
-    );
+    try {
+      const cards = data.map((row) =>
+        mapSupabaseProjectRowToProjectCard(
+          row as unknown as SupabaseProjectCardQueryRow
+        )
+      );
+
+      return {
+        ok: true,
+        source: "supabase",
+        cards,
+      };
+    } catch (mappingError) {
+      warnProjectsFallback("row mapping failed", mappingError);
+
+      return {
+        ok: false,
+        source: "supabase",
+        reason: "mapping_failed",
+      };
+    }
   } catch (error) {
-    warnProjectsFallback("unexpected query error; using mock fallback", error);
-    return getMockProjectCardsFallback();
+    warnProjectsFallback("unexpected query error", error);
+
+    return {
+      ok: false,
+      source: "supabase",
+      reason: "unexpected_error",
+    };
   }
+}
+
+export async function getProjectsPageCards(): Promise<ProjectCard[]> {
+  const result = await getProjectsPageCardsResult();
+
+  if (!result.ok) {
+    // Caller should render an explicit error state.
+    throw new Error(`ProjectsPageCardsError:${result.reason}`);
+  }
+
+  return result.cards;
 }

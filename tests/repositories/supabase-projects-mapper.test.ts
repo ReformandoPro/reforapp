@@ -32,7 +32,7 @@ describe("mapSupabaseProjectCardPartialRowToProjectCard", () => {
     const row: SupabaseProjectCardPartialRow = {
       id: "project_2",
       name: "Obra centro",
-      status: "approved",
+      status: "scheduled",
       client_id: "client_2",
       client: {
         id: "client_2",

@@ -232,7 +232,7 @@ Sí:
 - Equivalencia: **alta**.
 - Diferencias importantes:
   - admite `variant`, `padding`, `as`;
-  - usa clases del sistema (`bg-bg-surface`, `border-subtle`) en lugar de `var(--...)`;
+  - usa clases del sistema (`bg-bg-surface`, `border-subtle`) en lugar de `var(--token)`;
   - `rounded-lg` del sistema no coincide exactamente con nuestro `rounded-2xl` actual.
 
 ### `Button`
@@ -365,7 +365,7 @@ El material de diseño sigue modelando algunos bordes y focus como **shorthand C
 - `--border-subtle: 1px solid ...`
 - `--focus-ring: 0 0 0 3px ...`
 
-Nuestro runtime reciente los normalizó a valores más operables para clases con `var(--...)`:
+Nuestro runtime reciente los normalizó a valores más operables para clases con `var(--token)`:
 
 - bordes como color
 - focus ring como color utilizable en outline/ring
@@ -451,7 +451,7 @@ Eso **sí funcionaría** si activáramos esa configuración de Tailwind.
 Pero hoy Reformando.app no la tiene activa; hoy usamos principalmente:
 
 - clases estándar Tailwind
-- `var(--...)` en clases arbitrarias
+- `var(--token)` en clases arbitrarias
 
 Por tanto, **copiar tal cual los componentes nuevos rompería compilación o render** si no se adapta primero su capa de tokens/config.
 
@@ -593,7 +593,7 @@ No adoptar todavía:
 - cualquier rework completo de pantallas productivas
 - cualquier adopción del package tal cual desde ZIP sin limpieza y adaptación manual
 
-También **no** conviene adoptar literalmente los bordes/focus de `tokens.css` porque hoy nuestro runtime ya corrigió esos tokens para usarlos mejor con `var(--...)`.
+También **no** conviene adoptar literalmente los bordes/focus de `tokens.css` porque hoy nuestro runtime ya corrigió esos tokens para usarlos mejor con `var(--token)`.
 
 ---
 

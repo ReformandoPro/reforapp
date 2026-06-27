@@ -1,13 +1,10 @@
+// Canonical project lifecycle states for the MVP.
+// Keep this list aligned with the database constraint `projects_status_check`.
 export const PROJECT_STATUSES = [
-  "lead",
-  "budgeting",
-  "approved",
   "scheduled",
   "in_progress",
-  "paused",
+  "on_hold",
   "completed",
-  "delivered",
-  "closed",
   "cancelled",
 ] as const;
 

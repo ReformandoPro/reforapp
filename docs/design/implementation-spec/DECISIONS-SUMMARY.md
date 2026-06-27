@@ -6,7 +6,7 @@ This is the short, high-signal summary of what was decided.
 
 1) **Adopt semantic Tailwind**
 - Move to the semantic Tailwind model aligned with `docs/design/modern-source/tailwind.config.js`.
-- Stop expanding the app via ad-hoc `bg-[var(--…)]` patches as the primary strategy.
+- Stop expanding the app via ad-hoc `bg-[var(--token)]` patches as the primary strategy.
 
 2) **Wire typography in `layout.tsx`**
 - Replace Geist/Geist Mono with **Inter** (UI) + **Space Grotesk** (numerals).
@@ -21,7 +21,7 @@ This is the short, high-signal summary of what was decided.
 - Keep `--ds-*` only as a temporary alias layer during migration, then delete it.
 
 5) **Fix the two token type mismatches**
-- **Borders:** stop using shorthand tokens as colors in `border-[var(--…)]`; move to semantic border utilities.
+- **Borders:** stop using shorthand tokens as colors in `border-[var(--token)]`; move to semantic border utilities.
 - **Focus ring:** standardize on ring utilities (`ring-focus`) and retire the split shadow/color approach.
 
 6) **Process discipline**

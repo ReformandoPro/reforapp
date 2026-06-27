@@ -20,7 +20,7 @@ four concrete things:
 1. **Resolve two token *type* mismatches** (borders, focus ring) that currently
    block a clean drop-in.
 2. **Pick ONE integration model** — semantic Tailwind config (recommended) — and
-   stop mixing it with arbitrary `[var(--…)]` values.
+   stop mixing it with arbitrary `[var(--token)]` values.
 3. **Wire the fonts** (Inter + Space Grotesk) in `layout.tsx`. Until this is done,
    the "display / numeric" typography intent is not actually rendering.
 4. **Converge component geometry** (card radius, etc.) to the system values.
@@ -42,7 +42,7 @@ decision." They are now made, with rationale, so implementation can start.
 | Focus ring | `--focus-ring: 0 0 0 3px rgba(…)` (box-shadow) | used as a **color**; shadow lives in `--ds-focus-ring-shadow` | ❌ type mismatch |
 | Card radius | `radius/lg` = **16px** | `rounded-2xl` (16px in TW default, but hard-coded) | ⚠️ drift / not tokenized |
 | Typography | Inter (UI) + Space Grotesk (numbers), full scale | Geist / Geist Mono, scale not wired | ❌ not implemented |
-| Integration model | semantic Tailwind (`bg-surface`, `text-content-primary`) | Tailwind v4 + arbitrary `[var(--…)]` values | ⚠️ two models in parallel |
+| Integration model | semantic Tailwind (`bg-surface`, `text-content-primary`) | Tailwind v4 + arbitrary `[var(--token)]` values | ⚠️ two models in parallel |
 | Components | 14 in ZIPs (TSX + Next/JSX) | 10 adapters in `src/components/ui/` | partial overlap |
 
 The single most important takeaway: **the divergence is structural (names/types/wiring),
@@ -55,7 +55,7 @@ not chromatic.** Nobody needs to re-pick colors.
 ### Decision 1 — Integration model: **adopt the semantic Tailwind config**
 
 **Resolved:** Move to the modern semantic model (`bg-surface`, `text-content-primary`,
-`rounded-lg`, `text-overline`, …) and retire ad-hoc `bg-[var(--…)]` arbitrary values
+`rounded-lg`, `text-overline`, …) and retire ad-hoc `bg-[var(--token)]` arbitrary values
 over time.
 
 **Why:** The component ZIPs are already authored against this model (e.g. `Card`
@@ -231,7 +231,7 @@ You don't have to convert all screens at once. Recommended order:
 2. Migrate **shared `ui/` components** first (Card, Button, Badge, MetricCard,
    ListItem, ProgressBar, EmptyState) to semantic classes + correct geometry.
    Every screen benefits at once.
-3. Migrate **screens** one at a time, converting `bg-[var(--…)]` → semantic classes.
+3. Migrate **screens** one at a time, converting `bg-[var(--token)]` → semantic classes.
    Start with `ReformistDashboardScreen.tsx` (most modernized already), then
    `projects`, `budgets`, then the `slate-*`/`rose-*` raw-Tailwind screens
    (`tasks/page.tsx`, `ProjectTasksClient.tsx`) which are currently **off-system**

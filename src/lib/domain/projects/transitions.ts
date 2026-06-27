@@ -1,15 +1,10 @@
 import type { ProjectStatus } from "./status";
 
 export const PROJECT_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
-  lead: ["budgeting", "cancelled"],
-  budgeting: ["approved", "cancelled"],
-  approved: ["scheduled", "cancelled"],
-  scheduled: ["in_progress", "paused", "cancelled"],
-  in_progress: ["paused", "completed", "cancelled"],
-  paused: ["scheduled", "in_progress", "cancelled"],
-  completed: ["delivered", "closed"],
-  delivered: ["closed"],
-  closed: [],
+  scheduled: ["in_progress", "on_hold", "cancelled"],
+  in_progress: ["on_hold", "completed", "cancelled"],
+  on_hold: ["scheduled", "in_progress", "cancelled"],
+  completed: [],
   cancelled: [],
 };
 

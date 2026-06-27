@@ -5,5 +5,6 @@ export * from "./budget-line";
 export * from "./budget-detail";
 export * from "./dashboard";
 export * from "./project-overview";
+export * from "./project-detail";
 export * from "./budget-view";
 export * from "./project-task";

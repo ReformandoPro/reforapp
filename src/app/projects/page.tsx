@@ -4,19 +4,16 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getProjectCardsForProjectsPage } from "@/lib/services/projects";
+import {
+  getProjectCardsForProjectsPageResult,
+} from "@/lib/services/projects";
 import type { ProjectStatus } from "@/lib/domain/projects/status";
 
 const statusLabels: Record<ProjectStatus, string> = {
-  lead: "Lead",
-  budgeting: "Presupuestando",
-  approved: "Aprobado",
   scheduled: "Planificado",
   in_progress: "En curso",
-  paused: "Pausado",
+  on_hold: "En pausa",
   completed: "Completado",
-  delivered: "Entregado",
-  closed: "Cerrado",
   cancelled: "Cancelado",
 };
 
@@ -24,20 +21,42 @@ const statusTones: Record<
   ProjectStatus,
   "neutral" | "success" | "warning" | "danger" | "info"
 > = {
-  lead: "neutral",
-  budgeting: "warning",
-  approved: "info",
   scheduled: "info",
   in_progress: "info",
-  paused: "warning",
+  on_hold: "warning",
   completed: "success",
-  delivered: "success",
-  closed: "neutral",
   cancelled: "danger",
 };
 
 export default async function ProjectsPage() {
-  const projects = await getProjectCardsForProjectsPage();
+  const result = await getProjectCardsForProjectsPageResult();
+
+  if (!result.ok) {
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Obras
+            </h1>
+            <p className="text-sm text-[var(--text-secondary)] sm:text-base">
+              No se pudo cargar el listado desde Supabase.
+            </p>
+            <div className="mt-2">
+              <Link
+                href="/projects"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors border border-subtle bg-bg-surface text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                Reintentar
+              </Link>
+            </div>
+          </div>
+        </Card>
+      </section>
+    );
+  }
+
+  const projects = result.cards;
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -66,7 +85,7 @@ export default async function ProjectsPage() {
         />
       ) : (
         <div className="grid gap-4">
-          {projects.map((project) => (
+          {projects.map((project: import("@/lib/types").ProjectCard) => (
             <Card
               key={project.id}
               className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"

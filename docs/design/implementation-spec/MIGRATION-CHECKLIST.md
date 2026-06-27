@@ -27,7 +27,7 @@ after any phase.
       SegmentedControl, TabBar, Timeline, Checkbox, Input.
 
 ## Phase 3 — Screens (one at a time)
-- [ ] `ReformistDashboardScreen.tsx`: convert `bg-[var(--…)]` → semantic; map KPI badge
+- [ ] `ReformistDashboardScreen.tsx`: convert `bg-[var(--token)]` → semantic; map KPI badge
       enum → localized labels (`EN CURSO` / `AVISO` / `BLOQUEO`), not raw `info`/`warning`.
 - [ ] `projects/page.tsx`: arbitrary-var → semantic; standardize focus ring.
 - [ ] `budgets/page.tsx`: same.

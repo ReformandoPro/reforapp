@@ -11,6 +11,7 @@ vi.mock("../../src/lib/supabase/client", () => ({
 import { mockProjectCards } from "../../src/lib/mock/project";
 import {
   getProjectsPageCards,
+  getProjectsPageCardsResult,
   mapSupabaseProjectRowToProjectCard,
 } from "../../src/lib/data/projects";
 
@@ -55,17 +56,21 @@ describe("projects first read", () => {
     await expect(getProjectsPageCards()).resolves.toEqual(mockProjectCards);
   });
 
-  it("falls back to mock when organization id is missing", async () => {
+  it("returns an explicit error when organization id is missing (no silent mock fallback)", async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
     delete process.env.NEXT_PUBLIC_SUPABASE_ORGANIZATION_ID;
 
     createOptionalSupabaseClient.mockReturnValue({});
 
-    await expect(getProjectsPageCards()).resolves.toEqual(mockProjectCards);
+    await expect(getProjectsPageCardsResult()).resolves.toEqual({
+      ok: false,
+      source: "supabase",
+      reason: "missing_organization_id",
+    });
   });
 
-  it("falls back to mock when the Supabase query fails", async () => {
+  it("returns an explicit error when the Supabase query fails (no silent mock fallback)", async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
     process.env.NEXT_PUBLIC_SUPABASE_ORGANIZATION_ID = "org_demo";
@@ -80,10 +85,14 @@ describe("projects first read", () => {
 
     createOptionalSupabaseClient.mockReturnValue({ from });
 
-    await expect(getProjectsPageCards()).resolves.toEqual(mockProjectCards);
+    await expect(getProjectsPageCardsResult()).resolves.toEqual({
+      ok: false,
+      source: "supabase",
+      reason: "query_failed",
+    });
   });
 
-  it("falls back to mock when the Supabase query returns no rows", async () => {
+  it("returns an empty list when the Supabase query returns no rows (no mock fallback)", async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
     process.env.NEXT_PUBLIC_SUPABASE_ORGANIZATION_ID = "org_demo";
@@ -98,7 +107,11 @@ describe("projects first read", () => {
 
     createOptionalSupabaseClient.mockReturnValue({ from });
 
-    await expect(getProjectsPageCards()).resolves.toEqual(mockProjectCards);
+    await expect(getProjectsPageCardsResult()).resolves.toEqual({
+      ok: true,
+      source: "supabase",
+      cards: [],
+    });
   });
 
   it("returns normalized project cards when the Supabase query succeeds", async () => {
@@ -140,7 +153,7 @@ describe("projects first read", () => {
     ]);
   });
 
-  it("falls back to mock when a Supabase row is not mappable", async () => {
+  it("returns an explicit error when a Supabase row is not mappable (no silent mock fallback)", async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
     process.env.NEXT_PUBLIC_SUPABASE_ORGANIZATION_ID = "org_demo";
@@ -163,7 +176,11 @@ describe("projects first read", () => {
 
     createOptionalSupabaseClient.mockReturnValue({ from });
 
-    await expect(getProjectsPageCards()).resolves.toEqual(mockProjectCards);
+    await expect(getProjectsPageCardsResult()).resolves.toEqual({
+      ok: false,
+      source: "supabase",
+      reason: "mapping_failed",
+    });
   });
 
   it("maps a valid Supabase row into a ProjectCard contract", () => {
@@ -171,7 +188,7 @@ describe("projects first read", () => {
       mapSupabaseProjectRowToProjectCard({
         id: "project_real_2",
         name: "Obra mapeada",
-        status: "approved",
+        status: "scheduled",
         client_id: "client_real_2",
         client: {
           id: "client_real_2",
@@ -182,7 +199,7 @@ describe("projects first read", () => {
       id: "project_real_2",
       name: "Obra mapeada",
       clientName: "Familia Real",
-      status: "approved",
+      status: "scheduled",
       delayedTasksCount: 0,
       blockedTasksCount: 0,
       pendingApprovalsCount: 0,

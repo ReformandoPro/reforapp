@@ -14,7 +14,16 @@ import type {
   ProjectOverview,
   ProjectTaskListItem,
 } from "@/lib/types";
-import { getProjectsPageCards } from "./projects";
+import {
+  getProjectsPageCards,
+  getProjectsPageCardsResult,
+} from "./projects";
+import type { ProjectsPageCardsResult } from "./projects";
+import { getProjectDetailResult } from "./project-detail";
+import type { ProjectDetailResult } from "./project-detail";
+
+export type { ProjectsPageCardsResult } from "./projects";
+export type { ProjectDetailResult } from "./project-detail";
 
 export type DataAdapterMode =
   | "mock"
@@ -37,14 +46,22 @@ export function getProjects(): ProjectCard[] {
   return projectsRepository.getProjectCards();
 }
 
-export async function getProjectsPageCardsFromSupabaseOrMock(): Promise<
-  ProjectCard[]
-> {
+export async function getProjectsPageCardsFromSupabaseOrMock(): Promise<ProjectCard[]> {
   return getProjectsPageCards();
+}
+
+export async function getProjectsPageCardsResultFromSupabaseOrMock(): Promise<ProjectsPageCardsResult> {
+  return getProjectsPageCardsResult();
 }
 
 export function getProjectById(projectId: string): ProjectOverview | undefined {
   return projectsRepository.getProjectOverview(projectId);
+}
+
+export async function getProjectDetailResultFromSupabaseById(
+  projectId: string
+): Promise<ProjectDetailResult> {
+  return getProjectDetailResult(projectId);
 }
 
 export function getProjectTasks(projectId: string): ProjectTaskListItem[] {
