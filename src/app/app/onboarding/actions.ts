@@ -12,6 +12,12 @@ function backToOnboardingWithError(message: string): never {
   redirect(url.pathname + url.search);
 }
 
+function backToOnboardingWithInviteError(message: string): never {
+  const url = new URL("/app/onboarding", "http://local");
+  url.searchParams.set("inviteError", message);
+  redirect(url.pathname + url.search);
+}
+
 function slugify(input: string): string {
   return input
     .trim()
@@ -117,5 +123,51 @@ export async function createOrganizationAction(formData: FormData) {
 
   const url = new URL("/app/onboarding", "http://local");
   url.searchParams.set("created", "1");
+  redirect(url.pathname + url.search);
+}
+
+export async function createInvitationAction(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  const role = String(formData.get("role") ?? "member").trim();
+
+  if (!email || !email.includes("@")) {
+    backToOnboardingWithInviteError("Introduce un email válido.");
+  }
+
+  if (role !== "admin" && role !== "member") {
+    backToOnboardingWithInviteError("Rol inválido.");
+  }
+
+  const ctx = await getOrganizationContextForRequest();
+  if (!ctx.ok) {
+    redirect("/login?redirectTo=/app/onboarding");
+  }
+
+  if (ctx.role !== "owner" && ctx.role !== "admin") {
+    backToOnboardingWithInviteError("No tienes permisos para invitar miembros.");
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const token_hash = crypto.createHash("sha256").update(token).digest("hex");
+
+  const { error } = await supabase.from("organization_invitations").insert({
+    organization_id: ctx.organizationId,
+    invitee_email: email,
+    invited_role: role,
+    token_hash,
+    created_by_user_id: ctx.user.id,
+  });
+
+  if (error) {
+    backToOnboardingWithInviteError(
+      "No pudimos crear la invitación. Revisa si ya existe una invitación pendiente para ese email."
+    );
+  }
+
+  // No email sending yet. No token/link shown.
+  const url = new URL("/app/onboarding", "http://local");
+  url.searchParams.set("invited", "1");
   redirect(url.pathname + url.search);
 }
