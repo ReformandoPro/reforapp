@@ -193,8 +193,7 @@ export default async function AppDashboardPage() {
 
     const profileData = (profileRow.data ?? null) as ProfileData | null;
     const displayName = String(profileData?.display_name ?? "").trim();
-    const phone = String(profileData?.phone ?? "").trim();
-    const perfilCompletado = displayName.length > 0 && phone.length > 0;
+    const perfilCompletado = displayName.length > 0;
 
     const primerMiembroInvitado = (invitationsCount.count ?? 0) > 0 || (membersCount.count ?? 0) > 1;
 
