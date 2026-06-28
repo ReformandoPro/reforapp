@@ -65,11 +65,11 @@ export default async function AppProjectsPage() {
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             No pudimos cargar tus obras
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             {ctx.reason === "missing_membership"
               ? "Tu usuario no tiene acceso a ninguna organización todavía."
               : "Inicia sesión e inténtalo de nuevo."}
@@ -100,11 +100,11 @@ export default async function AppProjectsPage() {
   if (error) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             No pudimos cargar tus obras
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Revisa tu conexión e inténtalo de nuevo.
           </p>
           <div className="mt-4">
@@ -127,18 +127,18 @@ export default async function AppProjectsPage() {
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/app"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al panel
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-2xl">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Obras
             </h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Listado de obras de tu organización.
             </p>
           </div>
@@ -179,18 +179,18 @@ export default async function AppProjectsPage() {
             return (
               <Card
                 key={project.id}
-                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+                className="p-0 shadow-none"
               >
                 <Link
                   href={`/app/projects/${project.id}`}
-                  className="block p-5 hover:bg-[var(--bg-raised)]"
+                  className="block p-5 hover:bg-bg-raised"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-lg font-semibold tracking-tight">
                         {project.name}
                       </p>
-                      <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                      <p className="mt-2 text-sm text-content-secondary">
                         Cliente: {joinedClient?.display_name ?? "—"}
                       </p>
                     </div>
