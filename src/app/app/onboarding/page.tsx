@@ -5,9 +5,16 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 
+import { createOrganizationAction } from "./actions";
+
 export const dynamic = "force-dynamic";
 
-export default async function AppOnboardingPage() {
+export default async function AppOnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ created?: string; error?: string }>;
+}) {
+  const { created, error } = await searchParams;
   const ctx = await getOrganizationContextForRequest();
 
   // If already configured, don't block the user here.
@@ -30,7 +37,11 @@ export default async function AppOnboardingPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
-            <Badge tone="success">Organización activa</Badge>
+            {created === "1" ? (
+              <Badge tone="success">Empresa creada</Badge>
+            ) : (
+              <Badge tone="success">Organización activa</Badge>
+            )}
             <Badge tone="neutral">Rol: {ctx.role}</Badge>
           </div>
 
@@ -49,7 +60,7 @@ export default async function AppOnboardingPage() {
 
   // If user is not authenticated, AppLayout should already redirect to /login.
   // We still show a safe message in case this page is ever reached without auth.
-  if (!ctx.ok && ctx.reason !== "missing_membership") {
+  if (ctx.reason !== "missing_membership") {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <EmptyState
@@ -79,20 +90,47 @@ export default async function AppOnboardingPage() {
           </p>
         </div>
 
-        <div className="mt-6 space-y-3">
-          <p className="text-sm text-[var(--text-secondary)]">
-            Este paso de creación de empresa se implementará en el siguiente ticket.
-          </p>
+        <form action={createOrganizationAction} className="mt-6 space-y-6">
+          {error ? (
+            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+              {error}
+            </p>
+          ) : null}
 
-          <button
-            type="button"
-            disabled
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white opacity-60"
-            title="Próximamente"
-          >
-            Crear empresa (siguiente paso)
-          </button>
-        </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="name">
+              Nombre de la empresa
+            </label>
+            <input
+              id="name"
+              name="name"
+              required
+              placeholder="Ej: Reformas García SL"
+              className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            />
+            <p className="text-xs text-[var(--text-tertiary)]">
+              Próximo paso: invitar equipo y crear tu primera obra.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              Crear empresa
+            </button>
+
+            <button
+              type="button"
+              disabled
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-5 py-2 text-sm font-medium text-content-secondary opacity-70"
+              title="Siguiente ticket"
+            >
+              Invitar equipo (siguiente paso)
+            </button>
+          </div>
+        </form>
       </Card>
     </section>
   );
