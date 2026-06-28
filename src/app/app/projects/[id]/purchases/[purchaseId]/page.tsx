@@ -67,9 +67,9 @@ export default async function PurchaseDetailPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Pedido</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver este pedido.
           </p>
         </Card>
@@ -92,7 +92,7 @@ export default async function PurchaseDetailPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -125,7 +125,7 @@ export default async function PurchaseDetailPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/purchases`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a compras
         </Link>
@@ -170,16 +170,16 @@ export default async function PurchaseDetailPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}/purchases`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a compras
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{p.title}</h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               {project.name} · {formatDateTime(p.updated_at)}
               {p.supplier_name ? ` · ${p.supplier_name}` : ""}
             </p>
@@ -213,21 +213,21 @@ export default async function PurchaseDetailPage({
         </div>
 
         {error ? (
-          <p className="mt-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+          <p className="mt-5 rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
             {error}
           </p>
         ) : null}
 
         {p.notes ? (
-          <p className="mt-5 whitespace-pre-wrap text-sm text-[var(--text-primary)]">{p.notes}</p>
+          <p className="mt-5 whitespace-pre-wrap text-sm text-content-primary">{p.notes}</p>
         ) : null}
       </Card>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Líneas</h2>
 
         {itemRows.length === 0 ? (
-          <p className="mt-4 text-sm text-[var(--text-secondary)]">Sin líneas.</p>
+          <p className="mt-4 text-sm text-content-secondary">Sin líneas.</p>
         ) : (
           <div className="mt-4 grid gap-3">
             {itemRows.map((line) => {
@@ -241,18 +241,18 @@ export default async function PurchaseDetailPage({
               return (
                 <div
                   key={line.id}
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-4 py-3"
+                  className="rounded-xl border border-subtle bg-bg-raised px-4 py-3"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{line.description}</p>
-                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                      <p className="text-sm font-medium text-content-primary">{line.description}</p>
+                      <p className="mt-1 text-xs text-content-tertiary">
                         {qty} {line.unit ?? ""} × {formatMoneyEUR(unit)} · IVA {taxRate}%
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-[var(--text-primary)]">{formatMoneyEUR(total)}</p>
-                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                      <p className="text-sm font-semibold text-content-primary">{formatMoneyEUR(total)}</p>
+                      <p className="mt-1 text-xs text-content-tertiary">
                         Base {formatMoneyEUR(subtotal)} · IVA {formatMoneyEUR(tax)}
                       </p>
                     </div>
@@ -265,15 +265,15 @@ export default async function PurchaseDetailPage({
 
         <div className="mt-6 grid gap-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[var(--text-secondary)]">Subtotal</span>
+            <span className="text-content-secondary">Subtotal</span>
             <span className="font-medium">{formatMoneyEUR(totals.subtotal)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[var(--text-secondary)]">IVA</span>
+            <span className="text-content-secondary">IVA</span>
             <span className="font-medium">{formatMoneyEUR(totals.tax)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[var(--text-primary)] font-semibold">Total</span>
+            <span className="text-content-primary font-semibold">Total</span>
             <span className="font-semibold">{formatMoneyEUR(totals.total)}</span>
           </div>
         </div>
