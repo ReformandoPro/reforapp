@@ -125,7 +125,7 @@ export default async function AppProjectDetailPage({
   const taskCounts =
     data && !error
       ? await (async () => {
-          const [total, pending, inProgress, blocked, done, mine, documents, lastProgress] = await Promise.all([
+          const [total, pending, inProgress, blocked, done, mine, documents, lastProgress, budgetsCount, lastBudget] = await Promise.all([
             supabase
               .from("project_tasks")
               .select("id", { count: "exact", head: true })
@@ -174,6 +174,19 @@ export default async function AppProjectDetailPage({
               .order("created_at", { ascending: false })
               .limit(1)
               .maybeSingle(),
+            supabase
+              .from("project_budgets")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id),
+            supabase
+              .from("project_budgets")
+              .select("id, title, status, updated_at")
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id)
+              .order("updated_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
           ]);
 
           return {
@@ -185,6 +198,8 @@ export default async function AppProjectDetailPage({
             mine: mine.count ?? 0,
             documents: documents.count ?? 0,
             lastProgress: lastProgress.data ?? null,
+            budgetsCount: budgetsCount.count ?? 0,
+            lastBudget: lastBudget.data ?? null,
           };
         })()
       : null;
@@ -391,6 +406,41 @@ export default async function AppProjectDetailPage({
                 <p className="mt-4 text-sm text-[var(--text-secondary)]">
                   Progreso actual: <span className="font-medium">{row.progress}%</span>
                 </p>
+              </Card>
+
+              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight">Presupuestos</h2>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                      {taskCounts ? (
+                        taskCounts.lastBudget ? (
+                          <>
+                            Total: <span className="font-medium">{taskCounts.budgetsCount}</span> ·
+                            Último: <span className="font-medium">{taskCounts.lastBudget.title}</span> ·
+                            {taskCounts.lastBudget.status} · {formatUpdatedAt(taskCounts.lastBudget.updated_at)}
+                          </>
+                        ) : (
+                          <>
+                            Total: <span className="font-medium">{taskCounts.budgetsCount}</span> ·
+                            Aún no hay presupuestos.
+                          </>
+                        )
+                      ) : (
+                        "Resumen no disponible."
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <Link
+                      href={`/app/projects/${id}/budgets`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      Ver presupuestos
+                    </Link>
+                  </div>
+                </div>
               </Card>
             </>
           );
