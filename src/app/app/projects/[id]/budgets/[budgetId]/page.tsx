@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+
+import { BudgetActionsClient } from "./BudgetActionsClient";
 import {
   BUDGET_STATUSES,
   computeBudgetTotals,
@@ -44,10 +46,13 @@ function formatDateTime(value: string): string {
 
 export default async function BudgetDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; budgetId: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id: projectId, budgetId } = await params;
+  const { error } = await searchParams;
 
   const ctx = await getOrganizationContextForRequest();
   if (!ctx.ok) {
@@ -173,21 +178,38 @@ export default async function BudgetDetailPage({
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{budgetRow.title}</h1>
             <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
-              {project.name} · {statusLabel} · {formatDateTime(budgetRow.updated_at)}
+              {project.name} · {formatDateTime(budgetRow.updated_at)}
             </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Badge tone="neutral">Estado: {statusLabel}</Badge>
+              <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
+            </div>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
-            <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
             {canWrite ? (
-              <Link
-                href={`/app/projects/${projectId}/budgets/${budgetId}/edit`}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-              >
-                Editar
-              </Link>
+              <>
+                <Link
+                  href={`/app/projects/${projectId}/budgets/${budgetId}/edit`}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  Editar
+                </Link>
+
+                <BudgetActionsClient
+                  projectId={projectId}
+                  budgetId={budgetId}
+                  currentStatus={budgetRow.status}
+                />
+              </>
             ) : null}
           </div>
         </div>
+
+        {error ? (
+          <p className="mt-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            {error}
+          </p>
+        ) : null}
 
         {budgetRow.notes ? (
           <p className="mt-5 whitespace-pre-wrap text-sm text-[var(--text-primary)]">{budgetRow.notes}</p>
