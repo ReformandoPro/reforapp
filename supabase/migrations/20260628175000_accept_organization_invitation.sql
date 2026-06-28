@@ -8,7 +8,7 @@ create or replace function public.accept_organization_invitation(invitation_toke
 returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_catalog
 as $$
 declare
   v_user_id uuid;
