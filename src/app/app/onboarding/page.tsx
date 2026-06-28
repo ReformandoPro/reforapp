@@ -239,6 +239,14 @@ export default async function AppOnboardingPage({
             <p className="text-xs text-[var(--text-tertiary)]">
               Próximo paso: invitar equipo y crear tu primera obra.
             </p>
+            <p className="mt-2 text-sm">
+              <Link
+                href="/app/onboarding/first-project"
+                className="font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                Ir al asistente para crear la primera obra
+              </Link>
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
