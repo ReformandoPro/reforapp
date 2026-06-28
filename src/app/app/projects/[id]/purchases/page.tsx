@@ -1,0 +1,235 @@
+import Link from "next/link";
+
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { formatMoneyEUR } from "@/lib/services/budgets-basic";
+import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { computePurchaseTotals, PURCHASE_STATUSES, type PurchaseStatus } from "@/lib/services/purchases";
+import { createServerSupabaseClient } from "@/lib/supabase/ssr";
+
+export const dynamic = "force-dynamic";
+
+type PurchaseRow = {
+  id: string;
+  title: string;
+  supplier_name: string | null;
+  status: PurchaseStatus;
+  expected_date: string | null;
+  updated_at: string;
+};
+
+type ItemRow = {
+  purchase_id: string;
+  quantity: string | number;
+  unit_price: string | number;
+  tax_rate: string | number;
+};
+
+function formatDate(value: string | null): string {
+  if (!value) return "—";
+  try {
+    return new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function formatDateTime(value: string): string {
+  try {
+    return new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" }).format(
+      new Date(value)
+    );
+  } catch {
+    return value;
+  }
+}
+
+export default async function AppProjectPurchasesPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id: projectId } = await params;
+
+  const ctx = await getOrganizationContextForRequest();
+  if (!ctx.ok) {
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Compras</h1>
+          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            Inicia sesión para ver compras.
+          </p>
+        </Card>
+      </section>
+    );
+  }
+
+  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const supabase = await createServerSupabaseClient();
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("organization_id", ctx.organizationId)
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (!project) {
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <Link
+          href="/app/projects"
+          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        >
+          ← Volver a obras
+        </Link>
+        <EmptyState
+          title="Obra no encontrada"
+          description="No hemos encontrado una obra con este identificador dentro de tu organización."
+        />
+      </section>
+    );
+  }
+
+  const { data: purchases, error: purchasesError } = await supabase
+    .from("project_purchases")
+    .select("id, title, supplier_name, status, expected_date, updated_at")
+    .eq("organization_id", ctx.organizationId)
+    .eq("project_id", projectId)
+    .order("updated_at", { ascending: false });
+
+  if (purchasesError) {
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <EmptyState title="No pudimos cargar las compras" description="Revisa tu conexión e inténtalo." />
+      </section>
+    );
+  }
+
+  const rows = (purchases ?? []) as PurchaseRow[];
+  const ids = rows.map((r) => r.id);
+
+  const { data: items } = ids.length
+    ? await supabase
+        .from("project_purchase_items")
+        .select("purchase_id, quantity, unit_price, tax_rate")
+        .eq("organization_id", ctx.organizationId)
+        .eq("project_id", projectId)
+        .in("purchase_id", ids)
+    : { data: [] as unknown[] };
+
+  const itemRows = (items ?? []) as ItemRow[];
+  const itemsByPurchase = new Map<string, ItemRow[]>();
+  for (const item of itemRows) {
+    const list = itemsByPurchase.get(item.purchase_id) ?? [];
+    list.push(item);
+    itemsByPurchase.set(item.purchase_id, list);
+  }
+
+  const totalAll = rows.reduce((acc, r) => {
+    const list = itemsByPurchase.get(r.id) ?? [];
+    const totals = computePurchaseTotals(
+      list.map((i) => ({
+        quantity: Number(i.quantity),
+        unitPrice: Number(i.unit_price),
+        taxRate: Number(i.tax_rate),
+      }))
+    );
+    return acc + totals.total;
+  }, 0);
+
+  const totalAllRounded = Math.round((totalAll + Number.EPSILON) * 100) / 100;
+
+  return (
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <Link
+        href={`/app/projects/${projectId}`}
+        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+      >
+        ← Volver a la obra
+      </Link>
+
+      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Compras · {project.name}</h1>
+            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+              Pedidos de materiales con líneas e IVA.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Badge tone="neutral">Pedidos: {rows.length}</Badge>
+            <Badge tone="neutral">Total: {formatMoneyEUR(totalAllRounded)}</Badge>
+          </div>
+        </div>
+
+        {canWrite ? (
+          <div className="mt-5 flex justify-end">
+            <Link
+              href={`/app/projects/${projectId}/purchases/new`}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              Nuevo pedido
+            </Link>
+          </div>
+        ) : null}
+      </Card>
+
+      {rows.length === 0 ? (
+        <EmptyState
+          title="Sin compras"
+          description={
+            canWrite
+              ? "Crea el primer pedido de materiales para esta obra."
+              : "Aún no hay pedidos para esta obra."
+          }
+        />
+      ) : (
+        <div className="grid gap-3">
+          {rows.map((purchase) => {
+            const statusLabel =
+              PURCHASE_STATUSES.find((s) => s.value === purchase.status)?.label ?? purchase.status;
+
+            const list = itemsByPurchase.get(purchase.id) ?? [];
+            const totals = computePurchaseTotals(
+              list.map((i) => ({
+                quantity: Number(i.quantity),
+                unitPrice: Number(i.unit_price),
+                taxRate: Number(i.tax_rate),
+              }))
+            );
+
+            return (
+              <Card
+                key={purchase.id}
+                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+              >
+                <Link
+                  href={`/app/projects/${projectId}/purchases/${purchase.id}`}
+                  className="block p-5 hover:bg-[var(--bg-raised)]"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-base font-semibold tracking-tight">{purchase.title}</p>
+                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                        {statusLabel}
+                        {purchase.supplier_name ? ` · ${purchase.supplier_name}` : ""} ·
+                        Prevista: {formatDate(purchase.expected_date)} · Actualizado: {formatDateTime(purchase.updated_at)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
+                    </div>
+                  </div>
+                </Link>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
