@@ -28,6 +28,12 @@ export default async function AppLayout({
               Reformando
             </Link>
             <Link
+              href="/app"
+              className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            >
+              Panel
+            </Link>
+            <Link
               href="/app/projects"
               className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             >
