@@ -96,9 +96,9 @@ export default async function AppProjectTaskDetailPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Tarea</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver esta tarea.
           </p>
         </Card>
@@ -132,7 +132,7 @@ export default async function AppProjectTaskDetailPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -168,7 +168,7 @@ export default async function AppProjectTaskDetailPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/tasks`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a tareas
         </Link>
@@ -228,17 +228,17 @@ export default async function AppProjectTaskDetailPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}/tasks`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a tareas
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm text-[var(--text-tertiary)]">Obra</p>
+            <p className="text-sm text-content-tertiary">Obra</p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{row.title}</h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               {project.name}
             </p>
           </div>
@@ -250,32 +250,32 @@ export default async function AppProjectTaskDetailPage({
 
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Responsable</p>
-            <p className="mt-1 text-sm text-[var(--text-primary)]">{assigneeLabel}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">Responsable</p>
+            <p className="mt-1 text-sm text-content-primary">{assigneeLabel}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Fecha límite</p>
-            <p className="mt-1 text-sm text-[var(--text-primary)]">{formatDate(row.due_date)}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">Fecha límite</p>
+            <p className="mt-1 text-sm text-content-primary">{formatDate(row.due_date)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Actualizado</p>
-            <p className="mt-1 text-sm text-[var(--text-primary)]">{row.updated_at ? formatDateTime(row.updated_at) : "—"}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">Actualizado</p>
+            <p className="mt-1 text-sm text-content-primary">{row.updated_at ? formatDateTime(row.updated_at) : "—"}</p>
           </div>
         </div>
 
         {row.description ? (
           <div className="mt-6">
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Descripción</p>
-            <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--text-primary)]">{row.description}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">Descripción</p>
+            <p className="mt-2 whitespace-pre-wrap text-sm text-content-primary">{row.description}</p>
           </div>
         ) : null}
       </Card>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Comentarios</h2>
 
         {commentItems.length === 0 ? (
-          <p className="mt-4 text-sm text-[var(--text-secondary)]">Aún no hay comentarios.</p>
+          <p className="mt-4 text-sm text-content-secondary">Aún no hay comentarios.</p>
         ) : (
           <TaskCommentsClient projectId={projectId} taskId={taskId} comments={commentItems} />
         )}
@@ -285,7 +285,7 @@ export default async function AppProjectTaskDetailPage({
           <input type="hidden" name="taskId" value={taskId} />
 
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -305,7 +305,7 @@ export default async function AppProjectTaskDetailPage({
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <p className="text-xs text-[var(--text-tertiary)]">Solo visible para miembros de la organización.</p>
+            <p className="text-xs text-content-tertiary">Solo visible para miembros de la organización.</p>
             <button
               type="submit"
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"

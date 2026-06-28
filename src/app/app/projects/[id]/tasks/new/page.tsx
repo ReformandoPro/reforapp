@@ -26,11 +26,11 @@ export default async function NewProjectTaskPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Nueva tarea
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para crear una tarea.
           </p>
         </Card>
@@ -44,7 +44,7 @@ export default async function NewProjectTaskPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/tasks`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a tareas
         </Link>
@@ -70,7 +70,7 @@ export default async function NewProjectTaskPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -96,16 +96,16 @@ export default async function NewProjectTaskPage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}/tasks`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a tareas
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Nueva tarea · {project.name}
         </h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+        <p className="mt-2 text-sm text-content-secondary sm:text-base">
           Crea una tarea operativa para esta obra.
         </p>
 
@@ -113,7 +113,7 @@ export default async function NewProjectTaskPage({
           <input type="hidden" name="projectId" value={projectId} />
 
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -228,7 +228,7 @@ export default async function NewProjectTaskPage({
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-[var(--text-tertiary)]">
+            <p className="text-xs text-content-tertiary">
               La organización y la obra se validan en servidor.
             </p>
             <button
