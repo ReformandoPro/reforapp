@@ -20,7 +20,7 @@ function toneStyles(tone: ShowcaseTone) {
       return "border-[var(--danger-700)] bg-[var(--danger-900)] text-[var(--danger-100)]";
     case "neutral":
     default:
-      return "border-[var(--guild-border)] bg-[var(--guild-bg)] text-[var(--guild-text)]";
+      return "border-[var(--guild-chip-border)] bg-[var(--guild-chip-bg)] text-[var(--guild-chip-text)]";
   }
 }
 

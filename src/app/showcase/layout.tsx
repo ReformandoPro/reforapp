@@ -4,13 +4,14 @@ import { Inter, Space_Grotesk } from "next/font/google";
 
 import { cn } from "@/components/ui/cn";
 
+import "@/styles/showcase/tokens.css";
+import "@/styles/showcase/foundations.css";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-ui" });
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-num",
 });
-
-export const dynamic = "force-dynamic";
 
 export default function ShowcaseLayout({
   children,
@@ -18,7 +19,9 @@ export default function ShowcaseLayout({
   children: ReactNode;
 }) {
   return (
-    <div className={cn(inter.variable, spaceGrotesk.variable)}>{children}</div>
+    <div className={cn("showcaseScope", inter.variable, spaceGrotesk.variable)}>
+      {children}
+    </div>
   );
 }
 

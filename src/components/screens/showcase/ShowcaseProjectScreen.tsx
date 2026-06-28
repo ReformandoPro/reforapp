@@ -29,7 +29,7 @@ export function ShowcaseProjectScreen({
   variant,
 }: ShowcaseProjectScreenProps) {
   return (
-    <section className={styles.pageBg}>
+    <section className={`${styles.pageBg} showcasePage`}>
       <div className={styles.pageShell}>
         <div className={styles.root} data-variant={variant}>
           <ShowcaseHeaderBar
@@ -69,7 +69,7 @@ export function ShowcaseProjectScreen({
                 <div className={styles.sectionHeadRow}>
                   <p className={styles.sectionTitle}>{project.progress.label}</p>
                   <p className={styles.sectionValue}>
-                    <span className={styles.num}>{project.progress.value}%</span>
+                    <span className={`${styles.num} showcaseNum`}>{project.progress.value}%</span>
                   </p>
                 </div>
                 <ShowcaseProgressBar value={project.progress.value} />
@@ -94,21 +94,21 @@ export function ShowcaseProjectScreen({
                   <div className={styles.budgetRow}>
                     <p className={styles.budgetLabel}>Estimado</p>
                     <p className={styles.budgetValue}>
-                      <span className={styles.num}>{project.budget.estimated}</span>
+                      <span className={`${styles.num} showcaseNum`}>{project.budget.estimated}</span>
                     </p>
                   </div>
                   <ShowcaseDividerRow />
                   <div className={styles.budgetRow}>
                     <p className={styles.budgetLabel}>Gastado</p>
                     <p className={styles.budgetValue}>
-                      <span className={styles.num}>{project.budget.spent}</span>
+                      <span className={`${styles.num} showcaseNum`}>{project.budget.spent}</span>
                     </p>
                   </div>
                   <ShowcaseDividerRow />
                   <div className={styles.budgetRow}>
                     <p className={styles.budgetLabel}>Restante</p>
                     <p className={styles.budgetValue}>
-                      <span className={styles.num}>{project.budget.remaining}</span>
+                      <span className={`${styles.num} showcaseNum`}>{project.budget.remaining}</span>
                     </p>
                   </div>
                 </div>
