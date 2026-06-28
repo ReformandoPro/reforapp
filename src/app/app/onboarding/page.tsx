@@ -53,15 +53,15 @@ export default async function AppOnboardingPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver al panel
         </Link>
 
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Onboarding</h1>
-            <p className="text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="text-sm text-content-secondary sm:text-base">
               Tu empresa ya está configurada.
             </p>
           </div>
@@ -87,10 +87,10 @@ export default async function AppOnboardingPage({
         </Card>
 
         {canManageInvitations ? (
-          <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+          <Card className="p-6 shadow-none">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-semibold tracking-tight">Invitar equipo</h2>
-              <p className="text-sm text-[var(--text-secondary)]">
+              <p className="text-sm text-content-secondary">
                 Aún no enviamos emails automáticamente. Crea la invitación y (en el siguiente ticket) se podrá
                 aceptar desde un enlace.
               </p>
@@ -98,7 +98,7 @@ export default async function AppOnboardingPage({
 
             <form action={createInvitationAction} className="mt-6 space-y-6">
               {inviteError ? (
-                <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+                <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
                   {inviteError}
                 </p>
               ) : null}
@@ -145,14 +145,14 @@ export default async function AppOnboardingPage({
             </form>
 
             <div className="mt-8">
-              <h3 className="text-sm font-semibold text-[var(--text-secondary)]">Invitaciones</h3>
+              <h3 className="text-sm font-semibold text-content-secondary">Invitaciones</h3>
 
               {invitations.length === 0 ? (
-                <p className="mt-2 text-sm text-[var(--text-tertiary)]">Todavía no hay invitaciones.</p>
+                <p className="mt-2 text-sm text-content-tertiary">Todavía no hay invitaciones.</p>
               ) : (
-                <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+                <div className="mt-3 overflow-x-auto rounded-xl border border-subtle">
                   <table className="min-w-full text-left text-sm">
-                    <thead className="bg-[var(--bg-raised)] text-[var(--text-secondary)]">
+                    <thead className="bg-bg-raised text-content-secondary">
                       <tr>
                         <th className="px-3 py-2 font-medium">Email</th>
                         <th className="px-3 py-2 font-medium">Rol</th>
@@ -160,13 +160,13 @@ export default async function AppOnboardingPage({
                         <th className="px-3 py-2 font-medium">Expira</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--border-subtle)]">
+                    <tbody className="divide-y divide-subtle">
                       {invitations.map((inv) => (
-                        <tr key={inv.id} className="bg-[var(--bg-surface)]">
-                          <td className="px-3 py-2 text-[var(--text-primary)]">{inv.invitee_email}</td>
-                          <td className="px-3 py-2 text-[var(--text-secondary)]">{inv.invited_role}</td>
-                          <td className="px-3 py-2 text-[var(--text-secondary)]">{inv.status}</td>
-                          <td className="px-3 py-2 text-[var(--text-secondary)]">
+                        <tr key={inv.id} className="bg-bg-surface">
+                          <td className="px-3 py-2 text-content-primary">{inv.invitee_email}</td>
+                          <td className="px-3 py-2 text-content-secondary">{inv.invited_role}</td>
+                          <td className="px-3 py-2 text-content-secondary">{inv.status}</td>
+                          <td className="px-3 py-2 text-content-secondary">
                             {new Date(inv.expires_at).toLocaleString("es-ES", {
                               year: "numeric",
                               month: "2-digit",
@@ -203,24 +203,24 @@ export default async function AppOnboardingPage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href="/app"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al panel
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Configura tu empresa en Reformando
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Para usar la zona privada necesitas crear o unirte a una organización.
           </p>
         </div>
 
         <form action={createOrganizationAction} className="mt-6 space-y-6">
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -236,13 +236,13 @@ export default async function AppOnboardingPage({
               placeholder="Ej: Reformas García SL"
               className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             />
-            <p className="text-xs text-[var(--text-tertiary)]">
+            <p className="text-xs text-content-tertiary">
               Próximo paso: invitar equipo y crear tu primera obra.
             </p>
             <p className="mt-2 text-sm">
               <Link
                 href="/app/onboarding/first-project"
-                className="font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="font-medium text-content-secondary hover:text-content-primary"
               >
                 Ir al asistente para crear la primera obra
               </Link>

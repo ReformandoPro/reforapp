@@ -42,9 +42,9 @@ export default async function FirstProjectOnboardingPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Crear tu primera obra</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para continuar.
           </p>
           <div className="mt-4">
@@ -66,7 +66,7 @@ export default async function FirstProjectOnboardingPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app/onboarding"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver al onboarding
         </Link>
@@ -149,28 +149,28 @@ export default async function FirstProjectOnboardingPage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href="/app/onboarding"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al onboarding
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Crear tu primera obra</h1>
-          <p className="text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="text-sm text-content-secondary sm:text-base">
             Te guiamos con lo mínimo: datos de obra y cliente.
           </p>
         </div>
 
         {typeof projectsCount === "number" && projectsCount > 0 ? (
-          <p className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+          <p className="mt-4 rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
             Ya tienes obras creadas, pero puedes crear otra desde este asistente.
           </p>
         ) : null}
 
         <form action={createFirstProjectFromOnboardingAction} className="mt-6 space-y-6">
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -196,33 +196,33 @@ export default async function FirstProjectOnboardingPage({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-[var(--text-tertiary)]">
+              <p className="text-xs text-content-tertiary">
                 Si eliges una plantilla, se crearán fases y tareas base automáticamente.
               </p>
             </div>
 
-            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-4">
+            <div className="rounded-xl border border-subtle bg-bg-raised p-4">
               <p className="text-sm font-medium">Preview</p>
-              <ul className="mt-2 space-y-3 text-sm text-[var(--text-secondary)]">
+              <ul className="mt-2 space-y-3 text-sm text-content-secondary">
                 <li>
-                  <span className="font-medium text-[var(--text-primary)]">Sin plantilla</span>
-                  <div className="text-xs text-[var(--text-tertiary)]">
+                  <span className="font-medium text-content-primary">Sin plantilla</span>
+                  <div className="text-xs text-content-tertiary">
                     0 fases · 0 tareas
                   </div>
                 </li>
                 {templates.map((t) => (
                   <li key={t.id}>
-                    <div className="font-medium text-[var(--text-primary)]">{t.name}</div>
+                    <div className="font-medium text-content-primary">{t.name}</div>
                     {t.description ? (
-                      <div className="text-xs text-[var(--text-tertiary)]">{t.description}</div>
+                      <div className="text-xs text-content-tertiary">{t.description}</div>
                     ) : null}
-                    <div className="text-xs text-[var(--text-tertiary)]">
+                    <div className="text-xs text-content-tertiary">
                       {(phasesCountByTemplate.get(t.id) ?? 0).toString()} fases · {(tasksCountByTemplate.get(t.id) ?? 0).toString()} tareas
                     </div>
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs text-[var(--text-tertiary)]">
+              <p className="mt-3 text-xs text-content-tertiary">
                 Nota: el preview es informativo. La plantilla se aplica al enviar el formulario.
               </p>
             </div>
@@ -273,7 +273,7 @@ export default async function FirstProjectOnboardingPage({
             <h2 className="text-sm font-semibold">Cliente</h2>
 
             {clientsError ? (
-              <p className="text-sm text-[var(--text-secondary)]">
+              <p className="text-sm text-content-secondary">
                 No pudimos cargar clientes. Inténtalo de nuevo.
               </p>
             ) : null}
@@ -295,12 +295,12 @@ export default async function FirstProjectOnboardingPage({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-[var(--text-tertiary)]">
+              <p className="text-xs text-content-tertiary">
                 Debes seleccionar un cliente o crear uno nuevo.
               </p>
             </div>
 
-            <details className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-4">
+            <details className="rounded-xl border border-subtle bg-bg-raised p-4">
               <summary className="cursor-pointer text-sm font-medium">
                 Crear cliente rápido
               </summary>
@@ -350,7 +350,7 @@ export default async function FirstProjectOnboardingPage({
                   />
                 </div>
 
-                <p className="text-xs text-[var(--text-tertiary)]">
+                <p className="text-xs text-content-tertiary">
                   Este cliente se creará dentro de tu organización.
                 </p>
               </div>
