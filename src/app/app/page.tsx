@@ -28,12 +28,22 @@ export default async function AppDashboardPage() {
 
   const supabase = await createServerSupabaseClient();
 
-  const [projectsCount, openTasksCount, docsCount, progressLast, acceptedBudgets, costsRows, purchasesPending, purchaseItemsRows, phasesInProgress] =
+  const [activeProjectsCount, openTasksCount, docsCount, progressLast, acceptedBudgets, costsRows, purchasesPending, pendingPurchaseItemsRows, phasesInProgress] =
     await Promise.all([
       supabase
         .from("projects")
         .select("id", { count: "exact", head: true })
-        .eq("organization_id", ctx.organizationId),
+        .eq("organization_id", ctx.organizationId)
+        .in("status", [
+          "lead",
+          "budgeting",
+          "approved",
+          "scheduled",
+          "in_progress",
+          "paused",
+          "completed",
+          "delivered",
+        ]),
       supabase
         .from("project_tasks")
         .select("id", { count: "exact", head: true })
@@ -66,7 +76,16 @@ export default async function AppDashboardPage() {
         .in("status", ["planned", "ordered"]),
       supabase
         .from("project_purchase_items")
-        .select("quantity, unit_price, tax_rate")
+        .select(
+          `
+          quantity,
+          unit_price,
+          tax_rate,
+          purchase:project_purchases (
+            status
+          )
+        `
+        )
         .eq("organization_id", ctx.organizationId),
       supabase
         .from("project_phases")
@@ -82,14 +101,24 @@ export default async function AppDashboardPage() {
     }))
   );
 
+  const pendingPurchaseItems = (pendingPurchaseItemsRows.data ?? []) as Array<{
+    quantity: string | number;
+    unit_price: string | number;
+    tax_rate: string | number;
+    purchase: { status: string } | { status: string }[] | null;
+  }>;
+
   const purchasesTotals = computePurchaseTotals(
-    (purchaseItemsRows.data ?? []).map(
-      (r: { quantity: string | number; unit_price: string | number; tax_rate: string | number }) => ({
+    pendingPurchaseItems
+      .filter((r) => {
+        const purchase = Array.isArray(r.purchase) ? r.purchase[0] : r.purchase;
+        return purchase?.status === "planned" || purchase?.status === "ordered";
+      })
+      .map((r) => ({
         quantity: Number(r.quantity),
         unitPrice: Number(r.unit_price),
         taxRate: Number(r.tax_rate),
-      })
-    )
+      }))
   );
 
   function formatDateTime(value: string): string {
@@ -114,7 +143,7 @@ export default async function AppDashboardPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Badge tone="neutral">Obras: {projectsCount.count ?? 0}</Badge>
+            <Badge tone="neutral">Obras activas: {activeProjectsCount.count ?? 0}</Badge>
             <Badge tone="neutral">Tareas abiertas: {openTasksCount.count ?? 0}</Badge>
             <Badge tone="neutral">Docs: {docsCount.count ?? 0}</Badge>
           </div>
@@ -134,13 +163,10 @@ export default async function AppDashboardPage() {
               <span className="font-medium">{formatMoneyEUR(costsTotals.total)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-secondary)]">Compras (con IVA, total items)</span>
+              <span className="text-[var(--text-secondary)]">Compras pendientes (con IVA)</span>
               <span className="font-medium">{formatMoneyEUR(purchasesTotals.total)}</span>
             </div>
           </div>
-          <p className="mt-3 text-xs text-[var(--text-tertiary)]">
-            Nota: el total de compras suma líneas (no filtra por estado por ahora).
-          </p>
         </Card>
 
         <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
@@ -174,6 +200,12 @@ export default async function AppDashboardPage() {
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             Ver obras
+          </Link>
+          <Link
+            href="/app/clients"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            Ver clientes
           </Link>
           <Link
             href="/app/team"
