@@ -91,6 +91,8 @@ export default async function AppProjectDetailPage({
     );
   }
 
+  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("projects")
@@ -166,7 +168,8 @@ export default async function AppProjectDetailPage({
                 )}
               </div>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="grid gap-4 sm:grid-cols-2 flex-1">
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
                     Dirección
@@ -199,6 +202,18 @@ export default async function AppProjectDetailPage({
                     {formatUpdatedAt(row.updated_at)}
                   </p>
                 </div>
+                </div>
+
+                {canWrite ? (
+                  <div className="sm:pl-4">
+                    <Link
+                      href={`/app/projects/${id}/edit`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      Editar obra
+                    </Link>
+                  </div>
+                ) : null}
               </div>
             </Card>
           );
