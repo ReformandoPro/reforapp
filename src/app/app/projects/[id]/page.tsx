@@ -125,7 +125,7 @@ export default async function AppProjectDetailPage({
   const taskCounts =
     data && !error
       ? await (async () => {
-          const [total, pending, inProgress, blocked, done] = await Promise.all([
+          const [total, pending, inProgress, blocked, done, mine] = await Promise.all([
             supabase
               .from("project_tasks")
               .select("id", { count: "exact", head: true })
@@ -155,6 +155,12 @@ export default async function AppProjectDetailPage({
               .eq("organization_id", ctx.organizationId)
               .eq("project_id", id)
               .eq("status", "done"),
+            supabase
+              .from("project_tasks")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id)
+              .eq("assignee_user_id", ctx.user.id),
           ]);
 
           return {
@@ -163,6 +169,7 @@ export default async function AppProjectDetailPage({
             inProgress: inProgress.count ?? 0,
             blocked: blocked.count ?? 0,
             done: done.count ?? 0,
+            mine: mine.count ?? 0,
           };
         })()
       : null;
@@ -266,6 +273,11 @@ export default async function AppProjectDetailPage({
                           En curso: <span className="font-medium">{taskCounts.inProgress}</span> ·
                           Bloqueadas: <span className="font-medium">{taskCounts.blocked}</span> ·
                           Completadas: <span className="font-medium">{taskCounts.done}</span>
+                          {taskCounts.mine > 0 ? (
+                            <>
+                              {" "}· Mis tareas: <span className="font-medium">{taskCounts.mine}</span>
+                            </>
+                          ) : null}
                         </>
                       ) : (
                         "Resumen no disponible."

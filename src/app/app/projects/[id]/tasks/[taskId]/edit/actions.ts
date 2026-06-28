@@ -73,6 +73,9 @@ export async function updateProjectTask(formData: FormData) {
   const dueDateRaw = readOptionalText(formData, "due_date");
   const due_date = dueDateRaw;
 
+  const assigneeRaw = readOptionalText(formData, "assignee_user_id");
+  const assignee_user_id = assigneeRaw;
+
   const supabase = await createServerSupabaseClient();
 
   // Validate project belongs to org.
@@ -100,6 +103,20 @@ export async function updateProjectTask(formData: FormData) {
     backToEditWithError(projectId, taskId, "Tarea inválida para esta obra.");
   }
 
+  // Validate assignee belongs to org.
+  if (assignee_user_id) {
+    const { data: assigneeRow, error: assigneeError } = await supabase
+      .from("memberships")
+      .select("user_id")
+      .eq("organization_id", ctx.organizationId)
+      .eq("user_id", assignee_user_id)
+      .maybeSingle();
+
+    if (assigneeError || !assigneeRow) {
+      backToEditWithError(projectId, taskId, "Responsable inválido para tu organización.");
+    }
+  }
+
   const { error: updateError } = await supabase
     .from("project_tasks")
     .update({
@@ -108,6 +125,7 @@ export async function updateProjectTask(formData: FormData) {
       status,
       priority,
       due_date,
+      assignee_user_id,
     })
     .eq("organization_id", ctx.organizationId)
     .eq("project_id", projectId)

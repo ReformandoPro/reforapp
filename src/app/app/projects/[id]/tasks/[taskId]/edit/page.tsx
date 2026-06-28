@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { listOrganizationMembers } from "@/lib/services/org-members";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 import { updateProjectTask } from "./actions";
@@ -20,6 +21,7 @@ type TaskRow = {
   status: string;
   priority: string;
   due_date: string | null;
+  assignee_user_id: string | null;
 };
 
 export default async function EditProjectTaskPage({
@@ -65,6 +67,7 @@ export default async function EditProjectTaskPage({
   }
 
   const supabase = await createServerSupabaseClient();
+  const members = await listOrganizationMembers(ctx.organizationId);
 
   const { data: project } = await supabase
     .from("projects")
@@ -92,7 +95,7 @@ export default async function EditProjectTaskPage({
 
   const { data: task, error: taskError } = await supabase
     .from("project_tasks")
-    .select("id, title, description, status, priority, due_date")
+    .select("id, title, description, status, priority, due_date, assignee_user_id")
     .eq("organization_id", ctx.organizationId)
     .eq("project_id", projectId)
     .eq("id", taskId)
@@ -180,6 +183,25 @@ export default async function EditProjectTaskPage({
               defaultValue={row.description ?? ""}
               className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="assignee_user_id">
+              Responsable
+            </label>
+            <select
+              id="assignee_user_id"
+              name="assignee_user_id"
+              defaultValue={row.assignee_user_id ?? ""}
+              className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              <option value="">Sin asignar</option>
+              {members.map((member) => (
+                <option key={member.userId} value={member.userId}>
+                  {member.label} ({member.role})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

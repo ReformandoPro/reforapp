@@ -18,6 +18,7 @@ type TaskRow = {
   priority: TaskPriority;
   due_date: string | null;
   updated_at: string | null;
+  assignee_user_id: string | null;
 };
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -129,7 +130,7 @@ export default async function AppProjectTasksPage({
 
   const { data: tasks, error } = await supabase
     .from("project_tasks")
-    .select("id, title, status, priority, due_date, updated_at")
+    .select("id, title, status, priority, due_date, updated_at, assignee_user_id")
     .eq("organization_id", ctx.organizationId)
     .eq("project_id", projectId)
     .order("due_date", { ascending: true, nullsFirst: false })
@@ -212,6 +213,9 @@ export default async function AppProjectTasksPage({
                   <p className="text-base font-semibold tracking-tight">{task.title}</p>
                   <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                     Vence: {formatDate(task.due_date)}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                    Responsable: {task.assignee_user_id ?? "Sin asignar"}
                   </p>
                 </div>
 
