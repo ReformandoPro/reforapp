@@ -14,6 +14,23 @@ type ClientRow = {
   display_name: string;
 };
 
+type TemplateRow = {
+  id: string;
+  organization_id: string | null;
+  name: string;
+  description: string | null;
+  is_default: boolean;
+};
+
+type TemplatePhaseRow = {
+  id: string;
+  template_id: string;
+};
+
+type TemplateTaskRow = {
+  template_phase_id: string;
+};
+
 export default async function FirstProjectOnboardingPage({
   searchParams,
 }: {
@@ -77,6 +94,57 @@ export default async function FirstProjectOnboardingPage({
     .select("id", { count: "exact", head: true })
     .eq("organization_id", ctx.organizationId);
 
+  const { data: templatesRaw } = await supabase
+    .from("project_templates")
+    .select("id, organization_id, name, description, is_default")
+    .or(`organization_id.is.null,organization_id.eq.${ctx.organizationId}`)
+    .order("is_default", { ascending: false })
+    .order("name", { ascending: true });
+
+  const templates = ((templatesRaw ?? []) as TemplateRow[]) ?? [];
+
+  const templateIds = templates.map((t) => t.id);
+
+  let phases: TemplatePhaseRow[] = [];
+  if (templateIds.length > 0) {
+    const { data: phasesRaw } = await supabase
+      .from("project_template_phases")
+      .select("id, template_id")
+      .in("template_id", templateIds);
+    phases = ((phasesRaw ?? []) as TemplatePhaseRow[]) ?? [];
+  }
+
+  const phaseIds = phases.map((p) => p.id);
+
+  let tasks: TemplateTaskRow[] = [];
+  if (phaseIds.length > 0) {
+    const { data: tasksRaw } = await supabase
+      .from("project_template_tasks")
+      .select("template_phase_id")
+      .in("template_phase_id", phaseIds);
+    tasks = ((tasksRaw ?? []) as TemplateTaskRow[]) ?? [];
+  }
+
+  const phasesCountByTemplate = new Map<string, number>();
+  for (const p of phases) {
+    phasesCountByTemplate.set(p.template_id, (phasesCountByTemplate.get(p.template_id) ?? 0) + 1);
+  }
+
+  const phaseToTemplate = new Map<string, string>();
+  for (const p of phases) {
+    phaseToTemplate.set(p.id, p.template_id);
+  }
+
+  const tasksCountByTemplate = new Map<string, number>();
+  for (const t of tasks) {
+    const tid = phaseToTemplate.get(t.template_phase_id);
+    if (tid) {
+      tasksCountByTemplate.set(tid, (tasksCountByTemplate.get(tid) ?? 0) + 1);
+    }
+  }
+
+  const defaultTemplateId = templates.find((t) => t.is_default)?.id ?? "";
+
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
@@ -106,6 +174,59 @@ export default async function FirstProjectOnboardingPage({
               {error}
             </p>
           ) : null}
+
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold">Plantilla inicial</h2>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium" htmlFor="templateId">
+                Plantilla
+              </label>
+              <select
+                id="templateId"
+                name="templateId"
+                className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                defaultValue={defaultTemplateId || "none"}
+              >
+                <option value="none">Sin plantilla</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.is_default ? " (recomendada)" : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-[var(--text-tertiary)]">
+                Si eliges una plantilla, se crearán fases y tareas base automáticamente.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-4">
+              <p className="text-sm font-medium">Preview</p>
+              <ul className="mt-2 space-y-3 text-sm text-[var(--text-secondary)]">
+                <li>
+                  <span className="font-medium text-[var(--text-primary)]">Sin plantilla</span>
+                  <div className="text-xs text-[var(--text-tertiary)]">
+                    0 fases · 0 tareas
+                  </div>
+                </li>
+                {templates.map((t) => (
+                  <li key={t.id}>
+                    <div className="font-medium text-[var(--text-primary)]">{t.name}</div>
+                    {t.description ? (
+                      <div className="text-xs text-[var(--text-tertiary)]">{t.description}</div>
+                    ) : null}
+                    <div className="text-xs text-[var(--text-tertiary)]">
+                      {(phasesCountByTemplate.get(t.id) ?? 0).toString()} fases · {(tasksCountByTemplate.get(t.id) ?? 0).toString()} tareas
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-[var(--text-tertiary)]">
+                Nota: el preview es informativo. La plantilla se aplica al enviar el formulario.
+              </p>
+            </div>
+          </div>
 
           <div className="space-y-3">
             <h2 className="text-sm font-semibold">Datos de obra</h2>

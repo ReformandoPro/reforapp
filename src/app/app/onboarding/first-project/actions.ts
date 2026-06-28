@@ -26,6 +26,28 @@ function readOptionalText(formData: FormData, key: string) {
   return value.length > 0 ? value : null;
 }
 
+type TemplateRow = {
+  id: string;
+  organization_id: string | null;
+};
+
+type TemplatePhaseRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  default_status: "planned" | "in_progress" | "done" | "blocked" | "cancelled";
+};
+
+type TemplateTaskRow = {
+  template_phase_id: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  default_status: "pending" | "in_progress" | "done" | "blocked";
+  default_priority: "low" | "medium" | "high" | "urgent";
+};
+
 export async function createFirstProjectFromOnboardingAction(formData: FormData) {
   const ctx = await getOrganizationContextForRequest();
 
@@ -46,6 +68,9 @@ export async function createFirstProjectFromOnboardingAction(formData: FormData)
   if (!isProjectStatus(statusRaw)) {
     backToWizardWithError("Estado inválido.");
   }
+
+  const templateChoiceRaw = String(formData.get("templateId") ?? "").trim();
+  const templateId = templateChoiceRaw === "none" || templateChoiceRaw === "" ? null : templateChoiceRaw;
 
   const quickClientEnabled = String(formData.get("quickClientEnabled") ?? "") === "on";
 
@@ -115,6 +140,117 @@ export async function createFirstProjectFromOnboardingAction(formData: FormData)
 
   if (projectError) {
     backToWizardWithError("No pudimos crear la obra. Revisa los datos e inténtalo de nuevo.");
+  }
+
+  if (templateId) {
+    // Validate template visibility (global or same org).
+    const { data: templateRow, error: templateError } = await supabase
+      .from("project_templates")
+      .select("id, organization_id")
+      .eq("id", templateId)
+      .maybeSingle();
+
+    const template = templateRow as TemplateRow | null;
+
+    if (templateError || !template) {
+      backToWizardWithError("Plantilla inválida.");
+    }
+
+    const visible = template.organization_id === null || template.organization_id === ctx.organizationId;
+    if (!visible) {
+      backToWizardWithError("No tienes acceso a esa plantilla.");
+    }
+
+    // Load template phases.
+    const { data: templatePhases, error: phasesError } = await supabase
+      .from("project_template_phases")
+      .select("id, title, description, sort_order, default_status")
+      .eq("template_id", templateId)
+      .order("sort_order", { ascending: true });
+
+    if (phasesError) {
+      backToWizardWithError("No pudimos cargar la plantilla. Inténtalo de nuevo.");
+    }
+
+    const phaseRows = (templatePhases ?? []) as TemplatePhaseRow[];
+
+    // Insert project phases and keep mapping template_phase_id -> project_phase_id.
+    const { data: insertedPhases, error: insertPhasesError } = await supabase
+      .from("project_phases")
+      .insert(
+        phaseRows.map((p) => ({
+          organization_id: ctx.organizationId,
+          project_id: projectId,
+          title: p.title,
+          description: p.description,
+          sort_order: p.sort_order,
+          status: p.default_status,
+        }))
+      )
+      .select("id, title, sort_order");
+
+    if (insertPhasesError) {
+      backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (fases)." );
+    }
+
+    const insertedPhaseRows =
+      ((insertedPhases ?? []) as Array<{ id: string; title: string; sort_order: number }>) ?? [];
+
+    // Build mapping based on sort_order + title (stable in our seed).
+    const phaseMap = new Map<string, string>();
+    for (const tp of phaseRows) {
+      const match = insertedPhaseRows.find((ip) => ip.sort_order === tp.sort_order && ip.title === tp.title);
+      if (match) {
+        phaseMap.set(tp.id, match.id);
+      }
+    }
+
+    if (phaseMap.size !== phaseRows.length) {
+      // Best-effort cleanup (avoid leaving partial structure)
+      const insertedIds = insertedPhaseRows.map((p) => p.id);
+      await supabase.from("project_phases").delete().in("id", insertedIds);
+      backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (mapeo de fases)." );
+    }
+
+    // Load template tasks for these phases.
+    const templatePhaseIds = phaseRows.map((p) => p.id);
+    const { data: templateTasks, error: tasksError } = await supabase
+      .from("project_template_tasks")
+      .select("template_phase_id, title, description, sort_order, default_status, default_priority")
+      .in("template_phase_id", templatePhaseIds)
+      .order("sort_order", { ascending: true });
+
+    if (tasksError) {
+      // Best-effort cleanup
+      const insertedIds = insertedPhaseRows.map((p) => p.id);
+      await supabase.from("project_phases").delete().in("id", insertedIds);
+      backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (tareas)." );
+    }
+
+    const taskRows = (templateTasks ?? []) as TemplateTaskRow[];
+
+    if (taskRows.length > 0) {
+      const { error: insertTasksError } = await supabase.from("project_tasks").insert(
+        taskRows.map((t) => ({
+          organization_id: ctx.organizationId,
+          project_id: projectId,
+          title: t.title,
+          description: t.description,
+          status: t.default_status,
+          priority: t.default_priority,
+          phase_id: phaseMap.get(t.template_phase_id) ?? null,
+        }))
+      );
+
+      if (insertTasksError) {
+        // Best-effort cleanup: remove phases (tasks will set null on delete due FK set null,
+        // but we want no partial structure). Deleting phases first will null task phase_id,
+        // so also delete tasks we just created by project.
+        await supabase.from("project_tasks").delete().eq("project_id", projectId);
+        await supabase.from("project_phases").delete().eq("project_id", projectId);
+        backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (insertar tareas)." );
+      }
+    }
   }
 
   redirect(`/app/projects/${projectId}?createdFromOnboarding=1`);
