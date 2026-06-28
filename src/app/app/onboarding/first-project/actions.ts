@@ -13,6 +13,13 @@ function backToWizardWithError(message: string): never {
   redirect(url.pathname + url.search);
 }
 
+function redirectToProjectWithWarning(projectId: string, warning: string): never {
+  const url = new URL(`/app/projects/${projectId}`, "http://local");
+  url.searchParams.set("createdFromOnboarding", "1");
+  url.searchParams.set("templateWarning", warning);
+  redirect(url.pathname + url.search);
+}
+
 function readRequiredText(formData: FormData, key: string, label: string) {
   const value = String(formData.get(key) ?? "").trim();
   if (!value) {
@@ -174,42 +181,35 @@ export async function createFirstProjectFromOnboardingAction(formData: FormData)
 
     const phaseRows = (templatePhases ?? []) as TemplatePhaseRow[];
 
-    // Insert project phases and keep mapping template_phase_id -> project_phase_id.
-    const { data: insertedPhases, error: insertPhasesError } = await supabase
-      .from("project_phases")
-      .insert(
-        phaseRows.map((p) => ({
+    // Insert project phases one-by-one to keep an exact mapping template_phase_id -> project_phase_id.
+    const phaseMap = new Map<string, string>();
+    const insertedProjectPhaseIds: string[] = [];
+
+    for (const p of phaseRows) {
+      const { data: insertedPhase, error: insertPhaseError } = await supabase
+        .from("project_phases")
+        .insert({
           organization_id: ctx.organizationId,
           project_id: projectId,
           title: p.title,
           description: p.description,
           sort_order: p.sort_order,
           status: p.default_status,
-        }))
-      )
-      .select("id, title, sort_order");
+        })
+        .select("id")
+        .single();
 
-    if (insertPhasesError) {
-      backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (fases)." );
-    }
+      const insertedId = insertedPhase?.id as string | undefined;
 
-    const insertedPhaseRows =
-      ((insertedPhases ?? []) as Array<{ id: string; title: string; sort_order: number }>) ?? [];
-
-    // Build mapping based on sort_order + title (stable in our seed).
-    const phaseMap = new Map<string, string>();
-    for (const tp of phaseRows) {
-      const match = insertedPhaseRows.find((ip) => ip.sort_order === tp.sort_order && ip.title === tp.title);
-      if (match) {
-        phaseMap.set(tp.id, match.id);
+      if (insertPhaseError || !insertedId) {
+        if (insertedProjectPhaseIds.length > 0) {
+          await supabase.from("project_phases").delete().in("id", insertedProjectPhaseIds);
+        }
+        redirectToProjectWithWarning(projectId, "phases_failed");
       }
-    }
 
-    if (phaseMap.size !== phaseRows.length) {
-      // Best-effort cleanup (avoid leaving partial structure)
-      const insertedIds = insertedPhaseRows.map((p) => p.id);
-      await supabase.from("project_phases").delete().in("id", insertedIds);
-      backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (mapeo de fases)." );
+      insertedProjectPhaseIds.push(insertedId);
+      phaseMap.set(p.id, insertedId);
     }
 
     // Load template tasks for these phases.
@@ -221,34 +221,52 @@ export async function createFirstProjectFromOnboardingAction(formData: FormData)
       .order("sort_order", { ascending: true });
 
     if (tasksError) {
-      // Best-effort cleanup
-      const insertedIds = insertedPhaseRows.map((p) => p.id);
-      await supabase.from("project_phases").delete().in("id", insertedIds);
-      backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (tareas)." );
+      // Best-effort cleanup: remove inserted phases for this project.
+      const insertedIds = Array.from(phaseMap.values());
+      if (insertedIds.length > 0) {
+        await supabase.from("project_phases").delete().in("id", insertedIds);
+      }
+      redirectToProjectWithWarning(projectId, "tasks_load_failed");
     }
 
     const taskRows = (templateTasks ?? []) as TemplateTaskRow[];
 
     if (taskRows.length > 0) {
-      const { error: insertTasksError } = await supabase.from("project_tasks").insert(
-        taskRows.map((t) => ({
-          organization_id: ctx.organizationId,
-          project_id: projectId,
-          title: t.title,
-          description: t.description,
-          status: t.default_status,
-          priority: t.default_priority,
-          phase_id: phaseMap.get(t.template_phase_id) ?? null,
-        }))
-      );
+      const insertedProjectTaskIds: string[] = [];
 
-      if (insertTasksError) {
-        // Best-effort cleanup: remove phases (tasks will set null on delete due FK set null,
-        // but we want no partial structure). Deleting phases first will null task phase_id,
-        // so also delete tasks we just created by project.
-        await supabase.from("project_tasks").delete().eq("project_id", projectId);
-        await supabase.from("project_phases").delete().eq("project_id", projectId);
-        backToWizardWithError("La obra se creó, pero no pudimos aplicar la plantilla (insertar tareas)." );
+      for (const t of taskRows) {
+        const phaseId = phaseMap.get(t.template_phase_id) ?? null;
+
+        const { data: insertedTask, error: insertTaskError } = await supabase
+          .from("project_tasks")
+          .insert({
+            organization_id: ctx.organizationId,
+            project_id: projectId,
+            title: t.title,
+            description: t.description,
+            status: t.default_status,
+            priority: t.default_priority,
+            phase_id: phaseId,
+          })
+          .select("id")
+          .single();
+
+        const insertedTaskId = insertedTask?.id as string | undefined;
+
+        if (insertTaskError || !insertedTaskId) {
+          if (insertedProjectTaskIds.length > 0) {
+            await supabase.from("project_tasks").delete().in("id", insertedProjectTaskIds);
+          }
+
+          const insertedPhaseIds = Array.from(phaseMap.values());
+          if (insertedPhaseIds.length > 0) {
+            await supabase.from("project_phases").delete().in("id", insertedPhaseIds);
+          }
+
+          redirectToProjectWithWarning(projectId, "tasks_insert_failed");
+        }
+
+        insertedProjectTaskIds.push(insertedTaskId);
       }
     }
   }
