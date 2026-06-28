@@ -41,9 +41,9 @@ export default async function EditBudgetPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Editar presupuesto</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para editar un presupuesto.
           </p>
         </Card>
@@ -57,7 +57,7 @@ export default async function EditBudgetPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/budgets/${budgetId}`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver al presupuesto
         </Link>
@@ -80,7 +80,7 @@ export default async function EditBudgetPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -105,7 +105,7 @@ export default async function EditBudgetPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/budgets`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a presupuestos
         </Link>
@@ -143,12 +143,12 @@ export default async function EditBudgetPage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}/budgets/${budgetId}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al presupuesto
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Editar presupuesto · {project.name}
         </h1>
@@ -158,7 +158,7 @@ export default async function EditBudgetPage({
           <input type="hidden" name="budgetId" value={budgetId} />
 
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -172,7 +172,7 @@ export default async function EditBudgetPage({
           />
 
           <div className="flex items-center justify-between gap-4">
-            <p className="text-xs text-[var(--text-tertiary)]">
+            <p className="text-xs text-content-tertiary">
               La organización y la obra se validan en servidor.
             </p>
             <button
