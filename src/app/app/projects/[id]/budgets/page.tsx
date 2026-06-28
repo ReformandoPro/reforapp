@@ -50,9 +50,9 @@ export default async function AppProjectBudgetsPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Presupuestos</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver presupuestos.
           </p>
         </Card>
@@ -75,7 +75,7 @@ export default async function AppProjectBudgetsPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -129,18 +129,18 @@ export default async function AppProjectBudgetsPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a la obra
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Presupuestos · {project.name}
             </h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Presupuestos básicos con líneas e IVA.
             </p>
           </div>
@@ -183,16 +183,16 @@ export default async function AppProjectBudgetsPage({
             return (
               <Card
                 key={budget.id}
-                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+                className="p-0 shadow-none"
               >
                 <Link
                   href={`/app/projects/${projectId}/budgets/${budget.id}`}
-                  className="block p-5 hover:bg-[var(--bg-raised)]"
+                  className="block p-5 hover:bg-bg-raised"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-base font-semibold tracking-tight">{budget.title}</p>
-                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      <p className="mt-1 text-sm text-content-secondary">
                         {statusLabel} · Actualizado: {formatDateTime(budget.updated_at)}
                       </p>
                     </div>
