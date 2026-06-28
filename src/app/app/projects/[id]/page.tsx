@@ -112,6 +112,51 @@ export default async function AppProjectDetailPage({
     .eq("id", id)
     .maybeSingle();
 
+  const taskCounts =
+    data && !error
+      ? await (async () => {
+          const [total, pending, inProgress, blocked, done] = await Promise.all([
+            supabase
+              .from("project_tasks")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id),
+            supabase
+              .from("project_tasks")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id)
+              .eq("status", "pending"),
+            supabase
+              .from("project_tasks")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id)
+              .eq("status", "in_progress"),
+            supabase
+              .from("project_tasks")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id)
+              .eq("status", "blocked"),
+            supabase
+              .from("project_tasks")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id)
+              .eq("status", "done"),
+          ]);
+
+          return {
+            total: total.count ?? 0,
+            pending: pending.count ?? 0,
+            inProgress: inProgress.count ?? 0,
+            blocked: blocked.count ?? 0,
+            done: done.count ?? 0,
+          };
+        })()
+      : null;
+
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
@@ -148,59 +193,101 @@ export default async function AppProjectDetailPage({
           const joinedClient = normalizeJoinedClient(row.client);
           const status = isProjectStatus(row.status) ? row.status : null;
 
-          return (
-            <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    {row.name}
-                  </h1>
-                  <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
-                    Cliente: {joinedClient?.display_name ?? "—"}
-                  </p>
-                </div>
-                {status ? (
-                  <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
-                ) : (
-                  <Badge tone="neutral">Estado inválido</Badge>
-                )}
-              </div>
+          const canWrite = ctx.role === "owner" || ctx.role === "admin";
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Dirección
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--text-primary)]">
-                    {row.address}
-                  </p>
+          return (
+            <>
+              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                      {row.name}
+                    </h1>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+                      Cliente: {joinedClient?.display_name ?? "—"}
+                    </p>
+                  </div>
+                  {status ? (
+                    <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
+                  ) : (
+                    <Badge tone="neutral">Estado inválido</Badge>
+                  )}
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Tipo
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--text-primary)]">
-                    {row.type}
-                  </p>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Dirección
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--text-primary)]">{row.address}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Tipo
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--text-primary)]">{row.type}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Progreso
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--text-primary)]">{row.progress}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Actualizado
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--text-primary)]">
+                      {formatUpdatedAt(row.updated_at)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Progreso
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--text-primary)]">
-                    {row.progress}
-                  </p>
+              </Card>
+
+              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight">Tareas</h2>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                      {taskCounts ? (
+                        <>
+                          Total: <span className="font-medium">{taskCounts.total}</span> ·
+                          Pendientes: <span className="font-medium">{taskCounts.pending}</span> ·
+                          En curso: <span className="font-medium">{taskCounts.inProgress}</span> ·
+                          Bloqueadas: <span className="font-medium">{taskCounts.blocked}</span> ·
+                          Completadas: <span className="font-medium">{taskCounts.done}</span>
+                        </>
+                      ) : (
+                        "Resumen no disponible."
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <Link
+                      href={`/app/projects/${id}/tasks`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      Ver tareas
+                    </Link>
+                    {canWrite ? (
+                      <Link
+                        href={`/app/projects/${id}/tasks/new`}
+                        className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                      >
+                        Nueva tarea
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                    Actualizado
+
+                {taskCounts && taskCounts.total === 0 ? (
+                  <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                    Aún no hay tareas para esta obra.
                   </p>
-                  <p className="mt-1 text-sm text-[var(--text-primary)]">
-                    {formatUpdatedAt(row.updated_at)}
-                  </p>
-                </div>
-              </div>
-            </Card>
+                ) : null}
+              </Card>
+            </>
           );
         })()}
     </section>
