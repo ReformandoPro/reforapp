@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
@@ -65,6 +67,13 @@ export default async function AppProfilePage({
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+      <Link
+        href="/app"
+        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+      >
+        ← Volver al panel
+      </Link>
+
       <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Mi perfil</h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">

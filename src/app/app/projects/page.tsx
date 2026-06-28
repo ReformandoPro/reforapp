@@ -125,14 +125,21 @@ export default async function AppProjectsPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <Link
+        href="/app"
+        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+      >
+        ← Volver al panel
+      </Link>
+
       <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-2xl">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Obras (privado)
+              Obras
             </h1>
             <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
-              Listado real de tu organización. (RLS + memberships)
+              Listado de obras de tu organización.
             </p>
           </div>
 

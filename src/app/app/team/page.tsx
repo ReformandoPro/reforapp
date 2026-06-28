@@ -31,10 +31,10 @@ export default async function AppTeamPage() {
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div className="flex flex-col gap-3">
         <Link
-          href="/app/projects"
+          href="/app"
           className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         >
-          ← Volver a obras
+          ← Volver al panel
         </Link>
 
         <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
