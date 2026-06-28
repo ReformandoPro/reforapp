@@ -8,6 +8,7 @@ import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 import { addTaskCommentAction } from "./actions";
+import { TaskCommentsClient, type TaskCommentListItem } from "./TaskCommentsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -204,6 +205,21 @@ export default async function AppProjectTaskDetailPage({
   const row = task as unknown as TaskRow;
   const commentRows = (comments ?? []) as CommentRow[];
 
+  const commentItems: TaskCommentListItem[] = commentRows.map((comment) => {
+    const authorLabel = labelByUserId.get(comment.author_user_id) ?? comment.author_user_id;
+    const canManage =
+      comment.author_user_id === ctx.user.id || ctx.role === "owner" || ctx.role === "admin";
+
+    return {
+      id: comment.id,
+      authorLabel,
+      authorUserId: comment.author_user_id,
+      createdAtLabel: formatDateTime(comment.created_at),
+      body: comment.body,
+      canManage,
+    };
+  });
+
   const assigneeLabel = row.assignee_user_id
     ? labelByUserId.get(row.assignee_user_id) ?? row.assignee_user_id
     : "Sin asignar";
@@ -258,26 +274,10 @@ export default async function AppProjectTaskDetailPage({
       <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Comentarios</h2>
 
-        {commentRows.length === 0 ? (
+        {commentItems.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--text-secondary)]">Aún no hay comentarios.</p>
         ) : (
-          <div className="mt-4 grid gap-3">
-            {commentRows.map((comment) => {
-              const authorLabel = labelByUserId.get(comment.author_user_id) ?? comment.author_user_id;
-              return (
-                <div
-                  key={comment.id}
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-4 py-3"
-                >
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-medium text-[var(--text-primary)]">{authorLabel}</p>
-                    <p className="text-xs text-[var(--text-tertiary)]">{formatDateTime(comment.created_at)}</p>
-                  </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--text-primary)]">{comment.body}</p>
-                </div>
-              );
-            })}
-          </div>
+          <TaskCommentsClient projectId={projectId} taskId={taskId} comments={commentItems} />
         )}
 
         <form action={addTaskCommentAction} className="mt-6 space-y-4">
