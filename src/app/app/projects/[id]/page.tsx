@@ -125,7 +125,7 @@ export default async function AppProjectDetailPage({
   const taskCounts =
     data && !error
       ? await (async () => {
-          const [total, pending, inProgress, blocked, done, mine] = await Promise.all([
+          const [total, pending, inProgress, blocked, done, mine, documents] = await Promise.all([
             supabase
               .from("project_tasks")
               .select("id", { count: "exact", head: true })
@@ -161,6 +161,11 @@ export default async function AppProjectDetailPage({
               .eq("organization_id", ctx.organizationId)
               .eq("project_id", id)
               .eq("assignee_user_id", ctx.user.id),
+            supabase
+              .from("project_documents")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id),
           ]);
 
           return {
@@ -170,6 +175,7 @@ export default async function AppProjectDetailPage({
             blocked: blocked.count ?? 0,
             done: done.count ?? 0,
             mine: mine.count ?? 0,
+            documents: documents.count ?? 0,
           };
         })()
       : null;
@@ -306,6 +312,38 @@ export default async function AppProjectDetailPage({
                 {taskCounts && taskCounts.total === 0 ? (
                   <p className="mt-4 text-sm text-[var(--text-secondary)]">
                     Aún no hay tareas para esta obra.
+                  </p>
+                ) : null}
+              </Card>
+
+              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight">Documentos</h2>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                      {taskCounts ? (
+                        <>
+                          Total: <span className="font-medium">{taskCounts.documents}</span>
+                        </>
+                      ) : (
+                        "Resumen no disponible."
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <Link
+                      href={`/app/projects/${id}/documents`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      Ver documentos
+                    </Link>
+                  </div>
+                </div>
+
+                {taskCounts && taskCounts.documents === 0 ? (
+                  <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                    Aún no hay documentos para esta obra.
                   </p>
                 ) : null}
               </Card>
