@@ -47,9 +47,9 @@ export default async function ClientDetailPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Cliente</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver este cliente.
           </p>
         </Card>
@@ -80,7 +80,7 @@ export default async function ClientDetailPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/clients"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a clientes
         </Link>
@@ -106,26 +106,26 @@ export default async function ClientDetailPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/app/clients"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a clientes
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{row.display_name}</h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               {row.email ? `Email: ${row.email}` : ""}
               {row.email && row.phone ? " · " : ""}
               {row.phone ? `Tel: ${row.phone}` : ""}
               {!row.email && !row.phone ? "—" : ""}
             </p>
             {row.address ? (
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">Dirección: {row.address}</p>
+              <p className="mt-2 text-sm text-content-secondary">Dirección: {row.address}</p>
             ) : null}
             {row.notes ? (
-              <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--text-primary)]">{row.notes}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm text-content-primary">{row.notes}</p>
             ) : null}
           </div>
 
@@ -151,26 +151,26 @@ export default async function ClientDetailPage({
         </div>
       </Card>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Obras asociadas</h2>
 
         {projectRows.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--text-secondary)]">Este cliente no tiene obras todavía.</p>
+          <p className="mt-3 text-sm text-content-secondary">Este cliente no tiene obras todavía.</p>
         ) : (
           <div className="mt-4 grid gap-3">
             {projectRows.map((p) => (
               <Card
                 key={p.id}
-                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+                className="p-0 shadow-none"
               >
                 <Link
                   href={`/app/projects/${p.id}`}
-                  className="block p-5 hover:bg-[var(--bg-raised)]"
+                  className="block p-5 hover:bg-bg-raised"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-base font-semibold tracking-tight">{p.name}</p>
-                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      <p className="mt-1 text-sm text-content-secondary">
                         Estado: {p.status} · Actualizado: {formatUpdatedAt(p.updated_at)}
                       </p>
                     </div>
