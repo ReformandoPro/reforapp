@@ -30,10 +30,15 @@ type ProjectRow = {
 };
 
 const statusLabels: Record<ProjectStatus, string> = {
+  lead: "Lead",
+  budgeting: "Presupuestando",
+  approved: "Aprobada",
   scheduled: "Planificado",
   in_progress: "En curso",
-  on_hold: "En pausa",
+  paused: "En pausa",
   completed: "Completado",
+  delivered: "Entregada",
+  closed: "Cerrada",
   cancelled: "Cancelado",
 };
 

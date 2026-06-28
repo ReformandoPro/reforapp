@@ -143,22 +143,23 @@ export default async function AppProjectsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            disabled={!canCreate}
-            className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-              canCreate
-                ? "bg-primary-500 text-white hover:bg-primary-600"
-                : "border border-subtle bg-bg-surface text-content-secondary opacity-70"
-            }`}
-            title={
-              canCreate
-                ? "Próximamente"
-                : "No tienes permisos para crear obras"
-            }
-          >
-            Nueva obra (próximamente)
-          </button>
+          {canCreate ? (
+            <Link
+              href="/app/projects/new"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              Nueva obra
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-secondary opacity-70"
+              title="No tienes permisos para crear obras"
+            >
+              Nueva obra
+            </button>
+          )}
         </div>
       </Card>
 

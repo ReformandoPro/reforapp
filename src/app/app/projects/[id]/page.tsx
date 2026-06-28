@@ -334,11 +334,22 @@ export default async function AppProjectDetailPage({
                       Cliente: {joinedClient?.display_name ?? "—"}
                     </p>
                   </div>
-                  {status ? (
-                    <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
-                  ) : (
-                    <Badge tone="neutral">Estado inválido</Badge>
-                  )}
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    {status ? (
+                      <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
+                    ) : (
+                      <Badge tone="neutral">Estado inválido</Badge>
+                    )}
+
+                    {canWrite ? (
+                      <Link
+                        href={`/app/projects/${id}/edit`}
+                        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                      >
+                        Editar obra
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
