@@ -33,8 +33,24 @@ export default async function AppDashboardPage() {
 
   const supabase = await createServerSupabaseClient();
 
-  const [activeProjectsCount, openTasksCount, docsCount, progressLast, acceptedBudgets, costsRows, purchasesPending, pendingPurchaseItemsRows, phasesInProgress] =
-    await Promise.all([
+  const [
+    activeProjectsCount,
+    openTasksCount,
+    docsCount,
+    progressLast,
+    acceptedBudgets,
+    costsRows,
+    purchasesPending,
+    pendingPurchaseItemsRows,
+    phasesInProgress,
+    profileRow,
+    membersCount,
+    invitationsCount,
+    projectsTotal,
+    latestProjectRow,
+    phasesTotal,
+    tasksTotal,
+  ] = await Promise.all([
       supabase
         .from("projects")
         .select("id", { count: "exact", head: true })
@@ -97,6 +113,38 @@ export default async function AppDashboardPage() {
         .select("id", { count: "exact", head: true })
         .eq("organization_id", ctx.organizationId)
         .eq("status", "in_progress"),
+      supabase
+        .from("profiles")
+        .select("user_id, display_name, phone")
+        .eq("user_id", ctx.user.id)
+        .maybeSingle(),
+      supabase
+        .from("memberships")
+        .select("user_id", { count: "exact", head: true })
+        .eq("organization_id", ctx.organizationId),
+      supabase
+        .from("organization_invitations")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", ctx.organizationId),
+      supabase
+        .from("projects")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", ctx.organizationId),
+      supabase
+        .from("projects")
+        .select("id")
+        .eq("organization_id", ctx.organizationId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("project_phases")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", ctx.organizationId),
+      supabase
+        .from("project_tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", ctx.organizationId),
     ]);
 
   const costsTotals = computeCostTotals(
@@ -137,6 +185,80 @@ export default async function AppDashboardPage() {
     }
   }
 
+  const onboarding = (() => {
+    type ProfileData = { display_name: string | null; phone: string | null };
+    type LatestProjectData = { id: string };
+
+    const empresaCreada = true; // by reaching /app, ctx.ok implies membership/org exists
+
+    const profileData = (profileRow.data ?? null) as ProfileData | null;
+    const displayName = String(profileData?.display_name ?? "").trim();
+    const phone = String(profileData?.phone ?? "").trim();
+    const perfilCompletado = displayName.length > 0 && phone.length > 0;
+
+    const primerMiembroInvitado = (invitationsCount.count ?? 0) > 0 || (membersCount.count ?? 0) > 1;
+
+    const primeraObraCreada = (projectsTotal.count ?? 0) > 0;
+
+    const plantillaAplicada = (phasesTotal.count ?? 0) > 0;
+
+    const primeraTareaCreada = (tasksTotal.count ?? 0) > 0;
+
+    const latestProjectId = ((latestProjectRow.data ?? null) as LatestProjectData | null)?.id;
+
+    const checklist = [
+      {
+        key: "empresa",
+        label: "Empresa creada",
+        done: empresaCreada,
+        ctaLabel: null as string | null,
+        ctaHref: null as string | null,
+      },
+      {
+        key: "perfil",
+        label: "Perfil completado",
+        done: perfilCompletado,
+        ctaLabel: "Completar perfil",
+        ctaHref: "/app/profile",
+      },
+      {
+        key: "equipo",
+        label: "Primer miembro invitado",
+        done: primerMiembroInvitado,
+        ctaLabel: "Invitar equipo",
+        ctaHref: "/app/onboarding",
+      },
+      {
+        key: "obra",
+        label: "Primera obra creada",
+        done: primeraObraCreada,
+        ctaLabel: "Crear primera obra",
+        ctaHref: "/app/onboarding/first-project",
+      },
+      {
+        key: "plantilla",
+        label: "Plantilla aplicada",
+        done: plantillaAplicada,
+        ctaLabel: latestProjectId ? "Aplicar plantilla" : "Crear obra",
+        ctaHref: latestProjectId ? `/app/projects/${latestProjectId}/phases` : "/app/onboarding/first-project",
+      },
+      {
+        key: "tarea",
+        label: "Primera tarea creada",
+        done: primeraTareaCreada,
+        ctaLabel: latestProjectId ? "Ir a la obra" : "Ver obras",
+        ctaHref: latestProjectId ? `/app/projects/${latestProjectId}` : "/app/projects",
+      },
+    ];
+
+    const allDone = checklist.every((i) => i.done);
+
+    const nextBest =
+      checklist.find((i) => !i.done && i.ctaHref && i.ctaLabel) ?? null;
+
+    return { checklist, allDone, nextBest };
+  })();
+
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
@@ -154,6 +276,55 @@ export default async function AppDashboardPage() {
           </div>
         </div>
       </Card>
+
+      {!onboarding.allDone ? (
+        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold tracking-tight">Primeros pasos</h2>
+            <p className="text-sm text-[var(--text-secondary)]">
+              Un checklist rápido para terminar la implantación.
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-2 text-sm">
+            {onboarding.checklist.map((item) => (
+              <div key={item.key} className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--text-secondary)]">{item.label}</span>
+                  {item.done ? <Badge tone="success">Completado</Badge> : <Badge tone="neutral">Pendiente</Badge>}
+                </div>
+                {!item.done && item.ctaHref && item.ctaLabel ? (
+                  <Link
+                    href={item.ctaHref}
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                  >
+                    {item.ctaLabel}
+                  </Link>
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          {onboarding.nextBest ? (
+            <div className="mt-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-4">
+              <p className="text-sm font-semibold">Tu siguiente paso</p>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">{onboarding.nextBest.label}</p>
+              <div className="mt-3">
+                <Link
+                  href={onboarding.nextBest.ctaHref ?? "/app"}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  {onboarding.nextBest.ctaLabel}
+                </Link>
+              </div>
+            </div>
+          ) : null}
+        </Card>
+      ) : (
+        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+          <h2 className="text-lg font-semibold tracking-tight">¡Todo listo! Ya puedes gestionar tus obras.</h2>
+        </Card>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
