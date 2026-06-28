@@ -21,9 +21,9 @@ export default async function AppClientsPage() {
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Clientes</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver clientes.
           </p>
         </Card>
@@ -58,16 +58,16 @@ export default async function AppClientsPage() {
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/app"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al panel
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Clientes</h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Clientes de tu organización.
             </p>
           </div>
@@ -99,11 +99,11 @@ export default async function AppClientsPage() {
           {rows.map((c) => (
             <Card
               key={c.id}
-              className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+              className="p-0 shadow-none"
             >
-              <Link href={`/app/clients/${c.id}`} className="block p-5 hover:bg-[var(--bg-raised)]">
+              <Link href={`/app/clients/${c.id}`} className="block p-5 hover:bg-bg-raised">
                 <p className="text-base font-semibold tracking-tight">{c.display_name}</p>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                <p className="mt-1 text-sm text-content-secondary">
                   {c.email ? `Email: ${c.email}` : ""}
                   {c.email && c.phone ? " · " : ""}
                   {c.phone ? `Tel: ${c.phone}` : ""}
