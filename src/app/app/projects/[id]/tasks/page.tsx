@@ -213,17 +213,21 @@ export default async function AppProjectTasksPage({
               className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
             >
               <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-base font-semibold tracking-tight">{task.title}</p>
+                <Link
+                  href={`/app/projects/${projectId}/tasks/${task.id}`}
+                  className="flex-1 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  <p className="text-base font-semibold tracking-tight hover:underline">{task.title}</p>
                   <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                     Vence: {formatDate(task.due_date)}
                   </p>
                   <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                    Responsable: {task.assignee_user_id
+                    Responsable:{" "}
+                    {task.assignee_user_id
                       ? (memberLabelById.get(task.assignee_user_id) ?? task.assignee_user_id)
                       : "Sin asignar"}
                   </p>
-                </div>
+                </Link>
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <Badge tone={priorityTones[task.priority]}>
