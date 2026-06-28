@@ -90,11 +90,11 @@ export default async function AppProjectDetailPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             No pudimos cargar la obra
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             {ctx.reason === "missing_membership"
               ? "Tu usuario no tiene acceso a ninguna organización todavía."
               : "Inicia sesión e inténtalo de nuevo."}
@@ -288,17 +288,17 @@ export default async function AppProjectDetailPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/app/projects"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a obras
       </Link>
 
       {error ? (
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             No pudimos cargar la obra
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Revisa tu conexión e inténtalo de nuevo.
           </p>
           <div className="mt-4">
@@ -324,13 +324,13 @@ export default async function AppProjectDetailPage({
 
           return (
             <>
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                       {row.name}
                     </h1>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+                    <p className="mt-2 text-sm text-content-secondary sm:text-base">
                       Cliente: {joinedClient?.display_name ?? "—"}
                     </p>
                   </div>
@@ -354,39 +354,39 @@ export default async function AppProjectDetailPage({
 
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                    <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                       Dirección
                     </p>
-                    <p className="mt-1 text-sm text-[var(--text-primary)]">{row.address}</p>
+                    <p className="mt-1 text-sm text-content-primary">{row.address}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                    <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                       Tipo
                     </p>
-                    <p className="mt-1 text-sm text-[var(--text-primary)]">{row.type}</p>
+                    <p className="mt-1 text-sm text-content-primary">{row.type}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                    <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                       Progreso
                     </p>
-                    <p className="mt-1 text-sm text-[var(--text-primary)]">{row.progress}</p>
+                    <p className="mt-1 text-sm text-content-primary">{row.progress}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                    <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                       Actualizado
                     </p>
-                    <p className="mt-1 text-sm text-[var(--text-primary)]">
+                    <p className="mt-1 text-sm text-content-primary">
                       {formatUpdatedAt(row.updated_at)}
                     </p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold tracking-tight">Tareas</h2>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-2 text-sm text-content-secondary">
                       {taskCounts ? (
                         <>
                           Total: <span className="font-medium">{taskCounts.total}</span> ·
@@ -425,17 +425,17 @@ export default async function AppProjectDetailPage({
                 </div>
 
                 {taskCounts && taskCounts.total === 0 ? (
-                  <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                  <p className="mt-4 text-sm text-content-secondary">
                     Aún no hay tareas para esta obra.
                   </p>
                 ) : null}
               </Card>
 
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold tracking-tight">Planificación</h2>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-2 text-sm text-content-secondary">
                       {taskCounts ? (
                         taskCounts.currentPhase ? (
                           <>
@@ -483,11 +483,11 @@ export default async function AppProjectDetailPage({
                 </div>
               </Card>
 
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold tracking-tight">Documentos</h2>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-2 text-sm text-content-secondary">
                       {taskCounts ? (
                         <>
                           Total: <span className="font-medium">{taskCounts.documents}</span>
@@ -509,17 +509,17 @@ export default async function AppProjectDetailPage({
                 </div>
 
                 {taskCounts && taskCounts.documents === 0 ? (
-                  <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                  <p className="mt-4 text-sm text-content-secondary">
                     Aún no hay documentos para esta obra.
                   </p>
                 ) : null}
               </Card>
 
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold tracking-tight">Avances</h2>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-2 text-sm text-content-secondary">
                       {taskCounts ? (
                         taskCounts.lastProgress ? (
                           <>
@@ -546,16 +546,16 @@ export default async function AppProjectDetailPage({
                   </div>
                 </div>
 
-                <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                <p className="mt-4 text-sm text-content-secondary">
                   Progreso actual: <span className="font-medium">{row.progress}%</span>
                 </p>
               </Card>
 
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold tracking-tight">Presupuestos</h2>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-2 text-sm text-content-secondary">
                       {taskCounts ? (
                         taskCounts.lastBudget ? (
                           <>
@@ -586,11 +586,11 @@ export default async function AppProjectDetailPage({
                 </div>
               </Card>
 
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold tracking-tight">Costes</h2>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-2 text-sm text-content-secondary">
                       {taskCounts ? (
                         <>
                           Total: <span className="font-medium">{taskCounts.costsCount}</span> ·
@@ -613,11 +613,11 @@ export default async function AppProjectDetailPage({
                 </div>
               </Card>
 
-              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+              <Card className="p-6 shadow-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold tracking-tight">Compras</h2>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-2 text-sm text-content-secondary">
                       {taskCounts ? (
                         taskCounts.lastPurchase ? (
                           <>

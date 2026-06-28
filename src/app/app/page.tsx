@@ -21,9 +21,9 @@ export default async function AppDashboardPage() {
 
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Panel</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión e inténtalo de nuevo.
           </p>
         </Card>
@@ -260,11 +260,11 @@ export default async function AppDashboardPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Panel</h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Resumen rápido de tu organización.
             </p>
           </div>
@@ -277,10 +277,10 @@ export default async function AppDashboardPage() {
       </Card>
 
       {!onboarding.allDone ? (
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <div className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold tracking-tight">Primeros pasos</h2>
-            <p className="text-sm text-[var(--text-secondary)]">
+            <p className="text-sm text-content-secondary">
               Un checklist rápido para terminar la implantación.
             </p>
           </div>
@@ -289,7 +289,7 @@ export default async function AppDashboardPage() {
             {onboarding.checklist.map((item) => (
               <div key={item.key} className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-[var(--text-secondary)]">{item.label}</span>
+                  <span className="text-content-secondary">{item.label}</span>
                   {item.done ? <Badge tone="success">Completado</Badge> : <Badge tone="neutral">Pendiente</Badge>}
                 </div>
                 {!item.done && item.ctaHref && item.ctaLabel ? (
@@ -305,9 +305,9 @@ export default async function AppDashboardPage() {
           </div>
 
           {onboarding.nextBest ? (
-            <div className="mt-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-4">
+            <div className="mt-6 rounded-xl border border-subtle bg-bg-raised p-4">
               <p className="text-sm font-semibold">Tu siguiente paso</p>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">{onboarding.nextBest.label}</p>
+              <p className="mt-1 text-sm text-content-secondary">{onboarding.nextBest.label}</p>
               <div className="mt-3">
                 <Link
                   href={onboarding.nextBest.ctaHref ?? "/app"}
@@ -320,43 +320,43 @@ export default async function AppDashboardPage() {
           ) : null}
         </Card>
       ) : (
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h2 className="text-lg font-semibold tracking-tight">¡Todo listo! Ya puedes gestionar tus obras.</h2>
         </Card>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h2 className="text-lg font-semibold tracking-tight">Economía</h2>
           <div className="mt-4 grid gap-2 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-secondary)]">Presupuestos aceptados</span>
+              <span className="text-content-secondary">Presupuestos aceptados</span>
               <span className="font-medium">{acceptedBudgets.count ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-secondary)]">Costes reales (con IVA)</span>
+              <span className="text-content-secondary">Costes reales (con IVA)</span>
               <span className="font-medium">{formatMoneyEUR(costsTotals.total)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-secondary)]">Compras pendientes (con IVA)</span>
+              <span className="text-content-secondary">Compras pendientes (con IVA)</span>
               <span className="font-medium">{formatMoneyEUR(purchasesTotals.total)}</span>
             </div>
           </div>
         </Card>
 
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h2 className="text-lg font-semibold tracking-tight">Operaciones</h2>
           <div className="mt-4 grid gap-2 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-secondary)]">Compras pendientes</span>
+              <span className="text-content-secondary">Compras pendientes</span>
               <span className="font-medium">{purchasesPending.count ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-secondary)]">Fases en curso</span>
+              <span className="text-content-secondary">Fases en curso</span>
               <span className="font-medium">{phasesInProgress.count ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-secondary)]">Último avance</span>
+              <span className="text-content-secondary">Último avance</span>
               <span className="font-medium">
                 {progressLast.data
                   ? `${progressLast.data.progress}% · ${formatDateTime(progressLast.data.created_at)}`
@@ -367,7 +367,7 @@ export default async function AppDashboardPage() {
         </Card>
       </div>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Atajos</h2>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
