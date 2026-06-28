@@ -10,7 +10,7 @@ import { createProjectWithOptionalQuickClient } from "./actions";
 export const dynamic = "force-dynamic";
 
 type NewProjectPageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; clientId?: string }>;
 };
 
 type ClientRow = {
@@ -27,7 +27,7 @@ const statusLabels: Record<ProjectStatus, string> = {
 };
 
 export default async function NewProjectPage({ searchParams }: NewProjectPageProps) {
-  const { error } = await searchParams;
+  const { error, clientId } = await searchParams;
   const ctx = await getOrganizationContextForRequest();
 
   if (!ctx.ok) {
@@ -199,7 +199,7 @@ export default async function NewProjectPage({ searchParams }: NewProjectPagePro
                 id="clientId"
                 name="clientId"
                 className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                defaultValue=""
+                defaultValue={clientId ?? ""}
               >
                 <option value="">— Selecciona un cliente —</option>
                 {clientRows.map((client) => (
