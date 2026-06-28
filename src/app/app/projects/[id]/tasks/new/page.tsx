@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { listOrganizationMembers } from "@/lib/services/org-members";
+import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 import { createProjectTask } from "./actions";
@@ -57,7 +57,7 @@ export default async function NewProjectTaskPage({
   }
 
   const supabase = await createServerSupabaseClient();
-  const members = await listOrganizationMembers(ctx.organizationId);
+  const members = await getOrgMembersWithProfiles(ctx.organizationId);
   const { data: project } = await supabase
     .from("projects")
     .select("id, name")

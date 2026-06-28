@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -128,6 +129,9 @@ export default async function AppProjectTasksPage({
     );
   }
 
+  const members = await getOrgMembersWithProfiles(ctx.organizationId);
+  const memberLabelById = new Map(members.map((m) => [m.userId, m.label] as const));
+
   const { data: tasks, error } = await supabase
     .from("project_tasks")
     .select("id, title, status, priority, due_date, updated_at, assignee_user_id")
@@ -215,7 +219,9 @@ export default async function AppProjectTasksPage({
                     Vence: {formatDate(task.due_date)}
                   </p>
                   <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                    Responsable: {task.assignee_user_id ?? "Sin asignar"}
+                    Responsable: {task.assignee_user_id
+                      ? (memberLabelById.get(task.assignee_user_id) ?? task.assignee_user_id)
+                      : "Sin asignar"}
                   </p>
                 </div>
 
