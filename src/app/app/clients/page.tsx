@@ -52,6 +52,8 @@ export default async function AppClientsPage() {
 
   const rows = (clients ?? []) as ClientRow[];
 
+  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
@@ -66,29 +68,48 @@ export default async function AppClientsPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Clientes</h1>
             <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
-              Directorio de clientes (lectura). CRUD completo lo añadimos en un módulo aparte.
+              Clientes de tu organización.
             </p>
           </div>
-          <Badge tone="neutral">Total: {rows.length}</Badge>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Badge tone="neutral">Total: {rows.length}</Badge>
+            {canWrite ? (
+              <Link
+                href="/app/clients/new"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                Nuevo cliente
+              </Link>
+            ) : null}
+          </div>
         </div>
       </Card>
 
       {rows.length === 0 ? (
-        <EmptyState title="Sin clientes" description="Aún no hay clientes en tu organización." />
+        <EmptyState
+          title="Sin clientes"
+          description={
+            canWrite
+              ? "Crea tu primer cliente para asociar obras."
+              : "Aún no hay clientes en tu organización."
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {rows.map((c) => (
             <Card
               key={c.id}
-              className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 text-[var(--text-primary)] shadow-none"
+              className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
             >
-              <p className="text-base font-semibold tracking-tight">{c.display_name}</p>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                {c.email ? `Email: ${c.email}` : ""}
-                {c.email && c.phone ? " · " : ""}
-                {c.phone ? `Tel: ${c.phone}` : ""}
-                {!c.email && !c.phone ? "—" : ""}
-              </p>
+              <Link href={`/app/clients/${c.id}`} className="block p-5 hover:bg-[var(--bg-raised)]">
+                <p className="text-base font-semibold tracking-tight">{c.display_name}</p>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                  {c.email ? `Email: ${c.email}` : ""}
+                  {c.email && c.phone ? " · " : ""}
+                  {c.phone ? `Tel: ${c.phone}` : ""}
+                  {!c.email && !c.phone ? "—" : ""}
+                </p>
+              </Link>
             </Card>
           ))}
         </div>
