@@ -76,6 +76,9 @@ export async function updateProjectTask(formData: FormData) {
   const assigneeRaw = readOptionalText(formData, "assignee_user_id");
   const assignee_user_id = assigneeRaw;
 
+  const phaseRaw = readOptionalText(formData, "phase_id");
+  const phase_id = phaseRaw;
+
   const supabase = await createServerSupabaseClient();
 
   // Validate project belongs to org.
@@ -117,6 +120,21 @@ export async function updateProjectTask(formData: FormData) {
     }
   }
 
+  // Validate phase belongs to project (optional).
+  if (phase_id) {
+    const { data: phaseRow, error: phaseError } = await supabase
+      .from("project_phases")
+      .select("id")
+      .eq("organization_id", ctx.organizationId)
+      .eq("project_id", projectId)
+      .eq("id", phase_id)
+      .maybeSingle();
+
+    if (phaseError || !phaseRow) {
+      backToEditWithError(projectId, taskId, "Fase inválida para esta obra.");
+    }
+  }
+
   const { error: updateError } = await supabase
     .from("project_tasks")
     .update({
@@ -126,6 +144,7 @@ export async function updateProjectTask(formData: FormData) {
       priority,
       due_date,
       assignee_user_id,
+      phase_id,
     })
     .eq("organization_id", ctx.organizationId)
     .eq("project_id", projectId)

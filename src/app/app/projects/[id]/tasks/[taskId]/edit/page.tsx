@@ -22,6 +22,7 @@ type TaskRow = {
   priority: string;
   due_date: string | null;
   assignee_user_id: string | null;
+  phase_id: string | null;
 };
 
 export default async function EditProjectTaskPage({
@@ -95,7 +96,7 @@ export default async function EditProjectTaskPage({
 
   const { data: task, error: taskError } = await supabase
     .from("project_tasks")
-    .select("id, title, description, status, priority, due_date, assignee_user_id")
+    .select("id, title, description, status, priority, due_date, assignee_user_id, phase_id")
     .eq("organization_id", ctx.organizationId)
     .eq("project_id", projectId)
     .eq("id", taskId)
@@ -132,6 +133,16 @@ export default async function EditProjectTaskPage({
       </section>
     );
   }
+
+  const { data: phases } = await supabase
+    .from("project_phases")
+    .select("id, title")
+    .eq("organization_id", ctx.organizationId)
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: true })
+    .order("start_date", { ascending: true, nullsFirst: false });
+
+  const phaseRows = (phases ?? []) as Array<{ id: string; title: string }>;
 
   const row = task as unknown as TaskRow;
 
@@ -199,6 +210,25 @@ export default async function EditProjectTaskPage({
               {members.map((member) => (
                 <option key={member.userId} value={member.userId}>
                   {member.label} ({member.role})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="phase_id">
+              Fase (opcional)
+            </label>
+            <select
+              id="phase_id"
+              name="phase_id"
+              defaultValue={row.phase_id ?? ""}
+              className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              <option value="">Sin fase</option>
+              {phaseRows.map((ph) => (
+                <option key={ph.id} value={ph.id}>
+                  {ph.title}
                 </option>
               ))}
             </select>

@@ -20,6 +20,8 @@ type TaskRow = {
   due_date: string | null;
   updated_at: string | null;
   assignee_user_id: string | null;
+  phase_id: string | null;
+  phase?: { title: string } | { title: string }[] | null;
 };
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -134,7 +136,7 @@ export default async function AppProjectTasksPage({
 
   const { data: tasks, error } = await supabase
     .from("project_tasks")
-    .select("id, title, status, priority, due_date, updated_at, assignee_user_id")
+    .select("id, title, status, priority, due_date, updated_at, assignee_user_id, phase_id, phase:project_phases(title)")
     .eq("organization_id", ctx.organizationId)
     .eq("project_id", projectId)
     .order("due_date", { ascending: true, nullsFirst: false })
@@ -227,6 +229,14 @@ export default async function AppProjectTasksPage({
                       ? (memberLabelById.get(task.assignee_user_id) ?? task.assignee_user_id)
                       : "Sin asignar"}
                   </p>
+                  {task.phase_id ? (
+                    <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                      Fase:{" "}
+                      {Array.isArray(task.phase)
+                        ? task.phase[0]?.title
+                        : task.phase?.title ?? task.phase_id}
+                    </p>
+                  ) : null}
                 </Link>
 
                 <div className="flex flex-wrap items-center justify-end gap-2">

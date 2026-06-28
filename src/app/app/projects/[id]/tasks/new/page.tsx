@@ -82,6 +82,16 @@ export default async function NewProjectTaskPage({
     );
   }
 
+  const { data: phases } = await supabase
+    .from("project_phases")
+    .select("id, title")
+    .eq("organization_id", ctx.organizationId)
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: true })
+    .order("start_date", { ascending: true, nullsFirst: false });
+
+  const phaseRows = (phases ?? []) as Array<{ id: string; title: string }>;
+
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
@@ -146,6 +156,25 @@ export default async function NewProjectTaskPage({
               {members.map((member) => (
                 <option key={member.userId} value={member.userId}>
                   {member.label} ({member.role})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="phase_id">
+              Fase (opcional)
+            </label>
+            <select
+              id="phase_id"
+              name="phase_id"
+              defaultValue=""
+              className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              <option value="">Sin fase</option>
+              {phaseRows.map((ph) => (
+                <option key={ph.id} value={ph.id}>
+                  {ph.title}
                 </option>
               ))}
             </select>
