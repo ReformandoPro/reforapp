@@ -1,16 +1,27 @@
 begin;
 
+-- Ensure updated_at helper exists (shared across migrations).
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 create table if not exists public.project_tasks (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete restrict,
-  project_id text not null references public.projects(id) on delete restrict,
+  project_id uuid not null references public.projects(id) on delete restrict,
   title text not null,
   description text,
   status text not null,
   priority text not null,
   due_date date,
   created_at timestamptz not null default now(),
-  updated_at timestamptz
+  updated_at timestamptz not null default now()
 );
 
 alter table public.project_tasks

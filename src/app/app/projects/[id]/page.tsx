@@ -13,10 +13,15 @@ type AppProjectDetailPageProps = {
 };
 
 const statusLabels: Record<ProjectStatus, string> = {
+  lead: "Lead",
+  budgeting: "Presupuestando",
+  approved: "Aprobada",
   scheduled: "Planificado",
   in_progress: "En curso",
-  on_hold: "En pausa",
+  paused: "En pausa",
   completed: "Completado",
+  delivered: "Entregada",
+  closed: "Cerrada",
   cancelled: "Cancelado",
 };
 
@@ -24,10 +29,15 @@ const statusTones: Record<
   ProjectStatus,
   "neutral" | "success" | "warning" | "danger" | "info"
 > = {
+  lead: "neutral",
+  budgeting: "info",
+  approved: "success",
   scheduled: "info",
   in_progress: "info",
-  on_hold: "warning",
+  paused: "warning",
   completed: "success",
+  delivered: "success",
+  closed: "neutral",
   cancelled: "danger",
 };
 
