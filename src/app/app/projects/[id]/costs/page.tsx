@@ -55,9 +55,9 @@ export default async function AppProjectCostsPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Costes</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver costes.
           </p>
         </Card>
@@ -80,7 +80,7 @@ export default async function AppProjectCostsPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -164,16 +164,16 @@ export default async function AppProjectCostsPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a la obra
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Costes · {project.name}</h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Registro de gastos reales para comparar con presupuestos.
             </p>
           </div>
@@ -186,38 +186,38 @@ export default async function AppProjectCostsPage({
 
         <div className="mt-4 grid gap-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[var(--text-secondary)]">Total base</span>
+            <span className="text-content-secondary">Total base</span>
             <span className="font-medium">{formatMoneyEUR(totals.base)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[var(--text-secondary)]">Total IVA</span>
+            <span className="text-content-secondary">Total IVA</span>
             <span className="font-medium">{formatMoneyEUR(totals.tax)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[var(--text-primary)] font-semibold">Total (con IVA)</span>
+            <span className="text-content-primary font-semibold">Total (con IVA)</span>
             <span className="font-semibold">{formatMoneyEUR(totals.total)}</span>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-4 text-sm">
-          <p className="font-semibold text-[var(--text-primary)]">Comparativa</p>
+        <div className="mt-5 grid gap-2 rounded-xl border border-subtle bg-bg-raised p-4 text-sm">
+          <p className="font-semibold text-content-primary">Comparativa</p>
           {hasAcceptedBudget ? (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-[var(--text-secondary)]">Presupuesto aceptado (total)</span>
+                <span className="text-content-secondary">Presupuesto aceptado (total)</span>
                 <span className="font-medium">{formatMoneyEUR(acceptedTotals.total)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[var(--text-secondary)]">Costes reales (total)</span>
+                <span className="text-content-secondary">Costes reales (total)</span>
                 <span className="font-medium">{formatMoneyEUR(totals.total)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[var(--text-primary)] font-semibold">Diferencia</span>
+                <span className="text-content-primary font-semibold">Diferencia</span>
                 <span className="font-semibold">{formatMoneyEUR(diff ?? 0)}</span>
               </div>
             </>
           ) : (
-            <p className="text-[var(--text-secondary)]">Sin presupuesto aceptado.</p>
+            <p className="text-content-secondary">Sin presupuesto aceptado.</p>
           )}
         </div>
 
@@ -233,17 +233,17 @@ export default async function AppProjectCostsPage({
         ) : null}
       </Card>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Resumen por categoría</h2>
         {rows.length === 0 ? (
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">Aún no hay costes.</p>
+          <p className="mt-2 text-sm text-content-secondary">Aún no hay costes.</p>
         ) : (
           <div className="mt-4 grid gap-2 text-sm">
             {COST_CATEGORIES.map((c) => {
               const totalInc = totalsByCategory.get(c.value) ?? 0;
               return (
                 <div key={c.value} className="flex items-center justify-between">
-                  <span className="text-[var(--text-secondary)]">{c.label}</span>
+                  <span className="text-content-secondary">{c.label}</span>
                   <span className="font-medium">{formatMoneyEUR(totalInc)}</span>
                 </div>
               );
@@ -273,18 +273,18 @@ export default async function AppProjectCostsPage({
             return (
               <Card
                 key={row.id}
-                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+                className="border-subtle bg-bg-surface p-0 text-content-primary shadow-none"
               >
                 <div className="p-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-base font-semibold tracking-tight">{row.title}</p>
-                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      <p className="mt-1 text-sm text-content-secondary">
                         {catLabel} · {formatDate(row.cost_date)} · {authorLabel}
                         {row.supplier_name ? ` · ${row.supplier_name}` : ""}
                       </p>
                       {row.document_id ? (
-                        <p className="mt-1 text-xs text-[var(--text-tertiary)]">Con documento asociado</p>
+                        <p className="mt-1 text-xs text-content-tertiary">Con documento asociado</p>
                       ) : null}
                     </div>
                     <div className="flex flex-col items-start gap-2 sm:items-end">
@@ -292,7 +292,7 @@ export default async function AppProjectCostsPage({
                       {canWrite ? (
                         <Link
                           href={`/app/projects/${projectId}/costs/${row.id}/edit`}
-                          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
                         >
                           Editar
                         </Link>
