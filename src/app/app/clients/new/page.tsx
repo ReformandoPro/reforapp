@@ -19,9 +19,9 @@ export default async function NewClientPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Nuevo cliente</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para crear un cliente.
           </p>
         </Card>
@@ -35,7 +35,7 @@ export default async function NewClientPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app/clients"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a clientes
         </Link>
@@ -48,20 +48,20 @@ export default async function NewClientPage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href="/app/clients"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a clientes
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Nuevo cliente</h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+        <p className="mt-2 text-sm text-content-secondary sm:text-base">
           Crea un cliente dentro de tu organización.
         </p>
 
         <form action={createClientAction} className="mt-6 space-y-6">
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -128,7 +128,7 @@ export default async function NewClientPage({
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <p className="text-xs text-[var(--text-tertiary)]">La organización se deriva en servidor.</p>
+            <p className="text-xs text-content-tertiary">La organización se deriva en servidor.</p>
             <button
               type="submit"
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
