@@ -25,9 +25,9 @@ export default async function NewProjectPurchasePage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Nuevo pedido</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para crear un pedido.
           </p>
         </Card>
@@ -41,7 +41,7 @@ export default async function NewProjectPurchasePage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/purchases`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a compras
         </Link>
@@ -63,7 +63,7 @@ export default async function NewProjectPurchasePage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -83,14 +83,14 @@ export default async function NewProjectPurchasePage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}/purchases`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a compras
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Nuevo pedido · {project.name}</h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+        <p className="mt-2 text-sm text-content-secondary sm:text-base">
           Crea un pedido de materiales con líneas e IVA.
         </p>
 
@@ -98,7 +98,7 @@ export default async function NewProjectPurchasePage({
           <input type="hidden" name="projectId" value={projectId} />
 
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -115,7 +115,7 @@ export default async function NewProjectPurchasePage({
           />
 
           <div className="flex items-center justify-between gap-4">
-            <p className="text-xs text-[var(--text-tertiary)]">La organización y la obra se validan en servidor.</p>
+            <p className="text-xs text-content-tertiary">La organización y la obra se validan en servidor.</p>
             <button
               type="submit"
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"

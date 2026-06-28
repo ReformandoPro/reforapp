@@ -54,11 +54,11 @@ export default async function EditProjectPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Editar obra
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para editar una obra.
           </p>
           <div className="mt-4">
@@ -80,7 +80,7 @@ export default async function EditProjectPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href={`/app/projects/${id}`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver al detalle
         </Link>
@@ -105,11 +105,11 @@ export default async function EditProjectPage({
   if (projectError) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             No pudimos cargar la obra
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Revisa tu conexión e inténtalo de nuevo.
           </p>
           <div className="mt-4">
@@ -130,7 +130,7 @@ export default async function EditProjectPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -160,16 +160,16 @@ export default async function EditProjectPage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href={`/app/projects/${id}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al detalle
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Editar obra
         </h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+        <p className="mt-2 text-sm text-content-secondary sm:text-base">
           Cambios guardados bajo tu organización (RLS + memberships).
         </p>
 
@@ -177,7 +177,7 @@ export default async function EditProjectPage({
           <input type="hidden" name="projectId" value={projectRow.id} />
 
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
@@ -280,14 +280,14 @@ export default async function EditProjectPage({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-[var(--text-tertiary)]">
+              <p className="text-xs text-content-tertiary">
                 Solo aparecen clientes de tu organización.
               </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-[var(--text-tertiary)]">
+            <p className="text-xs text-content-tertiary">
               La organización se deriva de tu sesión. No se puede modificar.
             </p>
             <button
