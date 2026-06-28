@@ -27,9 +27,9 @@ export default async function AppProfilePage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Perfil</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver tu perfil.
           </p>
         </Card>
@@ -69,20 +69,20 @@ export default async function AppProfilePage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href="/app"
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al panel
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Mi perfil</h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+        <p className="mt-2 text-sm text-content-secondary sm:text-base">
           Configura tu nombre visible para asignaciones de tareas.
         </p>
 
         <form action={updateMyProfileAction} className="mt-6 space-y-6">
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
