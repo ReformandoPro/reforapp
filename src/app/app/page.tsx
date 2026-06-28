@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -14,6 +15,10 @@ export default async function AppDashboardPage() {
   const ctx = await getOrganizationContextForRequest();
 
   if (!ctx.ok) {
+    if (ctx.reason === "missing_membership") {
+      redirect("/app/onboarding");
+    }
+
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
