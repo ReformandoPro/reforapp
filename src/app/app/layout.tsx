@@ -22,10 +22,33 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen">
       <header className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/app/projects" className="text-sm font-semibold">
-            Reformando
-          </Link>
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link href="/app/projects" className="text-sm font-semibold">
+              Reformando
+            </Link>
+            <nav className="flex items-center gap-3">
+              <Link
+                href="/app/projects"
+                className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                Obras
+              </Link>
+              <Link
+                href="/app/team"
+                className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                Equipo
+              </Link>
+              <Link
+                href="/app/profile"
+                className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                Mi perfil
+              </Link>
+            </nav>
+          </div>
+
           <form action={logout}>
             <button
               type="submit"
