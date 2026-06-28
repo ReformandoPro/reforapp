@@ -32,6 +32,7 @@ type ProjectRow = {
   name: string;
   status: string;
   updated_at: string | null;
+  archived_at: string | null;
   client:
     | {
         display_name: string;
@@ -69,9 +70,11 @@ export default async function AppProjectsPage() {
     );
   }
 
+  const showArchived = false;
+
   const supabase = await createServerSupabaseClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("projects")
     .select(
       `
@@ -79,13 +82,22 @@ export default async function AppProjectsPage() {
       name,
       status,
       updated_at,
+      archived_at,
       client:clients (
         display_name
       )
     `
     )
-    .eq("organization_id", ctx.organizationId)
-    .order("updated_at", { ascending: false, nullsFirst: false });
+    .eq("organization_id", ctx.organizationId);
+
+  if (!showArchived) {
+    query = query.is("archived_at", null);
+  }
+
+  const { data, error } = await query.order("updated_at", {
+    ascending: false,
+    nullsFirst: false,
+  });
 
   if (error) {
     return (

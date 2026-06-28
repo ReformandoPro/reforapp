@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { ProjectStatus } from "@/lib/domain/projects/status";
 import { isProjectStatus } from "@/lib/domain/projects/status";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { ArchiveProjectButton, RestoreProjectButton } from "@/components/projects/ArchiveProjectActions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 type AppProjectDetailPageProps = {
@@ -39,6 +40,7 @@ type ProjectDetailRow = {
   type: string;
   progress: number;
   updated_at: string | null;
+  archived_at: string | null;
   client:
     | {
         display_name: string;
@@ -105,6 +107,7 @@ export default async function AppProjectDetailPage({
       type,
       progress,
       updated_at,
+      archived_at,
       client:clients (
         display_name
       )
@@ -149,6 +152,7 @@ export default async function AppProjectDetailPage({
           const row = data as unknown as ProjectDetailRow;
           const joinedClient = normalizeJoinedClient(row.client);
           const status = isProjectStatus(row.status) ? row.status : null;
+          const isArchived = Boolean(row.archived_at);
 
           return (
             <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
@@ -161,11 +165,14 @@ export default async function AppProjectDetailPage({
                     Cliente: {joinedClient?.display_name ?? "—"}
                   </p>
                 </div>
-                {status ? (
-                  <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
-                ) : (
-                  <Badge tone="neutral">Estado inválido</Badge>
-                )}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {isArchived ? <Badge tone="neutral">Archivada</Badge> : null}
+                  {status ? (
+                    <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
+                  ) : (
+                    <Badge tone="neutral">Estado inválido</Badge>
+                  )}
+                </div>
               </div>
 
               <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -205,13 +212,19 @@ export default async function AppProjectDetailPage({
                 </div>
 
                 {canWrite ? (
-                  <div className="sm:pl-4">
+                  <div className="flex flex-col gap-2 sm:pl-4">
                     <Link
                       href={`/app/projects/${id}/edit`}
                       className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     >
                       Editar obra
                     </Link>
+
+                    {isArchived ? (
+                      <RestoreProjectButton projectId={id} />
+                    ) : (
+                      <ArchiveProjectButton projectId={id} />
+                    )}
                   </div>
                 ) : null}
               </div>
