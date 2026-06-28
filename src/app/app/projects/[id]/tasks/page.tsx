@@ -74,11 +74,11 @@ export default async function AppProjectTasksPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Tareas
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             {ctx.reason === "missing_membership"
               ? "Tu usuario no tiene acceso a ninguna organización todavía."
               : "Inicia sesión e inténtalo de nuevo."}
@@ -102,11 +102,11 @@ export default async function AppProjectTasksPage({
   if (projectError) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             No pudimos cargar las tareas
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Revisa tu conexión e inténtalo de nuevo.
           </p>
         </Card>
@@ -119,7 +119,7 @@ export default async function AppProjectTasksPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -145,11 +145,11 @@ export default async function AppProjectTasksPage({
   if (error) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             No pudimos cargar las tareas
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Revisa tu conexión e inténtalo de nuevo.
           </p>
           <div className="mt-4">
@@ -171,18 +171,18 @@ export default async function AppProjectTasksPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a la obra
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Tareas · {project.name}
             </h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Gestión operativa de tareas para esta obra.
             </p>
           </div>
@@ -212,7 +212,7 @@ export default async function AppProjectTasksPage({
           {rows.map((task) => (
             <Card
               key={task.id}
-              className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+              className="p-0 shadow-none"
             >
               <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between">
                 <Link
@@ -220,17 +220,17 @@ export default async function AppProjectTasksPage({
                   className="flex-1 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 >
                   <p className="text-base font-semibold tracking-tight hover:underline">{task.title}</p>
-                  <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                  <p className="mt-1 text-xs text-content-tertiary">
                     Vence: {formatDate(task.due_date)}
                   </p>
-                  <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                  <p className="mt-1 text-xs text-content-tertiary">
                     Responsable:{" "}
                     {task.assignee_user_id
                       ? (memberLabelById.get(task.assignee_user_id) ?? task.assignee_user_id)
                       : "Sin asignar"}
                   </p>
                   {task.phase_id ? (
-                    <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                    <p className="mt-1 text-xs text-content-tertiary">
                       Fase:{" "}
                       {Array.isArray(task.phase)
                         ? task.phase[0]?.title
