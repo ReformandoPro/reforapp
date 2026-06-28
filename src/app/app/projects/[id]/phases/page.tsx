@@ -39,9 +39,9 @@ export default async function AppProjectPhasesPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Planificación</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver planificación.
           </p>
         </Card>
@@ -64,7 +64,7 @@ export default async function AppProjectPhasesPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -114,16 +114,16 @@ export default async function AppProjectPhasesPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a la obra
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Planificación · {project.name}</h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Fases para planificar la obra.
             </p>
           </div>
@@ -160,16 +160,16 @@ export default async function AppProjectPhasesPage({
             return (
               <Card
                 key={phase.id}
-                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-none"
+                className="p-0 shadow-none"
               >
                 <div className="p-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-base font-semibold tracking-tight">{phase.title}</p>
-                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      <p className="mt-1 text-sm text-content-secondary">
                         {statusLabel} · Inicio: {formatDate(phase.start_date)} · Fin: {formatDate(phase.end_date)}
                       </p>
-                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">Tareas asociadas: {tasksCount}</p>
+                      <p className="mt-1 text-xs text-content-tertiary">Tareas asociadas: {tasksCount}</p>
                     </div>
 
                     {canWrite ? (
