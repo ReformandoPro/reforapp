@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { ProjectStatus } from "@/lib/domain/projects/status";
 import { isProjectStatus } from "@/lib/domain/projects/status";
+import { formatMoneyEUR } from "@/lib/services/budgets-basic";
+import { computeCostTotals } from "@/lib/services/costs";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -125,7 +127,7 @@ export default async function AppProjectDetailPage({
   const taskCounts =
     data && !error
       ? await (async () => {
-          const [total, pending, inProgress, blocked, done, mine, documents, lastProgress, budgetsCount, lastBudget] = await Promise.all([
+          const [total, pending, inProgress, blocked, done, mine, documents, lastProgress, budgetsCount, lastBudget, costsCount, costsRows] = await Promise.all([
             supabase
               .from("project_tasks")
               .select("id", { count: "exact", head: true })
@@ -187,7 +189,24 @@ export default async function AppProjectDetailPage({
               .order("updated_at", { ascending: false })
               .limit(1)
               .maybeSingle(),
+            supabase
+              .from("project_costs")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id),
+            supabase
+              .from("project_costs")
+              .select("amount, tax_rate")
+              .eq("organization_id", ctx.organizationId)
+              .eq("project_id", id),
           ]);
+
+          const costTotals = computeCostTotals(
+            (costsRows.data ?? []).map((r: { amount: string | number; tax_rate: string | number }) => ({
+              amount: Number(r.amount),
+              taxRate: Number(r.tax_rate),
+            }))
+          );
 
           return {
             total: total.count ?? 0,
@@ -200,6 +219,8 @@ export default async function AppProjectDetailPage({
             lastProgress: lastProgress.data ?? null,
             budgetsCount: budgetsCount.count ?? 0,
             lastBudget: lastBudget.data ?? null,
+            costsCount: costsCount.count ?? 0,
+            costsTotal: costTotals.total,
           };
         })()
       : null;
@@ -438,6 +459,33 @@ export default async function AppProjectDetailPage({
                       className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     >
                       Ver presupuestos
+                    </Link>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight">Costes</h2>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                      {taskCounts ? (
+                        <>
+                          Total: <span className="font-medium">{taskCounts.costsCount}</span> ·
+                          Costes (con IVA): <span className="font-medium">{formatMoneyEUR(taskCounts.costsTotal)}</span>
+                        </>
+                      ) : (
+                        "Resumen no disponible."
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <Link
+                      href={`/app/projects/${id}/costs`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      Ver costes
                     </Link>
                   </div>
                 </div>
