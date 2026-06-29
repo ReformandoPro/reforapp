@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
@@ -118,26 +120,12 @@ export default async function AppProjectProgressPage({
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a la obra
-      </Link>
-
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Avances · {project.name}
-            </h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Registro cronológico de avances de obra.
-            </p>
-          </div>
-          <Badge tone="info">Progreso actual: {project.progress}%</Badge>
-        </div>
-      </Card>
+      <PageHeader
+        backLink={<BackLink href={`/app/projects/${projectId}`}>← Volver a la obra</BackLink>}
+        title={<>Avances · {project.name}</>}
+        description="Registro cronológico de avances de obra."
+        actions={<Badge tone="info">Progreso actual: {project.progress}%</Badge>}
+      />
 
       <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Añadir avance</h2>

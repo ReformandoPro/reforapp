@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   BUDGET_STATUSES,
   computeBudgetTotals,
@@ -127,34 +130,16 @@ export default async function AppProjectBudgetsPage({
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a la obra
-      </Link>
-
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Presupuestos · {project.name}
-            </h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Presupuestos básicos con líneas e IVA.
-            </p>
-          </div>
-
-          {canWrite ? (
-            <Link
-              href={`/app/projects/${projectId}/budgets/new`}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            >
-              Nuevo presupuesto
-            </Link>
-          ) : null}
-        </div>
-      </Card>
+      <PageHeader
+        backLink={<BackLink href={`/app/projects/${projectId}`}>← Volver a la obra</BackLink>}
+        title={<>Presupuestos · {project.name}</>}
+        description="Presupuestos básicos con líneas e IVA."
+        actions={
+          canWrite ? (
+            <LinkButton href={`/app/projects/${projectId}/budgets/new`}>Nuevo presupuesto</LinkButton>
+          ) : null
+        }
+      />
 
       {budgetRows.length === 0 ? (
         <EmptyState
