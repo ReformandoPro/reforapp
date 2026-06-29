@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { MetricCard } from "@/components/ui/MetricCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { formatMoneyEUR } from "@/lib/services/budgets-basic";
 import { computeCostTotals } from "@/lib/services/costs";
@@ -325,41 +326,41 @@ export default async function AppDashboardPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <Card className="p-6 shadow-none">
           <h2 className="text-lg font-semibold tracking-tight">Economía</h2>
-          <div className="mt-4 grid gap-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-content-secondary">Presupuestos aceptados</span>
-              <span className="font-medium">{acceptedBudgets.count ?? 0}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-content-secondary">Costes reales (con IVA)</span>
-              <span className="font-medium">{formatMoneyEUR(costsTotals.total)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-content-secondary">Compras pendientes (con IVA)</span>
-              <span className="font-medium">{formatMoneyEUR(purchasesTotals.total)}</span>
-            </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <MetricCard
+              label="Presupuestos aceptados"
+              value={acceptedBudgets.count ?? 0}
+            />
+            <MetricCard
+              label="Costes reales (con IVA)"
+              value={formatMoneyEUR(costsTotals.total)}
+            />
+            <MetricCard
+              label="Compras pendientes (con IVA)"
+              value={formatMoneyEUR(purchasesTotals.total)}
+            />
           </div>
         </Card>
 
         <Card className="p-6 shadow-none">
           <h2 className="text-lg font-semibold tracking-tight">Operaciones</h2>
-          <div className="mt-4 grid gap-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-content-secondary">Compras pendientes</span>
-              <span className="font-medium">{purchasesPending.count ?? 0}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-content-secondary">Fases en curso</span>
-              <span className="font-medium">{phasesInProgress.count ?? 0}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-content-secondary">Último avance</span>
-              <span className="font-medium">
-                {progressLast.data
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <MetricCard
+              label="Compras pendientes"
+              value={purchasesPending.count ?? 0}
+            />
+            <MetricCard
+              label="Fases en curso"
+              value={phasesInProgress.count ?? 0}
+            />
+            <MetricCard
+              label="Último avance"
+              value={
+                progressLast.data
                   ? `${progressLast.data.progress}% · ${formatDateTime(progressLast.data.created_at)}`
-                  : "—"}
-              </span>
-            </div>
+                  : "—"
+              }
+            />
           </div>
         </Card>
       </div>
