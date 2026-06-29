@@ -2,6 +2,7 @@ import { BackLink } from "@/components/ui/BackLink";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { FormActions } from "@/components/ui/FormActions";
 import { COST_CATEGORIES } from "@/lib/services/costs";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
@@ -230,15 +231,14 @@ export default async function NewProjectCostPage({
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-xs text-content-tertiary">La organización se valida en servidor.</p>
+          <FormActions layout="between" note="La organización se valida en servidor.">
             <button
               type="submit"
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               Crear coste
             </button>
-          </div>
+          </FormActions>
         </form>
       </Card>
     </section>
