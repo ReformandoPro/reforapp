@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BackLink } from "@/components/ui/BackLink";
 import { Card } from "@/components/ui/Card";
+import { FormActions } from "@/components/ui/FormActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PROJECT_STATUSES, type ProjectStatus } from "@/lib/domain/projects/status";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
@@ -272,17 +273,17 @@ export default async function EditProjectPage({
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-content-tertiary">
-              La organización se deriva de tu sesión. No se puede modificar.
-            </p>
+          <FormActions
+            layout="betweenResponsive"
+            note="La organización se deriva de tu sesión. No se puede modificar."
+          >
             <button
               type="submit"
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               Guardar cambios
             </button>
-          </div>
+          </FormActions>
         </form>
       </Card>
     </section>
