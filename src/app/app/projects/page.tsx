@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { CardLinkRow } from "@/components/ui/CardLinkRow";
 import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
@@ -104,22 +105,18 @@ export default async function AppProjectsPage() {
   if (error) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="p-6 shadow-none">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            No pudimos cargar tus obras
-          </h1>
-          <p className="mt-2 text-sm text-content-secondary sm:text-base">
-            Revisa tu conexión e inténtalo de nuevo.
-          </p>
-          <div className="mt-4">
+        <ErrorState
+          title="No pudimos cargar tus obras"
+          description="Revisa tu conexión e inténtalo de nuevo."
+          actions={
             <Link
               href="/app/projects"
               className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors border border-subtle bg-bg-surface text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               Reintentar
             </Link>
-          </div>
-        </Card>
+          }
+        />
       </section>
     );
   }
