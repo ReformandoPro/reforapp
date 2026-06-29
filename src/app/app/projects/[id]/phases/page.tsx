@@ -137,6 +137,11 @@ export default async function AppProjectPhasesPage({
               ? "Crea la primera fase para empezar la planificación."
               : "Aún no hay fases para esta obra."
           }
+          actions={
+            canWrite ? (
+              <LinkButton href={`/app/projects/${projectId}/phases/new`}>Nueva fase</LinkButton>
+            ) : null
+          }
         />
       ) : (
         <div className="grid gap-3">

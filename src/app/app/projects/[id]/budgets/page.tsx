@@ -150,6 +150,11 @@ export default async function AppProjectBudgetsPage({
               ? "Crea el primer presupuesto para esta obra."
               : "Aún no hay presupuestos para esta obra."
           }
+          actions={
+            canWrite ? (
+              <LinkButton href={`/app/projects/${projectId}/budgets/new`}>Nuevo presupuesto</LinkButton>
+            ) : null
+          }
         />
       ) : (
         <div className="grid gap-3">

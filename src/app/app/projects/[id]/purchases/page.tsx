@@ -173,6 +173,11 @@ export default async function AppProjectPurchasesPage({
               ? "Crea el primer pedido de materiales para esta obra."
               : "Aún no hay pedidos para esta obra."
           }
+          actions={
+            canWrite ? (
+              <LinkButton href={`/app/projects/${projectId}/purchases/new`}>Nuevo pedido</LinkButton>
+            ) : null
+          }
         />
       ) : (
         <div className="grid gap-3">
