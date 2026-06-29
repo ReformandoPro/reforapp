@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BackLink } from "@/components/ui/BackLink";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { CardActionRow } from "@/components/ui/CardActionRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -260,36 +261,28 @@ export default async function AppProjectCostsPage({
             const authorLabel = labelByUserId.get(row.created_by_user_id) ?? row.created_by_user_id;
 
             return (
-              <Card
+              <CardActionRow
                 key={row.id}
-                className="border-subtle bg-bg-surface p-0 text-content-primary shadow-none"
-              >
-                <div className="p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-base font-semibold tracking-tight">{row.title}</p>
-                      <p className="mt-1 text-sm text-content-secondary">
-                        {catLabel} · {formatDate(row.cost_date)} · {authorLabel}
-                        {row.supplier_name ? ` · ${row.supplier_name}` : ""}
-                      </p>
-                      {row.document_id ? (
-                        <p className="mt-1 text-xs text-content-tertiary">Con documento asociado</p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-col items-start gap-2 sm:items-end">
-                      <Badge tone="neutral">{formatMoneyEUR(totalInc)}</Badge>
-                      {canWrite ? (
-                        <Link
-                          href={`/app/projects/${projectId}/costs/${row.id}/edit`}
-                          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-                        >
-                          Editar
-                        </Link>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                heading={row.title}
+                description={
+                  <>
+                    {catLabel} · {formatDate(row.cost_date)} · {authorLabel}
+                    {row.supplier_name ? ` · ${row.supplier_name}` : ""}
+                  </>
+                }
+                meta={row.document_id ? "Con documento asociado" : null}
+                trailing={<Badge tone="neutral">{formatMoneyEUR(totalInc)}</Badge>}
+                actions={
+                  canWrite ? (
+                    <Link
+                      href={`/app/projects/${projectId}/costs/${row.id}/edit`}
+                      className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
+                    >
+                      Editar
+                    </Link>
+                  ) : null
+                }
+              />
             );
           })}
         </div>
