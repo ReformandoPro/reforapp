@@ -1,6 +1,7 @@
 import { BackLink } from "@/components/ui/BackLink";
 
 import { Card } from "@/components/ui/Card";
+import { FormActions } from "@/components/ui/FormActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
@@ -121,14 +122,14 @@ export default async function AppProfilePage({
             />
           </div>
 
-          <div className="flex justify-end">
+          <FormActions layout="end">
             <button
               type="submit"
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               Guardar
             </button>
-          </div>
+          </FormActions>
         </form>
       </Card>
     </section>
