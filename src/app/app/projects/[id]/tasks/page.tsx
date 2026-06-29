@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
@@ -169,34 +172,16 @@ export default async function AppProjectTasksPage({
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a la obra
-      </Link>
-
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Tareas · {project.name}
-            </h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Gestión operativa de tareas para esta obra.
-            </p>
-          </div>
-
-          {canWrite ? (
-            <Link
-              href={`/app/projects/${projectId}/tasks/new`}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            >
-              Nueva tarea
-            </Link>
-          ) : null}
-        </div>
-      </Card>
+      <PageHeader
+        backLink={<BackLink href={`/app/projects/${projectId}`}>← Volver a la obra</BackLink>}
+        title={<>Tareas · {project.name}</>}
+        description="Gestión operativa de tareas para esta obra."
+        actions={
+          canWrite ? (
+            <LinkButton href={`/app/projects/${projectId}/tasks/new`}>Nueva tarea</LinkButton>
+          ) : null
+        }
+      />
 
       {rows.length === 0 ? (
         <EmptyState

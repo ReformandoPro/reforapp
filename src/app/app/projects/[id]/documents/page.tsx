@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   DOCUMENT_CATEGORIES,
   createSignedDocumentUrl,
@@ -151,27 +153,12 @@ export default async function AppProjectDocumentsPage({
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a la obra
-      </Link>
-
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Documentos · {project.name}
-            </h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Documentación asociada a esta obra.
-            </p>
-          </div>
-
-          <Badge tone="neutral">Total: {rows.length}</Badge>
-        </div>
-      </Card>
+      <PageHeader
+        backLink={<BackLink href={`/app/projects/${projectId}`}>← Volver a la obra</BackLink>}
+        title={<>Documentos · {project.name}</>}
+        description="Documentación asociada a esta obra."
+        actions={<Badge tone="neutral">Total: {rows.length}</Badge>}
+      />
 
       <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Subir documento</h2>
