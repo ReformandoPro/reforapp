@@ -84,6 +84,7 @@ export default async function AppClientsPage() {
               ? "Crea tu primer cliente para asociar obras."
               : "Aún no hay clientes en tu organización."
           }
+          actions={canWrite ? <LinkButton href="/app/clients/new">Nuevo cliente</LinkButton> : null}
         />
       ) : (
         <div className="grid gap-3">

@@ -191,6 +191,11 @@ export default async function AppProjectTasksPage({
               ? "Crea la primera tarea para empezar a gestionar la obra."
               : "Aún no hay tareas para esta obra."
           }
+          actions={
+            canWrite ? (
+              <LinkButton href={`/app/projects/${projectId}/tasks/new`}>Nueva tarea</LinkButton>
+            ) : null
+          }
         />
       ) : (
         <div className="grid gap-3">

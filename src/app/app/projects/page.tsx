@@ -153,6 +153,9 @@ export default async function AppProjectsPage() {
         <EmptyState
           title="Sin obras todavía"
           description="Cuando crees tu primera obra, aparecerá aquí."
+          actions={
+            canCreate ? <LinkButton href="/app/projects/new">Nueva obra</LinkButton> : null
+          }
         />
       ) : (
         <div className="grid gap-4">
