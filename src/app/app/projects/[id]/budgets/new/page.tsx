@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/ui/BackLink";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -39,12 +39,7 @@ export default async function NewProjectBudgetPage({
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href={`/app/projects/${projectId}/budgets`}
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver a presupuestos
-        </Link>
+        <BackLink href={`/app/projects/${projectId}/budgets`}>← Volver a presupuestos</BackLink>
         <EmptyState title="Acceso denegado" description="No tienes permisos para crear presupuestos." />
       </section>
     );
@@ -61,12 +56,7 @@ export default async function NewProjectBudgetPage({
   if (!project) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href="/app/projects"
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver a obras
-        </Link>
+        <BackLink href="/app/projects">← Volver a obras</BackLink>
         <EmptyState
           title="Obra no encontrada"
           description="No hemos encontrado una obra con este identificador dentro de tu organización."
@@ -81,12 +71,7 @@ export default async function NewProjectBudgetPage({
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <Link
-        href={`/app/projects/${projectId}/budgets`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a presupuestos
-      </Link>
+      <BackLink href={`/app/projects/${projectId}/budgets`}>← Volver a presupuestos</BackLink>
 
       <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">

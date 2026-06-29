@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/ui/BackLink";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PROJECT_STATUSES, type ProjectStatus } from "@/lib/domain/projects/status";
@@ -78,12 +79,7 @@ export default async function EditProjectPage({
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href={`/app/projects/${id}`}
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver al detalle
-        </Link>
+        <BackLink href={`/app/projects/${id}`}>← Volver al detalle</BackLink>
 
         <EmptyState
           title="Acceso denegado"
@@ -128,12 +124,7 @@ export default async function EditProjectPage({
   if (!project) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href="/app/projects"
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver a obras
-        </Link>
+        <BackLink href="/app/projects">← Volver a obras</BackLink>
 
         <EmptyState
           title="Obra no encontrada"
@@ -158,12 +149,7 @@ export default async function EditProjectPage({
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <Link
-        href={`/app/projects/${id}`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver al detalle
-      </Link>
+      <BackLink href={`/app/projects/${id}`}>← Volver al detalle</BackLink>
 
       <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
