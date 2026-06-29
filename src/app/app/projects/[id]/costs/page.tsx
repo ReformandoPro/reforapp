@@ -1,8 +1,11 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/ui/BackLink";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { computeBudgetTotals, formatMoneyEUR, type BudgetStatus } from "@/lib/services/budgets-basic";
 import { COST_CATEGORIES, computeCostTotals, type CostCategory } from "@/lib/services/costs";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
@@ -162,26 +165,21 @@ export default async function AppProjectCostsPage({
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a la obra
-      </Link>
+      <PageHeader
+        backLink={<BackLink href={`/app/projects/${projectId}`}>← Volver a la obra</BackLink>}
+        title={`Costes · ${project.name}`}
+        description="Registro de gastos reales para comparar con presupuestos."
+        actions={
+          canWrite ? (
+            <LinkButton href={`/app/projects/${projectId}/costs/new`}>Nuevo coste</LinkButton>
+          ) : null
+        }
+      />
 
       <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Costes · {project.name}</h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Registro de gastos reales para comparar con presupuestos.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Badge tone="neutral">Costes: {rows.length}</Badge>
-            <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
-          </div>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <Badge tone="neutral">Costes: {rows.length}</Badge>
+          <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
         </div>
 
         <div className="mt-4 grid gap-2 text-sm">
@@ -220,17 +218,6 @@ export default async function AppProjectCostsPage({
             <p className="text-content-secondary">Sin presupuesto aceptado.</p>
           )}
         </div>
-
-        {canWrite ? (
-          <div className="mt-5 flex justify-end">
-            <Link
-              href={`/app/projects/${projectId}/costs/new`}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            >
-              Nuevo coste
-            </Link>
-          </div>
-        ) : null}
       </Card>
 
       <Card className="p-6 shadow-none">
