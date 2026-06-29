@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/ui/BackLink";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PROJECT_STATUSES, type ProjectStatus } from "@/lib/domain/projects/status";
@@ -62,12 +63,7 @@ export default async function NewProjectPage({ searchParams }: NewProjectPagePro
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href="/app/projects"
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver a obras
-        </Link>
+        <BackLink href="/app/projects">← Volver a obras</BackLink>
 
         <EmptyState title="Acceso denegado" description="No tienes permisos para crear obras." />
       </section>
@@ -85,12 +81,7 @@ export default async function NewProjectPage({ searchParams }: NewProjectPagePro
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <Link
-        href="/app/projects"
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a obras
-      </Link>
+      <BackLink href="/app/projects">← Volver a obras</BackLink>
 
       <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-2">

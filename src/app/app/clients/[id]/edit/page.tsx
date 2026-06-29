@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/ui/BackLink";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -46,12 +46,7 @@ export default async function EditClientPage({
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href={`/app/clients/${clientId}`}
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver al cliente
-        </Link>
+        <BackLink href={`/app/clients/${clientId}`}>← Volver al cliente</BackLink>
         <EmptyState title="Acceso denegado" description="No tienes permisos para editar clientes." />
       </section>
     );
@@ -80,12 +75,7 @@ export default async function EditClientPage({
   if (!client) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href="/app/clients"
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver a clientes
-        </Link>
+        <BackLink href="/app/clients">← Volver a clientes</BackLink>
         <EmptyState
           title="Cliente no encontrado"
           description="No hemos encontrado este cliente dentro de tu organización."
@@ -98,12 +88,7 @@ export default async function EditClientPage({
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <Link
-        href={`/app/clients/${clientId}`}
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver al cliente
-      </Link>
+      <BackLink href={`/app/clients/${clientId}`}>← Volver al cliente</BackLink>
 
       <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Editar cliente</h1>
