@@ -126,11 +126,11 @@ export function BudgetEditorClient({
           {lines.map((line, idx) => (
             <div
               key={line.id ?? `new-${idx}`}
-              className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] p-4"
+              className="rounded-xl border border-subtle bg-bg-raised p-4"
             >
               <div className="grid gap-3 sm:grid-cols-12">
                 <div className="sm:col-span-6">
-                  <label className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                  <label className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                     Concepto
                   </label>
                   <input
@@ -146,7 +146,7 @@ export function BudgetEditorClient({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                  <label className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                     Cant.
                   </label>
                   <input
@@ -167,7 +167,7 @@ export function BudgetEditorClient({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                  <label className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                     €/ud
                   </label>
                   <input
@@ -188,7 +188,7 @@ export function BudgetEditorClient({
                 </div>
 
                 <div className="sm:col-span-1">
-                  <label className="text-xs uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                  <label className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
                     IVA
                   </label>
                   <input
