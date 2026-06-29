@@ -196,8 +196,10 @@ export default async function AppProjectCostsPage({
             <span className="font-semibold">{formatMoneyEUR(totals.total)}</span>
           </div>
         </div>
+      </Card>
 
-        <div className="mt-5 grid gap-2 rounded-xl border border-subtle bg-bg-raised p-4 text-sm">
+      <Card className="p-6 shadow-none">
+        <div className="grid gap-2 rounded-xl border border-subtle bg-bg-raised p-4 text-sm">
           <p className="font-semibold text-content-primary">Comparativa</p>
           {hasAcceptedBudget ? (
             <>
