@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CardLinkRow } from "@/components/ui/CardLinkRow";
 import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -166,27 +167,17 @@ export default async function AppProjectBudgetsPage({
             );
 
             return (
-              <Card
+              <CardLinkRow
                 key={budget.id}
-                className="p-0 shadow-none"
-              >
-                <Link
-                  href={`/app/projects/${projectId}/budgets/${budget.id}`}
-                  className="block p-5 hover:bg-bg-raised"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-base font-semibold tracking-tight">{budget.title}</p>
-                      <p className="mt-1 text-sm text-content-secondary">
-                        {statusLabel} · Actualizado: {formatDateTime(budget.updated_at)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
-                    </div>
-                  </div>
-                </Link>
-              </Card>
+                href={`/app/projects/${projectId}/budgets/${budget.id}`}
+                heading={budget.title}
+                description={
+                  <>
+                    {statusLabel} · Actualizado: {formatDateTime(budget.updated_at)}
+                  </>
+                }
+                trailing={<Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>}
+              />
             );
           })}
         </div>

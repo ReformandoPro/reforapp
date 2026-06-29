@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CardLinkRow } from "@/components/ui/CardLinkRow";
 import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -189,29 +190,19 @@ export default async function AppProjectPurchasesPage({
             );
 
             return (
-              <Card
+              <CardLinkRow
                 key={purchase.id}
-                className="p-0 shadow-none"
-              >
-                <Link
-                  href={`/app/projects/${projectId}/purchases/${purchase.id}`}
-                  className="block p-5 hover:bg-bg-raised"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-base font-semibold tracking-tight">{purchase.title}</p>
-                      <p className="mt-1 text-sm text-content-secondary">
-                        {statusLabel}
-                        {purchase.supplier_name ? ` · ${purchase.supplier_name}` : ""} ·
-                        Prevista: {formatDate(purchase.expected_date)} · Actualizado: {formatDateTime(purchase.updated_at)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
-                    </div>
-                  </div>
-                </Link>
-              </Card>
+                href={`/app/projects/${projectId}/purchases/${purchase.id}`}
+                heading={purchase.title}
+                description={
+                  <>
+                    {statusLabel}
+                    {purchase.supplier_name ? ` · ${purchase.supplier_name}` : ""} · Prevista:{" "}
+                    {formatDate(purchase.expected_date)} · Actualizado: {formatDateTime(purchase.updated_at)}
+                  </>
+                }
+                trailing={<Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>}
+              />
             );
           })}
         </div>
