@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { formatMoneyEUR } from "@/lib/services/budgets-basic";
 import { computeCostTotals } from "@/lib/services/costs";
 import { computePurchaseTotals } from "@/lib/services/purchases";
@@ -260,21 +261,17 @@ export default async function AppDashboardPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Panel</h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Resumen rápido de tu organización.
-            </p>
-          </div>
+      <PageHeader
+        title="Panel"
+        description="Resumen rápido de tu organización."
+        actions={
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Badge tone="neutral">Obras activas: {activeProjectsCount.count ?? 0}</Badge>
             <Badge tone="neutral">Tareas abiertas: {openTasksCount.count ?? 0}</Badge>
             <Badge tone="neutral">Docs: {docsCount.count ?? 0}</Badge>
           </div>
-        </div>
-      </Card>
+        }
+      />
 
       {!onboarding.allDone ? (
         <Card className="p-6 shadow-none">
