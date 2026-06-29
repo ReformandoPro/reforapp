@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { CardActionRow } from "@/components/ui/CardActionRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
@@ -150,31 +151,26 @@ export default async function AppProjectPhasesPage({
             const tasksCount = taskCountByPhase.get(phase.id) ?? 0;
 
             return (
-              <Card
+              <CardActionRow
                 key={phase.id}
-                className="p-0 shadow-none"
-              >
-                <div className="p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-base font-semibold tracking-tight">{phase.title}</p>
-                      <p className="mt-1 text-sm text-content-secondary">
-                        {statusLabel} · Inicio: {formatDate(phase.start_date)} · Fin: {formatDate(phase.end_date)}
-                      </p>
-                      <p className="mt-1 text-xs text-content-tertiary">Tareas asociadas: {tasksCount}</p>
-                    </div>
-
-                    {canWrite ? (
-                      <Link
-                        href={`/app/projects/${projectId}/phases/${phase.id}/edit`}
-                        className="inline-flex min-h-9 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-3 py-1.5 text-xs font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                      >
-                        Editar
-                      </Link>
-                    ) : null}
-                  </div>
-                </div>
-              </Card>
+                heading={phase.title}
+                description={
+                  <>
+                    {statusLabel} · Inicio: {formatDate(phase.start_date)} · Fin: {formatDate(phase.end_date)}
+                  </>
+                }
+                meta={<>Tareas asociadas: {tasksCount}</>}
+                actions={
+                  canWrite ? (
+                    <Link
+                      href={`/app/projects/${projectId}/phases/${phase.id}/edit`}
+                      className="inline-flex min-h-9 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-3 py-1.5 text-xs font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      Editar
+                    </Link>
+                  ) : null
+                }
+              />
             );
           })}
         </div>
