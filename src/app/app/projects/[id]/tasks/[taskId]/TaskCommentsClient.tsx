@@ -36,14 +36,14 @@ export function TaskCommentsClient({ projectId, taskId, comments }: TaskComments
         return (
           <div
             key={comment.id}
-            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-4 py-3"
+            className="rounded-xl border border-subtle bg-bg-raised px-4 py-3"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--text-primary)]">
+                <p className="text-sm font-medium text-content-primary">
                   {comment.authorLabel}
                 </p>
-                <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
+                <p className="mt-0.5 text-xs text-content-tertiary">
                   {comment.createdAtLabel}
                 </p>
               </div>
@@ -106,7 +106,7 @@ export function TaskCommentsClient({ projectId, taskId, comments }: TaskComments
                 </div>
               </form>
             ) : (
-              <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--text-primary)]">
+              <p className="mt-2 whitespace-pre-wrap text-sm text-content-primary">
                 {comment.body}
               </p>
             )}
