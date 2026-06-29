@@ -6,7 +6,7 @@ import { Card } from "./Card";
 import { cn } from "./cn";
 
 type CardLinkRowProps = Omit<ComponentProps<typeof Link>, "className"> & {
-  title: ReactNode;
+  heading: ReactNode;
   description?: ReactNode;
   eyebrow?: ReactNode;
   leading?: ReactNode;
@@ -17,7 +17,7 @@ type CardLinkRowProps = Omit<ComponentProps<typeof Link>, "className"> & {
 };
 
 export function CardLinkRow({
-  title,
+  heading,
   description,
   eyebrow,
   leading,
@@ -48,7 +48,7 @@ export function CardLinkRow({
 
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold tracking-tight text-content-primary">
-                  {title}
+                  {heading}
                 </p>
                 {description ? (
                   <p className="mt-1 text-sm text-content-secondary">{description}</p>
