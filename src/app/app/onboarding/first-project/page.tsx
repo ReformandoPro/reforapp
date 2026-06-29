@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -64,12 +65,7 @@ export default async function FirstProjectOnboardingPage({
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link
-          href="/app/onboarding"
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver al onboarding
-        </Link>
+        <BackLink href="/app/onboarding">← Volver al onboarding</BackLink>
 
         <EmptyState
           title="Solo lectura"
@@ -147,12 +143,7 @@ export default async function FirstProjectOnboardingPage({
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <Link
-        href="/app/onboarding"
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver al onboarding
-      </Link>
+      <BackLink href="/app/onboarding">← Volver al onboarding</BackLink>
 
       <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-2">
