@@ -1,8 +1,8 @@
-import Link from "next/link";
-
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 
@@ -29,42 +29,29 @@ export default async function AppTeamPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <Link
-          href="/app"
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver al panel
-        </Link>
-
-        <Card className="p-6 shadow-none">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Equipo</h1>
-              <p className="mt-2 text-sm text-content-secondary sm:text-base">
-                Directorio básico de miembros de tu organización.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              disabled={!canInvite}
-              className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-                canInvite
-                  ? "bg-primary-500 text-white opacity-70"
-                  : "border border-subtle bg-bg-surface text-content-secondary opacity-70"
-              }`}
-              title={
-                canInvite
-                  ? "Próximamente"
-                  : "No tienes permisos para invitar miembros"
-              }
-            >
-              Invitar miembro (próximamente)
-            </button>
-          </div>
-        </Card>
-      </div>
+      <PageHeader
+        backLink={<BackLink href="/app">← Volver al panel</BackLink>}
+        title="Equipo"
+        description="Directorio básico de miembros de tu organización."
+        actions={
+          <button
+            type="button"
+            disabled={!canInvite}
+            className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+              canInvite
+                ? "bg-primary-500 text-white opacity-70"
+                : "border border-subtle bg-bg-surface text-content-secondary opacity-70"
+            }`}
+            title={
+              canInvite
+                ? "Próximamente"
+                : "No tienes permisos para invitar miembros"
+            }
+          >
+            Invitar miembro (próximamente)
+          </button>
+        }
+      />
 
       {members.length === 0 ? (
         <EmptyState

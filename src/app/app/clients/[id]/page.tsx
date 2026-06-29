@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -104,52 +107,43 @@ export default async function ClientDetailPage({
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href="/app/clients"
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver a clientes
-      </Link>
-
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{row.display_name}</h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              {row.email ? `Email: ${row.email}` : ""}
-              {row.email && row.phone ? " · " : ""}
-              {row.phone ? `Tel: ${row.phone}` : ""}
-              {!row.email && !row.phone ? "—" : ""}
-            </p>
+      <PageHeader
+        backLink={<BackLink href="/app/clients">← Volver a clientes</BackLink>}
+        title={row.display_name}
+        description={
+          <>
+            {row.email ? `Email: ${row.email}` : ""}
+            {row.email && row.phone ? " · " : ""}
+            {row.phone ? `Tel: ${row.phone}` : ""}
+            {!row.email && !row.phone ? "—" : ""}
+          </>
+        }
+        meta={
+          <>
             {row.address ? (
               <p className="mt-2 text-sm text-content-secondary">Dirección: {row.address}</p>
             ) : null}
             {row.notes ? (
               <p className="mt-3 whitespace-pre-wrap text-sm text-content-primary">{row.notes}</p>
             ) : null}
-          </div>
-
-          <div className="flex flex-col gap-2 sm:items-end">
+          </>
+        }
+        actions={
+          <>
             <Badge tone="neutral">Obras: {projectRows.length}</Badge>
             {canWrite ? (
               <>
-                <Link
-                  href={`/app/clients/${clientId}/edit`}
-                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                >
+                <LinkButton href={`/app/clients/${clientId}/edit`} variant="secondary">
                   Editar cliente
-                </Link>
-                <Link
-                  href={`/app/projects/new?clientId=${clientId}`}
-                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                >
+                </LinkButton>
+                <LinkButton href={`/app/projects/new?clientId=${clientId}`}>
                   Nueva obra para este cliente
-                </Link>
+                </LinkButton>
               </>
             ) : null}
-          </div>
-        </div>
-      </Card>
+          </>
+        }
+      />
 
       <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Obras asociadas</h2>
