@@ -34,9 +34,9 @@ export default async function EditProjectPhasePage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Editar fase</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para editar una fase.
           </p>
         </Card>
@@ -50,7 +50,7 @@ export default async function EditProjectPhasePage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/phases`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a planificación
         </Link>
@@ -73,7 +73,7 @@ export default async function EditProjectPhasePage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -98,7 +98,7 @@ export default async function EditProjectPhasePage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link
           href={`/app/projects/${projectId}/phases`}
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a planificación
         </Link>
@@ -116,12 +116,12 @@ export default async function EditProjectPhasePage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}/phases`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a planificación
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Editar fase · {project.name}</h1>
 
         <form action={updateProjectPhaseAction} className="mt-6 space-y-6">
@@ -129,7 +129,7 @@ export default async function EditProjectPhasePage({
           <input type="hidden" name="phaseId" value={phaseId} />
 
           {error ? (
-            <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
               {error}
             </p>
           ) : null}
