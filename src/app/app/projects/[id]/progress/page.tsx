@@ -44,9 +44,9 @@ export default async function AppProjectProgressPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Avances</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver avances.
           </p>
         </Card>
@@ -81,7 +81,7 @@ export default async function AppProjectProgressPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -120,18 +120,18 @@ export default async function AppProjectProgressPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a la obra
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Avances · {project.name}
             </h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Registro cronológico de avances de obra.
             </p>
           </div>
@@ -139,11 +139,11 @@ export default async function AppProjectProgressPage({
         </div>
       </Card>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Añadir avance</h2>
 
         {!canWrite ? (
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+          <p className="mt-2 text-sm text-content-secondary">
             No tienes permisos para registrar avances.
           </p>
         ) : (
@@ -151,7 +151,7 @@ export default async function AppProjectProgressPage({
             <input type="hidden" name="projectId" value={projectId} />
 
             {error ? (
-              <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+              <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
                 {error}
               </p>
             ) : null}
@@ -187,7 +187,7 @@ export default async function AppProjectProgressPage({
             </div>
 
             <div className="flex items-center justify-between gap-4">
-              <p className="text-xs text-[var(--text-tertiary)]">
+              <p className="text-xs text-content-tertiary">
                 Se valida organización/obra en servidor. Solo owner/admin.
               </p>
               <button
@@ -217,13 +217,13 @@ export default async function AppProjectProgressPage({
             return (
               <Card
                 key={update.id}
-                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 text-[var(--text-primary)] shadow-none"
+                className="border border-subtle bg-bg-surface p-5 text-content-primary shadow-none"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-base font-semibold tracking-tight">{update.progress}%</p>
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">{update.note}</p>
-                    <p className="mt-2 text-xs text-[var(--text-tertiary)]">
+                    <p className="mt-1 text-sm text-content-secondary">{update.note}</p>
+                    <p className="mt-2 text-xs text-content-tertiary">
                       {formatDateTime(update.created_at)} · {authorLabel}
                     </p>
                   </div>
