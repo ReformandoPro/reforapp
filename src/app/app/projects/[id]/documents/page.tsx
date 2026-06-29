@@ -68,9 +68,9 @@ export default async function AppProjectDocumentsPage({
   if (!ctx.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+        <Card className="p-6 shadow-none">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Documentos</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
             Inicia sesión para ver documentos.
           </p>
         </Card>
@@ -105,7 +105,7 @@ export default async function AppProjectDocumentsPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/app/projects"
-          className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
         >
           ← Volver a obras
         </Link>
@@ -153,18 +153,18 @@ export default async function AppProjectDocumentsPage({
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href={`/app/projects/${projectId}`}
-        className="inline-flex text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a la obra
       </Link>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Documentos · {project.name}
             </h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">
+            <p className="mt-2 text-sm text-content-secondary sm:text-base">
               Documentación asociada a esta obra.
             </p>
           </div>
@@ -173,11 +173,11 @@ export default async function AppProjectDocumentsPage({
         </div>
       </Card>
 
-      <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
+      <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Subir documento</h2>
 
         {!canUpload ? (
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+          <p className="mt-2 text-sm text-content-secondary">
             No tienes permisos para subir documentos.
           </p>
         ) : (
@@ -185,7 +185,7 @@ export default async function AppProjectDocumentsPage({
             <input type="hidden" name="projectId" value={projectId} />
 
             {error ? (
-              <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-raised)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+              <p className="rounded-xl border border-subtle bg-bg-raised px-3 py-2 text-sm text-content-secondary">
                 {error}
               </p>
             ) : null}
@@ -235,7 +235,7 @@ export default async function AppProjectDocumentsPage({
             </div>
 
             <div className="flex items-center justify-between gap-4">
-              <p className="text-xs text-[var(--text-tertiary)]">
+              <p className="text-xs text-content-tertiary">
                 Se valida organización/obra en servidor. El bucket es privado.
               </p>
               <button
@@ -270,18 +270,18 @@ export default async function AppProjectDocumentsPage({
             return (
               <Card
                 key={doc.id}
-                className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 text-[var(--text-primary)] shadow-none"
+                className="border border-subtle bg-bg-surface p-5 text-content-primary shadow-none"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-base font-semibold tracking-tight">{doc.file_name}</p>
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-content-secondary">
                       {DOCUMENT_CATEGORIES.find((c) => c.value === doc.category)?.label ?? doc.category}
                       {" "}· {formatSize(doc.size_bytes)} · {formatDateTime(doc.created_at)}
                     </p>
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">Autor: {authorLabel}</p>
+                    <p className="mt-1 text-sm text-content-secondary">Autor: {authorLabel}</p>
                     {doc.description ? (
-                      <p className="mt-2 text-sm text-[var(--text-primary)]">{doc.description}</p>
+                      <p className="mt-2 text-sm text-content-primary">{doc.description}</p>
                     ) : null}
                   </div>
 
