@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import type { ProjectStatus } from "@/lib/domain/projects/status";
 import { isProjectStatus } from "@/lib/domain/projects/status";
 import { formatMoneyEUR } from "@/lib/services/budgets-basic";
@@ -286,12 +289,12 @@ export default async function AppProjectDetailPage({
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
+      <BackLink
         href="/app/projects"
         className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver a obras
-      </Link>
+      </BackLink>
 
       {error ? (
         <Card className="p-6 shadow-none">
@@ -324,17 +327,15 @@ export default async function AppProjectDetailPage({
 
           return (
             <>
-              <Card className="p-6 shadow-none">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                      {row.name}
-                    </h1>
-                    <p className="mt-2 text-sm text-content-secondary sm:text-base">
-                      Cliente: {joinedClient?.display_name ?? "—"}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2 sm:items-end">
+              <PageHeader
+                title={row.name}
+                description={
+                  <>
+                    Cliente: {joinedClient?.display_name ?? "—"}
+                  </>
+                }
+                actions={
+                  <>
                     {status ? (
                       <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
                     ) : (
@@ -342,16 +343,15 @@ export default async function AppProjectDetailPage({
                     )}
 
                     {canWrite ? (
-                      <Link
-                        href={`/app/projects/${id}/edit`}
-                        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                      >
+                      <LinkButton href={`/app/projects/${id}/edit`} variant="secondary">
                         Editar obra
-                      </Link>
+                      </LinkButton>
                     ) : null}
-                  </div>
-                </div>
+                  </>
+                }
+              />
 
+              <Card className="p-6 shadow-none">
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div>
                     <p className="text-xs uppercase tracking-[0.14em] text-content-tertiary">
