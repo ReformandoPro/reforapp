@@ -91,7 +91,7 @@ export default async function AppClientsPage() {
             <CardLinkRow
               key={c.id}
               href={`/app/clients/${c.id}`}
-              title={c.display_name}
+              heading={c.display_name}
               description={
                 <>
                   {c.email ? `Email: ${c.email}` : ""}

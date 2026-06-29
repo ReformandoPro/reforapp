@@ -166,7 +166,7 @@ export default async function AppProjectsPage() {
               <CardLinkRow
                 key={project.id}
                 href={`/app/projects/${project.id}`}
-                title={project.name}
+                heading={project.name}
                 description={<>Cliente: {joinedClient?.display_name ?? "—"}</>}
                 trailing={
                   status ? (
