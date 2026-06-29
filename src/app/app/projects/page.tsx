@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CardLinkRow } from "@/components/ui/CardLinkRow";
 import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -162,33 +163,19 @@ export default async function AppProjectsPage() {
               : null;
 
             return (
-              <Card
+              <CardLinkRow
                 key={project.id}
-                className="p-0 shadow-none"
-              >
-                <Link
-                  href={`/app/projects/${project.id}`}
-                  className="block p-5 hover:bg-bg-raised"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-lg font-semibold tracking-tight">
-                        {project.name}
-                      </p>
-                      <p className="mt-2 text-sm text-content-secondary">
-                        Cliente: {joinedClient?.display_name ?? "—"}
-                      </p>
-                    </div>
-                    {status ? (
-                      <Badge tone={statusTones[status]}>
-                        {statusLabels[status]}
-                      </Badge>
-                    ) : (
-                      <Badge tone="neutral">Estado inválido</Badge>
-                    )}
-                  </div>
-                </Link>
-              </Card>
+                href={`/app/projects/${project.id}`}
+                title={project.name}
+                description={<>Cliente: {joinedClient?.display_name ?? "—"}</>}
+                trailing={
+                  status ? (
+                    <Badge tone={statusTones[status]}>{statusLabels[status]}</Badge>
+                  ) : (
+                    <Badge tone="neutral">Estado inválido</Badge>
+                  )
+                }
+              />
             );
           })}
         </div>

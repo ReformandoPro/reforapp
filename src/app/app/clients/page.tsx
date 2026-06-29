@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CardLinkRow } from "@/components/ui/CardLinkRow";
 import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -89,20 +88,19 @@ export default async function AppClientsPage() {
       ) : (
         <div className="grid gap-3">
           {rows.map((c) => (
-            <Card
+            <CardLinkRow
               key={c.id}
-              className="p-0 shadow-none"
-            >
-              <Link href={`/app/clients/${c.id}`} className="block p-5 hover:bg-bg-raised">
-                <p className="text-base font-semibold tracking-tight">{c.display_name}</p>
-                <p className="mt-1 text-sm text-content-secondary">
+              href={`/app/clients/${c.id}`}
+              title={c.display_name}
+              description={
+                <>
                   {c.email ? `Email: ${c.email}` : ""}
                   {c.email && c.phone ? " · " : ""}
                   {c.phone ? `Tel: ${c.phone}` : ""}
                   {!c.email && !c.phone ? "—" : ""}
-                </p>
-              </Link>
-            </Card>
+                </>
+              }
+            />
           ))}
         </div>
       )}
