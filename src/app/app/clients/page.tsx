@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -56,34 +59,23 @@ export default async function AppClientsPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
+      <BackLink
         href="/app"
         className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
       >
         ← Volver al panel
-      </Link>
+      </BackLink>
 
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Clientes</h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Clientes de tu organización.
-            </p>
-          </div>
+      <PageHeader
+        title="Clientes"
+        description="Clientes de tu organización."
+        actions={
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Badge tone="neutral">Total: {rows.length}</Badge>
-            {canWrite ? (
-              <Link
-                href="/app/clients/new"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-              >
-                Nuevo cliente
-              </Link>
-            ) : null}
+            {canWrite ? <LinkButton href="/app/clients/new">Nuevo cliente</LinkButton> : null}
           </div>
-        </div>
-      </Card>
+        }
+      />
 
       {rows.length === 0 ? (
         <EmptyState
