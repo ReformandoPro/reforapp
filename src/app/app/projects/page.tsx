@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BackLink } from "@/components/ui/BackLink";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import type { ProjectStatus } from "@/lib/domain/projects/status";
 import { isProjectStatus } from "@/lib/domain/projects/status";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
@@ -125,31 +128,13 @@ export default async function AppProjectsPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href="/app"
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver al panel
-      </Link>
-
-      <Card className="p-6 shadow-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Obras
-            </h1>
-            <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              Listado de obras de tu organización.
-            </p>
-          </div>
-
-          {canCreate ? (
-            <Link
-              href="/app/projects/new"
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            >
-              Nueva obra
-            </Link>
+      <PageHeader
+        backLink={<BackLink href="/app">← Volver al panel</BackLink>}
+        title="Obras"
+        description="Listado de obras de tu organización."
+        actions={
+          canCreate ? (
+            <LinkButton href="/app/projects/new">Nueva obra</LinkButton>
           ) : (
             <button
               type="button"
@@ -159,9 +144,9 @@ export default async function AppProjectsPage() {
             >
               Nueva obra
             </button>
-          )}
-        </div>
-      </Card>
+          )
+        }
+      />
 
       {projects.length === 0 ? (
         <EmptyState
