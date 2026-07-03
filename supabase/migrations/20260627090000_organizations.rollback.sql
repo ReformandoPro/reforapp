@@ -2,12 +2,10 @@ begin;
 
 -- Rollback: organizations core bootstrap.
 
-drop policy if exists organizations_delete_owner_admin on public.organizations;
-drop policy if exists organizations_update_owner_admin on public.organizations;
-drop policy if exists organizations_insert_authenticated on public.organizations;
-drop policy if exists organizations_select_member on public.organizations;
-
 drop trigger if exists set_updated_at_organizations on public.organizations;
+
+drop index if exists organizations_created_at_idx;
+drop index if exists organizations_slug_unique;
 
 drop table if exists public.organizations;
 

@@ -2,12 +2,11 @@ begin;
 
 -- Rollback: projects core bootstrap.
 
-drop policy if exists projects_delete_owner_admin on public.projects;
-drop policy if exists projects_update_owner_admin on public.projects;
-drop policy if exists projects_insert_owner_admin on public.projects;
-drop policy if exists projects_select_member on public.projects;
-
 drop trigger if exists set_updated_at_projects on public.projects;
+
+drop index if exists projects_org_status_idx;
+drop index if exists projects_org_client_idx;
+drop index if exists projects_org_updated_at_idx;
 
 drop table if exists public.projects;
 
