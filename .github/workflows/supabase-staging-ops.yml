@@ -186,10 +186,6 @@ jobs:
           fi
 
           # Require UUID inputs
-          for v in OWNER1_USER_ID MEMBER1_USER_ID OWNER2_USER_ID NO_MEMBERSHIP_USER_ID; do
-            val="${{ inputs.OWNER1_USER_ID }}"
-          done
-
           if [ -z "${{ inputs.OWNER1_USER_ID }}" ] || [ -z "${{ inputs.MEMBER1_USER_ID }}" ] || [ -z "${{ inputs.OWNER2_USER_ID }}" ] || [ -z "${{ inputs.NO_MEMBERSHIP_USER_ID }}" ]; then
             echo "ERROR: Missing one or more required UUID inputs for seed." >&2
             exit 1
@@ -261,8 +257,17 @@ where user_id = '__NO_MEMBERSHIP_USER_ID__'::uuid;
 
 -- documents should NOT be seeded
 -- if table exists, count should be 0 (seed does not insert)
-select count(*)::int as project_documents_count
-from public.project_documents;
+do $$
+begin
+  if to_regclass('public.project_documents') is null then
+    raise notice 'project_documents table not found; skipping documents check.';
+  end if;
+end $$;
+
+select case
+  when to_regclass('public.project_documents') is null then null
+  else (select count(*)::int from public.project_documents)
+end as project_documents_count;
 SQL
 
           # Replace placeholder in verify SQL
