@@ -1,0 +1,277 @@
+name: Supabase Staging Ops (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Operation mode (run one at a time)'
+        type: choice
+        required: true
+        default: backup_only
+        options:
+          - backup_only
+          - db_push
+          - seed
+          - verify
+      confirm_project_ref:
+        description: 'Must equal hafljwojvblyfljddjcr (staging project ref)'
+        type: string
+        required: true
+      backup_confirmed:
+        description: 'For db_push only: must equal I_HAVE_DOWNLOADED_BACKUP'
+        type: string
+        required: false
+      OWNER1_USER_ID:
+        description: 'For seed/verify: Auth user UUID (Org1 owner)'
+        type: string
+        required: false
+      MEMBER1_USER_ID:
+        description: 'For seed/verify: Auth user UUID (Org1 member)'
+        type: string
+        required: false
+      OWNER2_USER_ID:
+        description: 'For seed/verify: Auth user UUID (Org2 owner)'
+        type: string
+        required: false
+      NO_MEMBERSHIP_USER_ID:
+        description: 'For seed/verify: Auth user UUID (no membership user)'
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-staging-ops
+  cancel-in-progress: false
+
+env:
+  STAGING_PROJECT_REF: hafljwojvblyfljddjcr
+  BACKUP_PREFIX: reformando-staging-before-b5
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard rails (project ref)
+        shell: bash
+        run: |
+          set +x
+          if [ "${{ inputs.confirm_project_ref }}" != "${STAGING_PROJECT_REF}" ]; then
+            echo "ERROR: confirm_project_ref must equal ${STAGING_PROJECT_REF}." >&2
+            exit 1
+          fi
+
+      - name: Mask secrets
+        shell: bash
+        run: |
+          set +x
+          if [ -n "${{ secrets.SUPABASE_STAGING_DB_URL }}" ]; then
+            echo "::add-mask::${{ secrets.SUPABASE_STAGING_DB_URL }}"
+          fi
+          if [ -n "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            echo "::add-mask::${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Supabase CLI
+        shell: bash
+        run: |
+          set +x
+          npm i -g supabase@2
+          supabase --version
+
+      # -----------------------
+      # backup_only
+      # -----------------------
+      - name: Backup (public schema) to artifact
+        if: ${{ inputs.mode == 'backup_only' }}
+        shell: bash
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set +x
+          if [ -z "${SUPABASE_STAGING_DB_URL}" ]; then
+            echo "ERROR: Missing secret SUPABASE_STAGING_DB_URL" >&2
+            exit 1
+          fi
+
+          TS="$(date -u +%Y%m%d-%H%M%S)"
+          OUT_DIR="$RUNNER_TEMP/supabase-backups"
+          OUT_FILE="${BACKUP_PREFIX}-${TS}.sql"
+          OUT_PATH="$OUT_DIR/$OUT_FILE"
+          mkdir -p "$OUT_DIR"
+
+          # Dump ONLY schema public (read-only)
+          supabase db dump \
+            --db-url "$SUPABASE_STAGING_DB_URL" \
+            --schema public \
+            -f "$OUT_PATH"
+
+          test -f "$OUT_PATH" || (echo "ERROR: Backup file not created" >&2 && exit 1)
+          test -s "$OUT_PATH" || (echo "ERROR: Backup file is empty" >&2 && exit 1)
+
+          echo "Backup created: $OUT_FILE"
+
+      - name: Upload backup artifact
+        if: ${{ inputs.mode == 'backup_only' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-staging-backup-public-schema
+          path: ${{ runner.temp }}/supabase-backups/*.sql
+          if-no-files-found: error
+          retention-days: 14
+
+      # -----------------------
+      # db_push
+      # -----------------------
+      - name: Guard rails (backup_confirmed)
+        if: ${{ inputs.mode == 'db_push' }}
+        shell: bash
+        run: |
+          set +x
+          if [ "${{ inputs.backup_confirmed }}" != "I_HAVE_DOWNLOADED_BACKUP" ]; then
+            echo "ERROR: For db_push you must set backup_confirmed=I_HAVE_DOWNLOADED_BACKUP" >&2
+            exit 1
+          fi
+
+      - name: Supabase link (requires SUPABASE_ACCESS_TOKEN)
+        if: ${{ inputs.mode == 'db_push' }}
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set +x
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "ERROR: Missing secret SUPABASE_ACCESS_TOKEN (required for db_push)." >&2
+            exit 1
+          fi
+
+          # Auth for supabase CLI
+          supabase login --token "$SUPABASE_ACCESS_TOKEN"
+          supabase link --project-ref "${STAGING_PROJECT_REF}"
+
+      - name: Apply migrations (supabase db push)
+        if: ${{ inputs.mode == 'db_push' }}
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set +x
+          # Do not reset, do not drop. db push should fail if conflicts exist.
+          supabase db push
+
+      # -----------------------
+      # seed
+      # -----------------------
+      - name: Seed (render temp + execute)
+        if: ${{ inputs.mode == 'seed' }}
+        shell: bash
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set +x
+          if [ -z "${SUPABASE_STAGING_DB_URL}" ]; then
+            echo "ERROR: Missing secret SUPABASE_STAGING_DB_URL" >&2
+            exit 1
+          fi
+
+          # Require UUID inputs
+          for v in OWNER1_USER_ID MEMBER1_USER_ID OWNER2_USER_ID NO_MEMBERSHIP_USER_ID; do
+            val="${{ inputs.OWNER1_USER_ID }}"
+          done
+
+          if [ -z "${{ inputs.OWNER1_USER_ID }}" ] || [ -z "${{ inputs.MEMBER1_USER_ID }}" ] || [ -z "${{ inputs.OWNER2_USER_ID }}" ] || [ -z "${{ inputs.NO_MEMBERSHIP_USER_ID }}" ]; then
+            echo "ERROR: Missing one or more required UUID inputs for seed." >&2
+            exit 1
+          fi
+
+          SRC="supabase/seed/staging-demo.sql"
+          test -f "$SRC" || (echo "ERROR: Seed source not found at $SRC" >&2 && exit 1)
+
+          OUT_DIR="$RUNNER_TEMP/seed"
+          mkdir -p "$OUT_DIR"
+          OUT="$OUT_DIR/staging-demo.rendered.sql"
+
+          # Render placeholders (do not print UUIDs)
+          sed \
+            -e "s/__OWNER1_USER_ID__/${{ inputs.OWNER1_USER_ID }}/g" \
+            -e "s/__MEMBER1_USER_ID__/${{ inputs.MEMBER1_USER_ID }}/g" \
+            -e "s/__OWNER2_USER_ID__/${{ inputs.OWNER2_USER_ID }}/g" \
+            -e "s/__NO_MEMBERSHIP_USER_ID__/${{ inputs.NO_MEMBERSHIP_USER_ID }}/g" \
+            "$SRC" > "$OUT"
+
+          # Execute seed
+          supabase db execute \
+            --db-url "$SUPABASE_STAGING_DB_URL" \
+            --file "$OUT"
+
+          # Cleanup temp seed
+          rm -f "$OUT"
+
+      # -----------------------
+      # verify
+      # -----------------------
+      - name: Verify (counts + invariants)
+        if: ${{ inputs.mode == 'verify' }}
+        shell: bash
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set +x
+          if [ -z "${SUPABASE_STAGING_DB_URL}" ]; then
+            echo "ERROR: Missing secret SUPABASE_STAGING_DB_URL" >&2
+            exit 1
+          fi
+
+          if [ -z "${{ inputs.NO_MEMBERSHIP_USER_ID }}" ]; then
+            echo "ERROR: verify requires NO_MEMBERSHIP_USER_ID input." >&2
+            exit 1
+          fi
+
+          Q="$RUNNER_TEMP/verify.sql"
+          cat > "$Q" <<'SQL'
+-- Counts
+select 'organizations' as table, count(*)::int as count from public.organizations;
+select 'memberships' as table, count(*)::int as count from public.memberships;
+select 'clients' as table, count(*)::int as count from public.clients;
+select 'projects' as table, count(*)::int as count from public.projects;
+
+-- Optional module tables (may exist)
+select 'project_phases' as table, count(*)::int as count from public.project_phases;
+select 'project_tasks' as table, count(*)::int as count from public.project_tasks;
+select 'project_budgets' as table, count(*)::int as count from public.project_budgets;
+select 'project_costs' as table, count(*)::int as count from public.project_costs;
+select 'project_purchases' as table, count(*)::int as count from public.project_purchases;
+
+-- Invariants
+-- no-membership user must not have memberships
+select count(*)::int as no_membership_user_memberships
+from public.memberships
+where user_id = '__NO_MEMBERSHIP_USER_ID__'::uuid;
+
+-- documents should NOT be seeded
+-- if table exists, count should be 0 (seed does not insert)
+select count(*)::int as project_documents_count
+from public.project_documents;
+SQL
+
+          # Replace placeholder in verify SQL
+          sed -i \
+            -e "s/__NO_MEMBERSHIP_USER_ID__/${{ inputs.NO_MEMBERSHIP_USER_ID }}/g" \
+            "$Q"
+
+          supabase db execute \
+            --db-url "$SUPABASE_STAGING_DB_URL" \
+            --file "$Q"
+
+          rm -f "$Q"
