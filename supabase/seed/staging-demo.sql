@@ -17,10 +17,10 @@
 -- 4) Run the script.
 --
 -- Notes:
--- - profiles are NOT seeded here (best-effort / optional). The repo migrations create
---   a trigger to auto-create profiles on auth.users insert. This seed will *check*
---   that profiles exist for the seeded users before inserting module rows that
---   reference public.profiles.
+-- - profiles are handled as **best-effort**:
+--   the repo migrations create a trigger to auto-create profiles on auth.users insert.
+--   This seed also includes an idempotent **fallback upsert** to ensure minimal
+--   profiles exist for the demo users (safe with the trigger due to ON CONFLICT).
 -- - project_documents are NOT seeded here (requires Storage + real files).
 
 begin;
@@ -31,7 +31,16 @@ begin;
 DO $$
 begin
   if '__OWNER1_USER_ID__' like '%__%' then
-    raise exception 'Placeholders not replaced. Replace __OWNER1_USER_ID__/__MEMBER1_USER_ID__/__OWNER2_USER_ID__/__NO_MEMBERSHIP_USER_ID__ with real Auth user UUIDs before running.';
+    raise exception 'Placeholders not replaced: __OWNER1_USER_ID__';
+  end if;
+  if '__MEMBER1_USER_ID__' like '%__%' then
+    raise exception 'Placeholders not replaced: __MEMBER1_USER_ID__';
+  end if;
+  if '__OWNER2_USER_ID__' like '%__%' then
+    raise exception 'Placeholders not replaced: __OWNER2_USER_ID__';
+  end if;
+  if '__NO_MEMBERSHIP_USER_ID__' like '%__%' then
+    raise exception 'Placeholders not replaced: __NO_MEMBERSHIP_USER_ID__';
   end if;
 end $$;
 
@@ -222,18 +231,36 @@ set client_id = excluded.client_id,
 -- -----------------------------------------------------------------------------
 -- 6) Optional: module data (Org 1 only)
 -- -----------------------------------------------------------------------------
--- Many module tables reference public.profiles(user_id). We do NOT insert profiles here.
--- Instead, we assert profiles exist for owner1/member1 before inserting module rows.
+-- Many module tables reference public.profiles(user_id).
+-- The repo migrations create a trigger on auth.users to create profiles automatically,
+-- but we also do a safe fallback upsert here to avoid seed blocking if profiles
+-- weren't created yet for any reason.
+--
+-- NOTE: This does not create Auth users. Auth users must already exist.
+insert into public.profiles (user_id, display_name, email)
+values
+  ('__OWNER1_USER_ID__'::uuid, 'Owner Org 1 (demo)', null),
+  ('__MEMBER1_USER_ID__'::uuid, 'Member Org 1 (demo)', null),
+  ('__OWNER2_USER_ID__'::uuid, 'Owner Org 2 (demo)', null),
+  ('__NO_MEMBERSHIP_USER_ID__'::uuid, 'No Membership (demo)', null)
+on conflict (user_id) do update
+set display_name = excluded.display_name,
+    updated_at = now();
+
+-- Hard check: profiles must exist now (FK targets)
 DO $$
 begin
   if not exists (select 1 from public.profiles where user_id = '__OWNER1_USER_ID__'::uuid) then
-    raise exception 'Missing public.profiles for OWNER1_USER_ID. Create Auth user in Dashboard first (profiles should be auto-created by trigger), or run the profiles backfill migration logic.';
+    raise exception 'Missing public.profiles for OWNER1_USER_ID even after upsert.';
   end if;
   if not exists (select 1 from public.profiles where user_id = '__MEMBER1_USER_ID__'::uuid) then
-    raise exception 'Missing public.profiles for MEMBER1_USER_ID. Create Auth user in Dashboard first (profiles should be auto-created by trigger), or run the profiles backfill migration logic.';
+    raise exception 'Missing public.profiles for MEMBER1_USER_ID even after upsert.';
   end if;
   if not exists (select 1 from public.profiles where user_id = '__OWNER2_USER_ID__'::uuid) then
-    raise exception 'Missing public.profiles for OWNER2_USER_ID. Create Auth user in Dashboard first (profiles should be auto-created by trigger), or run the profiles backfill migration logic.';
+    raise exception 'Missing public.profiles for OWNER2_USER_ID even after upsert.';
+  end if;
+  if not exists (select 1 from public.profiles where user_id = '__NO_MEMBERSHIP_USER_ID__'::uuid) then
+    raise exception 'Missing public.profiles for NO_MEMBERSHIP_USER_ID even after upsert.';
   end if;
 end $$;
 

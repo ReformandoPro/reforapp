@@ -53,7 +53,11 @@ If the schema exists (it does in current repo migrations), the seed also creates
 
 ### Explicitly NOT seeded
 - **project_documents**: not seeded on purpose (real flow requires Storage + real files). Bucket stays empty; upload should be tested from UI in a later block.
-- **profiles**: treated as best-effort/optional (see below).
+
+### `public.profiles`
+- Auth users must be created manually.
+- The repo migrations define a trigger to auto-create `public.profiles` for new `auth.users`.
+- The seed also includes a safe fallback **upsert** to ensure minimal profile rows exist for the demo users (idempotent, and compatible with the trigger).
 
 ---
 
@@ -98,18 +102,25 @@ The seed is **idempotent** (safe to run multiple times) thanks to deterministic 
 
 ---
 
-## About `public.profiles` (best-effort)
+## About `public.profiles`
+Some module tables (`project_costs`, `project_purchases`, `project_progress_updates`) reference `public.profiles(user_id)`.
+
 The repo migrations create `public.profiles` and a trigger on `auth.users` to auto-create a profile row when a new auth user is created.
 
-This seed does **not** insert into `public.profiles` to avoid duplicates or fighting that trigger.
+To reduce friction, the seed also performs an idempotent **upsert fallback** into `public.profiles` for the four demo users.
 
-However, some module tables (`project_costs`, `project_purchases`, `project_progress_updates`) reference `public.profiles(user_id)`.
+If the seed fails with a foreign key error to `public.profiles`, verify that the Auth users exist and then run:
 
-So the seed script will **fail fast** with a clear error if a `profiles` row is missing for any of the demo users.
-
-If that happens:
-- confirm the Auth users really exist in the staging project,
-- then check whether `public.profiles` has rows for them.
+```sql
+select user_id, display_name, email
+from public.profiles
+where user_id in (
+  '__OWNER1_USER_ID__'::uuid,
+  '__MEMBER1_USER_ID__'::uuid,
+  '__OWNER2_USER_ID__'::uuid,
+  '__NO_MEMBERSHIP_USER_ID__'::uuid
+);
+```
 
 ---
 
