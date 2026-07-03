@@ -4,10 +4,14 @@ import { redirect } from "next/navigation";
 
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
+function isAllowedRedirectTo(value: string): boolean {
+  return value === "/app" || value.startsWith("/app/");
+}
+
 export async function loginWithPassword(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const redirectTo = String(formData.get("redirectTo") ?? "/app/projects");
+  const redirectTo = String(formData.get("redirectTo") ?? "/app");
 
   const supabase = await createServerSupabaseClient();
 
@@ -19,14 +23,11 @@ export async function loginWithPassword(formData: FormData) {
   if (error) {
     const url = new URL("/login", "http://local");
     url.searchParams.set("error", "1");
-    url.searchParams.set(
-      "redirectTo",
-      redirectTo.startsWith("/app") ? redirectTo : "/app/projects"
-    );
+    url.searchParams.set("redirectTo", isAllowedRedirectTo(redirectTo) ? redirectTo : "/app");
     redirect(url.pathname + url.search);
   }
 
-  redirect(redirectTo.startsWith("/app") ? redirectTo : "/app/projects");
+  redirect(isAllowedRedirectTo(redirectTo) ? redirectTo : "/app");
 }
 
 export async function logout() {

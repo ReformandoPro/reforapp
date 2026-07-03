@@ -11,7 +11,8 @@ export async function middleware(request: NextRequest) {
 
   if (!hasAuthCookie) {
     const redirectUrl = new URL("/login", request.url);
-    redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
+    const returnTo = request.nextUrl.pathname + request.nextUrl.search;
+    redirectUrl.searchParams.set("redirectTo", returnTo);
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -23,7 +24,8 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     const redirectUrl = new URL("/login", request.url);
-    redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
+    const returnTo = request.nextUrl.pathname + request.nextUrl.search;
+    redirectUrl.searchParams.set("redirectTo", returnTo);
     return NextResponse.redirect(redirectUrl);
   }
 
