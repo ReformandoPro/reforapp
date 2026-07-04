@@ -241,13 +241,38 @@ jobs:
           select 'clients' as table, count(*)::int as count from public.clients;
           select 'projects' as table, count(*)::int as count from public.projects;
 
-          -- Optional module tables (may exist)
-          select 'project_phases' as table, count(*)::int as count from public.project_phases;
-          select 'project_tasks' as table, count(*)::int as count from public.project_tasks;
-          select 'project_budgets' as table, count(*)::int as count from public.project_budgets;
-          select 'project_costs' as table, count(*)::int as count from public.project_costs;
-          select 'project_purchases' as table, count(*)::int as count from public.project_purchases;
+          select 'profiles' as table, count(*)::int as count from public.profiles;
+          -- Optional module tables: legacy-safe, skip with a NOTICE instead of
+          -- failing when the table does not exist on this environment (same
+          -- to_regclass(...) pattern already used in supabase/seed/staging-demo.sql).
+          do $$
+          declare
+          tbl text;
+          v_count int;
+          optional_tables text[] := array['project_phases','project_progress_updates','project_costs','project_budgets','project_budget_lines','project_purchases','project_purchase_items','project_task_comments'];
+          begin
+          foreach tbl in array optional_tables loop
+          if to_regclass(format('public.%I', tbl)) is null then
+          raise notice 'verify: % skipped because table does not exist (legacy staging schema not yet migrated for this module).', tbl;
+          else
+          execute format('select count(*) from public.%I', tbl) into v_count;
+          raise notice 'verify: % count = %', tbl, v_count;
+          end if;
+          end loop;
+          end $$;
 
+          -- project_tasks: core seeded module, but legacy-aware. Only count(*) is
+          -- used here (never assume a phase_id column exists; see
+          -- supabase/seed/staging-demo.sql section 6.2 for why).
+          do $$
+          begin
+          if to_regclass('public.project_tasks') is null then
+          raise exception 'verify: required table public.project_tasks does not exist.';
+          else
+          raise notice 'verify: project_tasks count = %', (select count(*) from public.project_tasks);
+          end if;
+          end $$;
+          
           -- Invariants
           -- no-membership user must not have memberships
           select count(*)::int as no_membership_user_memberships
