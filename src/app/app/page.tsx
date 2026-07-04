@@ -9,18 +9,13 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { createSupabaseClientsReader } from "@/lib/services/clients";
+import { calculateDashboardMetrics } from "@/lib/services/dashboard-metrics";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { getOrganizationById } from "@/lib/services/organizations";
 import { createSupabaseProjectsReader } from "@/lib/services/private-projects";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
-
-const mockProjectMetrics = {
-  activeProjectsCount: 1,
-  budgetingProjectsCount: 1,
-  averageProgress: 27,
-};
 
 export default async function AppDashboardPage() {
   const ctx = await getOrganizationContextForRequest();
@@ -61,17 +56,24 @@ export default async function AppDashboardPage() {
   const organization = organizationResult.organization;
   const projectsReader = createSupabaseProjectsReader(supabase);
   const clientsReader = createSupabaseClientsReader(supabase);
-  const [projects, clientsResult] = await Promise.all([
-    projectsReader.listProjects(ctx.organizationId),
+  const [projectsResult, clientsResult] = await Promise.all([
+    projectsReader
+      .listProjects(ctx.organizationId)
+      .then((data) => ({ ok: true as const, data }))
+      .catch((error: unknown) => ({
+        ok: false as const,
+        message: error instanceof Error ? error.message : "No pudimos cargar las obras.",
+      })),
     clientsReader
       .listClients(ctx.organizationId)
-      .then((items) => ({ ok: true as const, items }))
+      .then((data) => ({ ok: true as const, data }))
       .catch((error: unknown) => ({
         ok: false as const,
         message: error instanceof Error ? error.message : "No pudimos cargar los clientes.",
       })),
   ]);
-  const clients = clientsResult.ok ? clientsResult.items : [];
+  const projects = projectsResult.ok ? projectsResult.data : [];
+  const metrics = calculateDashboardMetrics({ projects: projectsResult, clients: clientsResult });
 
   const recentActivity = [
     "Presupuesto pendiente de revisión en Adecuación local Serrano.",
@@ -98,14 +100,26 @@ export default async function AppDashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Obras activas" value={mockProjectMetrics.activeProjectsCount} helper="En producción o planificación" />
-        <StatCard label="En presupuesto" value={mockProjectMetrics.budgetingProjectsCount} helper="Pendientes de cierre comercial" />
+        <StatCard
+          label="Obras activas"
+          value={metrics.activeProjectsCount.value}
+          helper={metrics.activeProjectsCount.helper}
+        />
+        <StatCard
+          label="En presupuesto"
+          value={metrics.budgetingProjectsCount.value}
+          helper={metrics.budgetingProjectsCount.helper}
+        />
         <StatCard
           label="Clientes registrados"
-          value={clientsResult.ok ? clients.length : "—"}
-          helper={clientsResult.ok ? "Contactos con expediente" : "Error leyendo clientes"}
+          value={metrics.clientsCount.value}
+          helper={metrics.clientsCount.helper}
         />
-        <StatCard label="Avance medio" value={`${mockProjectMetrics.averageProgress}%`} helper="Estimación operativa mock" />
+        <StatCard
+          label="Avance medio"
+          value={metrics.averageProgress.ok ? `${metrics.averageProgress.value}%` : metrics.averageProgress.value}
+          helper={metrics.averageProgress.helper}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
