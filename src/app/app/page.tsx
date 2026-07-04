@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { StatCard } from "@/components/app/StatCard";
 import { StatusBadge } from "@/components/app/StatusBadge";
@@ -6,9 +7,12 @@ import { Card } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { mockOrganization } from "@/lib/mock/reformando";
 import { createMockClientsReader } from "@/lib/services/clients";
-import { getDemoOrganization } from "@/lib/services/demo-organization";
+import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { getOrganizationById } from "@/lib/services/organizations";
 import { createMockProjectsReader } from "@/lib/services/private-projects";
+import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +22,47 @@ function average(values: number[]) {
 }
 
 export default async function AppDashboardPage() {
-  const organization = await getDemoOrganization();
+  const ctx = await getOrganizationContextForRequest();
+
+  if (!ctx.ok) {
+    if (ctx.reason === "missing_membership") {
+      redirect("/app/onboarding");
+    }
+
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <Card padding="lg" shadow="none">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Panel de control</h1>
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
+            No pudimos resolver tu organización. Inicia sesión e inténtalo de nuevo.
+          </p>
+        </Card>
+      </section>
+    );
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const organizationResult = await getOrganizationById(supabase, ctx.organizationId);
+
+  if (!organizationResult.ok) {
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <Card padding="lg" shadow="none">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Panel de control</h1>
+          <p className="mt-2 text-sm text-content-secondary sm:text-base">
+            Tu membership existe, pero no pudimos cargar la organización asociada.
+          </p>
+        </Card>
+      </section>
+    );
+  }
+
+  const organization = organizationResult.organization;
   const projectsReader = createMockProjectsReader();
   const clientsReader = createMockClientsReader();
   const [projects, clients] = await Promise.all([
-    projectsReader.listProjects(organization.id),
-    clientsReader.listClients(organization.id),
+    projectsReader.listProjects(mockOrganization.id),
+    clientsReader.listClients(mockOrganization.id),
   ]);
 
   const activeProjects = projects.filter((project) =>
@@ -41,7 +80,11 @@ export default async function AppDashboardPage() {
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <PageHeader
-        eyebrow={<span className="text-sm font-medium text-content-tertiary">{organization.name}</span>}
+        eyebrow={
+          <span className="text-sm font-medium text-content-tertiary">
+            {organization.name} · rol {ctx.role}
+          </span>
+        }
         title="Panel de control"
         description="Resumen operativo de clientes, obras y próximos pasos para la empresa de reformas."
         actions={
