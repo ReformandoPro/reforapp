@@ -14,39 +14,25 @@ export type DashboardActivityResult =
   | { ok: true; items: DashboardActivityItem[] }
   | { ok: false; message: string };
 
-function getActivityTimestamp(item: { updatedAt?: string | null; createdAt?: string | null }): string | null {
-  return item.updatedAt ?? item.createdAt ?? null;
-}
-
-function getActivityVerb(item: { updatedAt?: string | null; createdAt?: string | null }): string {
-  if (item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt) {
-    return "actualizada";
-  }
-
-  return "creada";
-}
-
-function projectActivity(project: Project): DashboardActivityItem | null {
-  const occurredAt = getActivityTimestamp(project);
-  if (!occurredAt) return null;
+function projectCreatedActivity(project: Project): DashboardActivityItem | null {
+  if (!project.createdAt) return null;
 
   return {
     id: `project-${project.id}`,
-    occurredAt,
-    label: `Obra ${getActivityVerb(project)}`,
+    occurredAt: project.createdAt,
+    label: "Obra creada",
     description: project.name,
     href: `/app/projects/${project.id}`,
   };
 }
 
-function clientActivity(client: Client): DashboardActivityItem | null {
-  const occurredAt = getActivityTimestamp(client);
-  if (!occurredAt) return null;
+function clientCreatedActivity(client: Client): DashboardActivityItem | null {
+  if (!client.createdAt) return null;
 
   return {
     id: `client-${client.id}`,
-    occurredAt,
-    label: `Cliente ${getActivityVerb(client)}`,
+    occurredAt: client.createdAt,
+    label: "Cliente creado",
     description: client.displayName,
     href: `/app/clients/${client.id}`,
   };
@@ -66,8 +52,8 @@ export function buildDashboardActivity({
   }
 
   const items = [
-    ...projects.data.map(projectActivity),
-    ...clients.data.map(clientActivity),
+    ...projects.data.map(projectCreatedActivity),
+    ...clients.data.map(clientCreatedActivity),
   ]
     .filter((item): item is DashboardActivityItem => item !== null)
     .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
