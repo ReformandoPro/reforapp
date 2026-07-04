@@ -300,15 +300,84 @@ set client_id = excluded.client_id,
 -- weren't created yet for any reason.
 --
 -- NOTE: This does not create Auth users. Auth users must already exist.
-insert into public.profiles (user_id, display_name, email)
-values
-  ('__OWNER1_USER_ID__'::uuid, 'Owner Org 1 (demo)', null),
-  ('__MEMBER1_USER_ID__'::uuid, 'Member Org 1 (demo)', null),
-  ('__OWNER2_USER_ID__'::uuid, 'Owner Org 2 (demo)', null),
-  ('__NO_MEMBERSHIP_USER_ID__'::uuid, 'No Membership (demo)', null)
-on conflict (user_id) do update
-set display_name = excluded.display_name,
-    updated_at = now();
+--
+-- LEGACY-SAFE: this staging environment's public.profiles.user_id has NO
+-- unique/exclusion constraint, so `insert ... on conflict (user_id) do update`
+-- fails here with "there is no unique or exclusion constraint matching the
+-- ON CONFLICT specification". Instead of relying on ON CONFLICT, do a manual
+-- UPDATE followed by INSERT ... only when still missing, per demo user. That
+-- pattern works whether or not user_id is unique in a given environment and
+-- never duplicates an existing profile row.
+--
+-- This environment's public.profiles also has legacy NOT NULL columns with
+-- no default (id text, name text, role text). Any new row inserted here must
+-- populate them too, so detect at runtime whether those columns exist and
+-- only include them in the INSERT when they do.
+do $$
+declare
+  has_id boolean;
+  has_name boolean;
+  has_role boolean;
+  insert_cols text;
+  insert_vals text;
+  r record;
+begin
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'id'
+  ) into has_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'name'
+  ) into has_name;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'role'
+  ) into has_role;
+
+  for r in
+    select * from (values
+      ('__OWNER1_USER_ID__'::uuid, 'Owner Org 1 (demo)', 'owner1@gastrocloud.es'),
+      ('__MEMBER1_USER_ID__'::uuid, 'Member Org 1 (demo)', 'member1@gastrocloud.es'),
+      ('__OWNER2_USER_ID__'::uuid, 'Owner Org 2 (demo)', 'owner2@gastrocloud.es'),
+      ('__NO_MEMBERSHIP_USER_ID__'::uuid, 'No Membership (demo)', 'nomembership@gastrocloud.es')
+    ) as t(user_id, display_name, email)
+  loop
+    -- 1) Update first, in case a profile row already exists for this user
+    --    (created by the auth.users trigger or a previous seed run).
+    execute format(
+      'update public.profiles set display_name = %L, email = %L, updated_at = now() where user_id = %L::uuid',
+      r.display_name, r.email, r.user_id
+    );
+
+    -- 2) Insert only if still missing. Re-check instead of relying on
+    --    ON CONFLICT, because user_id has no unique/exclusion constraint
+    --    on this legacy staging schema.
+    if not exists (select 1 from public.profiles where user_id = r.user_id) then
+      insert_cols := 'user_id, display_name, email';
+      insert_vals := format('%L::uuid, %L, %L', r.user_id, r.display_name, r.email);
+
+      if has_id then
+        insert_cols := insert_cols || ', id';
+        insert_vals := insert_vals || format(', %L', r.user_id::text);
+      end if;
+      if has_name then
+        insert_cols := insert_cols || ', name';
+        insert_vals := insert_vals || format(', %L', r.display_name);
+      end if;
+      if has_role then
+        insert_cols := insert_cols || ', role';
+        insert_vals := insert_vals || format(', %L', 'admin');
+      end if;
+
+      execute format('insert into public.profiles (%s) values (%s)', insert_cols, insert_vals);
+    end if;
+  end loop;
+
+  raise notice 'profiles: upserted demo rows via UPDATE + INSERT-if-missing (no ON CONFLICT; user_id has no unique constraint on this legacy schema). Legacy columns present -> id: %, name: %, role: %', has_id, has_name, has_role;
+end $$;
 
 -- Hard check: profiles must exist now (FK targets)
 DO $$
