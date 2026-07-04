@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { createSupabaseClientsReader } from "@/lib/services/clients";
+import { buildDashboardActivity } from "@/lib/services/dashboard-activity";
 import { calculateDashboardMetrics } from "@/lib/services/dashboard-metrics";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { getOrganizationById } from "@/lib/services/organizations";
@@ -74,12 +75,7 @@ export default async function AppDashboardPage() {
   ]);
   const projects = projectsResult.ok ? projectsResult.data : [];
   const metrics = calculateDashboardMetrics({ projects: projectsResult, clients: clientsResult });
-
-  const recentActivity = [
-    "Presupuesto pendiente de revisión en Adecuación local Serrano.",
-    "Reforma integral vivienda García avanzó a fase de instalaciones.",
-    "Documentación de cliente preparada para revisión interna.",
-  ];
+  const recentActivity = buildDashboardActivity({ projects: projectsResult, clients: clientsResult });
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -167,17 +163,38 @@ export default async function AppDashboardPage() {
         </Card>
 
         <Card padding="lg" shadow="none">
-          <h2 className="text-lg font-semibold">Próximas acciones</h2>
+          <h2 className="text-lg font-semibold">Actividad reciente</h2>
           <p className="mt-1 text-sm text-content-secondary">
-            Señales operativas para preparar el siguiente día de obra.
+            Últimos movimientos reales de clientes y obras de la organización.
           </p>
-          <ul className="mt-5 space-y-3">
-            {recentActivity.map((item) => (
-              <li key={item} className="rounded-2xl border border-subtle bg-bg-raised p-4 text-sm text-content-secondary">
-                {item}
-              </li>
-            ))}
-          </ul>
+          {!recentActivity.ok ? (
+            <div className="mt-5 rounded-2xl border border-subtle bg-bg-raised p-4 text-sm text-content-secondary">
+              {recentActivity.message}
+            </div>
+          ) : recentActivity.items.length === 0 ? (
+            <EmptyState
+              className="mt-5"
+              title="Sin actividad reciente"
+              description="Cuando haya clientes u obras con fechas reales, aparecerán aquí."
+            />
+          ) : (
+            <ul className="mt-5 space-y-3">
+              {recentActivity.items.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    className="block rounded-2xl border border-subtle bg-bg-raised p-4 text-sm transition-colors hover:bg-bg-surface"
+                  >
+                    <span className="font-medium text-content-primary">{item.label}</span>
+                    <span className="mt-1 block text-content-secondary">{item.description}</span>
+                    <time className="mt-2 block text-xs text-content-tertiary" dateTime={item.occurredAt}>
+                      {new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(item.occurredAt))}
+                    </time>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       </div>
     </section>
