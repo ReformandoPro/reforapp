@@ -39,16 +39,16 @@ begin;
 -- -----------------------------------------------------------------------------
 DO $$
 begin
-  if '__OWNER1_USER_ID__' like '%__%' then
+  if position('__' in '__OWNER1_USER_ID__') > 0 then
     raise exception 'Placeholders not replaced: __OWNER1_USER_ID__';
   end if;
-  if '__MEMBER1_USER_ID__' like '%__%' then
+  if position('__' in '__MEMBER1_USER_ID__') > 0 then
     raise exception 'Placeholders not replaced: __MEMBER1_USER_ID__';
   end if;
-  if '__OWNER2_USER_ID__' like '%__%' then
+  if position('__' in '__OWNER2_USER_ID__') > 0 then
     raise exception 'Placeholders not replaced: __OWNER2_USER_ID__';
   end if;
-  if '__NO_MEMBERSHIP_USER_ID__' like '%__%' then
+  if position('__' in '__NO_MEMBERSHIP_USER_ID__') > 0 then
     raise exception 'Placeholders not replaced: __NO_MEMBERSHIP_USER_ID__';
   end if;
 end $$;
