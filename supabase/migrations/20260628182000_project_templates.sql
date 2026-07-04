@@ -124,9 +124,19 @@ create table if not exists public.project_template_phases (
   created_at timestamptz not null default now()
 );
 
-alter table public.project_template_phases
-  add constraint project_template_phases_default_status_check
-  check (default_status in ('planned','in_progress','done','blocked','cancelled'));
+DO $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'project_template_phases_default_status_check'
+      and conrelid = 'public.project_template_phases'::regclass
+  ) then
+    alter table public.project_template_phases
+      add constraint project_template_phases_default_status_check
+      check (default_status in ('planned','in_progress','done','blocked','cancelled'));
+  end if;
+end $$;
 
 create index if not exists project_template_phases_template_idx
   on public.project_template_phases (template_id);
@@ -235,13 +245,33 @@ create table if not exists public.project_template_tasks (
   created_at timestamptz not null default now()
 );
 
-alter table public.project_template_tasks
-  add constraint project_template_tasks_default_status_check
-  check (default_status in ('pending','in_progress','done','blocked'));
+DO $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'project_template_tasks_default_status_check'
+      and conrelid = 'public.project_template_tasks'::regclass
+  ) then
+    alter table public.project_template_tasks
+      add constraint project_template_tasks_default_status_check
+      check (default_status in ('pending','in_progress','done','blocked'));
+  end if;
+end $$;
 
-alter table public.project_template_tasks
-  add constraint project_template_tasks_default_priority_check
-  check (default_priority in ('low','medium','high','urgent'));
+DO $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'project_template_tasks_default_priority_check'
+      and conrelid = 'public.project_template_tasks'::regclass
+  ) then
+    alter table public.project_template_tasks
+      add constraint project_template_tasks_default_priority_check
+      check (default_priority in ('low','medium','high','urgent'));
+  end if;
+end $$;
 
 create index if not exists project_template_tasks_phase_idx
   on public.project_template_tasks (template_phase_id);
