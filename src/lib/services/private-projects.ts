@@ -48,7 +48,7 @@ function normalizeProjectStatus(status: string): ProjectLifecycleStatus {
     return status as ProjectLifecycleStatus;
   }
 
-  return "scheduled";
+  throw new Error(`Unknown project status from Supabase: ${status}`);
 }
 
 export function mapProjectRow(row: ProjectRow): Project {
