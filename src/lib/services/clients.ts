@@ -60,7 +60,7 @@ export function createSupabaseClientsReader(supabase: SupabaseClient): ClientsRe
         .order("display_name", { ascending: true });
 
       if (error) {
-        return [];
+        throw new Error(`Unable to read clients from Supabase: ${error.message}`);
       }
 
       return ((data ?? []) as ClientRow[]).map(mapClientRow);
@@ -73,7 +73,11 @@ export function createSupabaseClientsReader(supabase: SupabaseClient): ClientsRe
         .eq("id", clientId)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        throw new Error(`Unable to read client from Supabase: ${error.message}`);
+      }
+
+      if (!data) {
         return null;
       }
 
