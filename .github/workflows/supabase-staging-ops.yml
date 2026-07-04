@@ -279,19 +279,23 @@ jobs:
           from public.memberships
           where user_id = '__NO_MEMBERSHIP_USER_ID__'::uuid;
 
-          -- documents should NOT be seeded
-          -- if table exists, count should be 0 (seed does not insert)
-          do $$
-          begin
+            -- documents should NOT be seeded
+            -- if table exists, count should be 0 (seed does not insert). Legacy-safe:
+            -- uses EXECUTE so public.project_documents is only resolved at runtime,
+            -- inside the branch where the table is known to exist (same pattern as
+            -- the optional module tables above), instead of a static reference that
+            -- postgres resolves eagerly even inside a CASE/ELSE branch.
+            do $$
+            declare
+            v_count int;
+            begin
             if to_regclass('public.project_documents') is null then
-              raise notice 'project_documents table not found; skipping documents check.';
+            raise notice 'verify: project_documents skipped because table does not exist (legacy staging schema not yet migrated for this module).';
+            else
+            execute 'select count(*)::int from public.project_documents' into v_count;
+            raise notice 'verify: project_documents count = %', v_count;
             end if;
-          end $$;
-
-          select case
-            when to_regclass('public.project_documents') is null then null
-            else (select count(*)::int from public.project_documents)
-          end as project_documents_count;
+            end $$;
           SQL
 
           # Replace placeholder in verify SQL
