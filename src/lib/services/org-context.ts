@@ -26,7 +26,12 @@ function pickPrimaryMembership(rows: MembershipRow[]): MembershipRow | null {
   return (
     rows
       .slice()
-      .sort((a, b) => rank[a.role] - rank[b.role])[0] ??
+      .sort((a, b) => {
+        const roleDiff = rank[a.role] - rank[b.role];
+        if (roleDiff !== 0) return roleDiff;
+
+        return a.organization_id.localeCompare(b.organization_id);
+      })[0] ??
     null
   );
 }
