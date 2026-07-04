@@ -1,0 +1,87 @@
+name: Supabase Staging Repair (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_project_ref:
+        description: 'Must equal hafljwojvblyfljddjcr (staging project ref)'
+        type: string
+        required: true
+      confirm_backup:
+        description: 'Must equal I_HAVE_VALID_BACKUP'
+        type: string
+        required: true
+      confirm_repair_version:
+        description: 'Must equal 20260528134257 (legacy migration version to mark as reverted)'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-staging-repair
+  cancel-in-progress: false
+
+env:
+  STAGING_PROJECT_REF: hafljwojvblyfljddjcr
+  REPAIR_VERSION: "20260528134257"
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard rails (inputs)
+        shell: bash
+        run: |
+          set +x
+          if [ "${{ inputs.confirm_project_ref }}" != "${STAGING_PROJECT_REF}" ]; then
+            echo "ERROR: confirm_project_ref must equal ${STAGING_PROJECT_REF}." >&2
+            exit 1
+          fi
+          if [ "${{ inputs.confirm_backup }}" != "I_HAVE_VALID_BACKUP" ]; then
+            echo "ERROR: confirm_backup must equal I_HAVE_VALID_BACKUP." >&2
+            exit 1
+          fi
+          if [ "${{ inputs.confirm_repair_version }}" != "${REPAIR_VERSION}" ]; then
+            echo "ERROR: confirm_repair_version must equal ${REPAIR_VERSION}." >&2
+            exit 1
+          fi
+
+      - name: Mask secrets
+        shell: bash
+        run: |
+          set +x
+          if [ -n "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            echo "::add-mask::${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Supabase CLI
+        shell: bash
+        run: |
+          set +x
+          npm i -g supabase@2
+          supabase --version
+
+      - name: Repair migration history (mark legacy version as reverted)
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set +x
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "ERROR: Missing secret SUPABASE_ACCESS_TOKEN" >&2
+            exit 1
+          fi
+          supabase login --token "$SUPABASE_ACCESS_TOKEN"
+          supabase link --project-ref "${STAGING_PROJECT_REF}"
+          supabase migration repair --status reverted "${REPAIR_VERSION}"
