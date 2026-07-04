@@ -11,9 +11,19 @@ create table if not exists public.memberships (
   primary key (organization_id, user_id)
 );
 
-alter table public.memberships
-  add constraint memberships_role_check
-  check (role in ('owner','admin','member'));
+DO $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'memberships_role_check'
+      and conrelid = 'public.memberships'::regclass
+  ) then
+    alter table public.memberships
+      add constraint memberships_role_check
+      check (role in ('owner','admin','member'));
+  end if;
+end $$;
 
 create index if not exists memberships_user_id_idx
   on public.memberships (user_id);
