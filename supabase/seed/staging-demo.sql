@@ -23,6 +23,15 @@
 --   profiles exist for the demo users (safe with the trigger due to ON CONFLICT).
 -- - project_documents are NOT seeded here (requires Storage + real files).
 
+-- - project_task_comments are NOT seeded here either (kept as a future optional module).
+-- - This seed is LEGACY-AWARE: optional module tables (project_phases,
+--   project_progress_updates, project_budgets/project_budget_lines, project_costs,
+--   project_purchases/project_purchase_items) are only seeded when their table
+--   (and required columns, e.g. project_tasks.phase_id) already exist in this
+--   environment. If a module/column is missing or incompatible, the seed emits a
+--   RAISE NOTICE and skips just that module instead of failing. The core
+--   (organizations, memberships, clients, projects) and project_tasks (when the
+--   table exists) are always seeded.
 begin;
 
 -- -----------------------------------------------------------------------------
@@ -264,125 +273,288 @@ begin
   end if;
 end $$;
 
--- 6.1) Phases (for project 1)
-insert into public.project_phases (
-  id, organization_id, project_id, title, description, status, start_date, end_date, sort_order
-)
-values
-  ('eeeeeeee-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Demolición', 'Retirada de sanitarios y alicatado antiguo.', 'done', '2026-06-01', '2026-06-03', 10),
-  ('eeeeeeee-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Instalaciones', 'Fontanería y electricidad.', 'in_progress', '2026-06-04', null, 20),
-  ('eeeeeeee-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Acabados', 'Alicatado, pintura y montaje.', 'planned', null, null, 30)
-on conflict (id) do update
-set title = excluded.title,
-    description = excluded.description,
-    status = excluded.status,
-    start_date = excluded.start_date,
-    end_date = excluded.end_date,
-    sort_order = excluded.sort_order,
-    updated_at = now();
+-- -----------------------------------------------------------------------------
+-- 6) Optional module data (Org 1 only) - LEGACY-AWARE
+-- -----------------------------------------------------------------------------
+-- Each optional module below is only seeded when its table (and any required
+-- columns) already exist in this environment. These tables are created by
+-- dedicated migrations that are themselves legacy-safe: on a staging project
+-- where public.projects.id is still `text` (pre-uuid-normalization), those
+-- migrations intentionally skip creating the module tables. When that happens,
+-- this seed emits a RAISE NOTICE and continues instead of failing.
 
--- 6.2) Tasks (project 1, some assigned to member1)
-insert into public.project_tasks (
-  id, organization_id, project_id, title, description, status, priority, due_date, assignee_user_id, phase_id
-)
-values
-  ('ffffffff-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Retirar sanitarios', null, 'done', 'high', '2026-06-02', '__MEMBER1_USER_ID__'::uuid, 'eeeeeeee-0000-0000-0000-000000000001'),
-  ('ffffffff-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Revisión fontanería', 'Comprobar tomas y desagües.', 'in_progress', 'urgent', '2026-06-06', '__OWNER1_USER_ID__'::uuid, 'eeeeeeee-0000-0000-0000-000000000002'),
-  ('ffffffff-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Preparar presupuesto de acabados', null, 'pending', 'medium', '2026-06-12', null, 'eeeeeeee-0000-0000-0000-000000000003')
-on conflict (id) do update
-set title = excluded.title,
-    description = excluded.description,
-    status = excluded.status,
-    priority = excluded.priority,
-    due_date = excluded.due_date,
-    assignee_user_id = excluded.assignee_user_id,
-    phase_id = excluded.phase_id,
-    updated_at = now();
+-- 6.1) Phases (for project 1) - optional module
+do $$
+begin
+  if to_regclass('public.project_phases') is null then
+    raise notice 'project_phases: skipped seed module because table public.project_phases does not exist (legacy staging schema not yet migrated for this module).';
+  elsif not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'project_phases' and column_name = 'project_id'
+      ) then
+    raise notice 'project_phases: skipped seed module because column public.project_phases.project_id does not exist.';
+  else
+    execute $ins$
+      insert into public.project_phases (
+            id, organization_id, project_id, title, description, status, start_date, end_date, sort_order
+          )
+      values
+        ('eeeeeeee-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Demolicion', 'Retirada de sanitarios y alicatado antiguo.', 'done', '2026-06-01', '2026-06-03', 10),
+        ('eeeeeeee-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Instalaciones', 'Fontaneria y electricidad.', 'in_progress', '2026-06-04', null, 20),
+        ('eeeeeeee-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Acabados', 'Alicatado, pintura y montaje.', 'planned', null, null, 30)
+      on conflict (id) do update
+      set title = excluded.title,
+          description = excluded.description,
+          status = excluded.status,
+          start_date = excluded.start_date,
+          end_date = excluded.end_date,
+          sort_order = excluded.sort_order,
+          updated_at = now();
+    $ins$;
+    raise notice 'project_phases: seeded demo rows (table exists and is compatible).';
+  end if;
+end $$;
 
--- 6.3) Progress updates (project 1)
-insert into public.project_progress_updates (
-  id, organization_id, project_id, author_user_id, progress, note
-)
-values
-  ('99999999-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 15, 'Demolición completada.'),
-  ('99999999-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__MEMBER1_USER_ID__'::uuid, 35, 'Instalaciones en marcha; pendiente revisión de fontanería.')
-on conflict (id) do update
-set progress = excluded.progress,
-    note = excluded.note;
+-- 6.2) Tasks (project 1, some assigned to member1) - core module, legacy-aware for phase_id
+do $$
+declare
+  has_phase_id boolean;
+begin
+  if to_regclass('public.project_tasks') is null then
+    raise notice 'project_tasks: skipped seed module because table public.project_tasks does not exist.';
+  else
+    select exists (
+          select 1 from information_schema.columns
+          where table_schema = 'public' and table_name = 'project_tasks' and column_name = 'phase_id'
+        ) into has_phase_id;
 
--- 6.4) Costs (project 1)
-insert into public.project_costs (
-  id, organization_id, project_id, created_by_user_id, title, description, category, amount, tax_rate, cost_date, supplier_name, document_id
-)
-values
-  ('88888888-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 'Fontanería (material)', 'Tuberías, juntas, selladores.', 'material', 320.50, 21, '2026-06-04', 'Suministros Centro', null),
-  ('88888888-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 'Mano de obra demolición', null, 'labor', 450.00, 21, '2026-06-02', null, null)
-on conflict (id) do update
-set title = excluded.title,
-    description = excluded.description,
-    category = excluded.category,
-    amount = excluded.amount,
-    tax_rate = excluded.tax_rate,
-    cost_date = excluded.cost_date,
-    supplier_name = excluded.supplier_name,
-    document_id = excluded.document_id,
-    updated_at = now();
+    if has_phase_id then
+      execute $ins$
+        insert into public.project_tasks (
+                id, organization_id, project_id, title, description, status, priority, due_date, assignee_user_id, phase_id
+              )
+        values
+          ('ffffffff-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Retirar sanitarios', null, 'done', 'high', '2026-06-02', '__MEMBER1_USER_ID__'::uuid, 'eeeeeeee-0000-0000-0000-000000000001'),
+          ('ffffffff-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Revision fontaneria', 'Comprobar tomas y desagues.', 'in_progress', 'urgent', '2026-06-06', '__OWNER1_USER_ID__'::uuid, 'eeeeeeee-0000-0000-0000-000000000002'),
+          ('ffffffff-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Preparar presupuesto de acabados', null, 'pending', 'medium', '2026-06-12', null, 'eeeeeeee-0000-0000-0000-000000000003')
+        on conflict (id) do update
+        set title = excluded.title,
+            description = excluded.description,
+            status = excluded.status,
+            priority = excluded.priority,
+            due_date = excluded.due_date,
+            assignee_user_id = excluded.assignee_user_id,
+            phase_id = excluded.phase_id,
+            updated_at = now();
+      $ins$;
+      raise notice 'project_tasks: seeded demo rows including phase_id (column present).';
+    else
+      execute $ins$
+        insert into public.project_tasks (
+                id, organization_id, project_id, title, description, status, priority, due_date, assignee_user_id
+              )
+        values
+          ('ffffffff-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Retirar sanitarios', null, 'done', 'high', '2026-06-02', '__MEMBER1_USER_ID__'::uuid),
+          ('ffffffff-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Revision fontaneria', 'Comprobar tomas y desagues.', 'in_progress', 'urgent', '2026-06-06', '__OWNER1_USER_ID__'::uuid),
+          ('ffffffff-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Preparar presupuesto de acabados', null, 'pending', 'medium', '2026-06-12', null)
+        on conflict (id) do update
+        set title = excluded.title,
+            description = excluded.description,
+            status = excluded.status,
+            priority = excluded.priority,
+            due_date = excluded.due_date,
+            assignee_user_id = excluded.assignee_user_id,
+            updated_at = now();
+      $ins$;
+      raise notice 'project_tasks: seeded demo rows WITHOUT phase_id because column public.project_tasks.phase_id does not exist (project_phases module not installed on this legacy staging schema).';
+    end if;
+  end if;
+end $$;
 
--- 6.5) Budget + lines (project 1)
-insert into public.project_budgets (
-  id, organization_id, project_id, title, status, notes
-)
-values
-  ('77777777-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Presupuesto baño (demo)', 'draft', 'Presupuesto demo para QA. Sin validez comercial.')
-on conflict (id) do update
-set title = excluded.title,
-    status = excluded.status,
-    notes = excluded.notes,
-    updated_at = now();
+-- 6.3) Progress updates (project 1) - optional module
+do $$
+begin
+  if to_regclass('public.project_progress_updates') is null then
+    raise notice 'project_progress_updates: skipped seed module because table public.project_progress_updates does not exist (legacy staging schema not yet migrated for this module).';
+  elsif not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'project_progress_updates' and column_name = 'project_id'
+      ) then
+    raise notice 'project_progress_updates: skipped seed module because column public.project_progress_updates.project_id does not exist.';
+  else
+    execute $ins$
+      insert into public.project_progress_updates (
+            id, organization_id, project_id, author_user_id, progress, note
+          )
+      values
+        ('99999999-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 15, 'Demolicion completada.'),
+        ('99999999-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__MEMBER1_USER_ID__'::uuid, 35, 'Instalaciones en marcha; pendiente revision de fontaneria.')
+      on conflict (id) do update
+      set progress = excluded.progress,
+          note = excluded.note;
+    $ins$;
+    raise notice 'project_progress_updates: seeded demo rows (table exists and is compatible).';
+  end if;
+end $$;
 
-insert into public.project_budget_lines (
-  id, organization_id, budget_id, project_id, description, quantity, unit_price, tax_rate, sort_order
-)
-values
-  ('66666666-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '77777777-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Retirada de sanitarios', 1, 280.00, 21, 10),
-  ('66666666-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '77777777-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Instalación fontanería', 1, 520.00, 21, 20),
-  ('66666666-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', '77777777-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Alicatado y pintura', 1, 740.00, 21, 30)
-on conflict (id) do update
-set description = excluded.description,
-    quantity = excluded.quantity,
-    unit_price = excluded.unit_price,
-    tax_rate = excluded.tax_rate,
-    sort_order = excluded.sort_order,
-    updated_at = now();
+-- 6.4) Costs (project 1) - optional module
+do $$
+begin
+  if to_regclass('public.project_costs') is null then
+    raise notice 'project_costs: skipped seed module because table public.project_costs does not exist (legacy staging schema not yet migrated for this module).';
+  elsif not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'project_costs' and column_name = 'project_id'
+      ) then
+    raise notice 'project_costs: skipped seed module because column public.project_costs.project_id does not exist.';
+  else
+    execute $ins$
+      insert into public.project_costs (
+            id, organization_id, project_id, created_by_user_id, title, description, category, amount, tax_rate, cost_date, supplier_name, document_id
+          )
+      values
+        ('88888888-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 'Fontaneria (material)', 'Tuberias, juntas, selladores.', 'material', 320.50, 21, '2026-06-04', 'Suministros Centro', null),
+        ('88888888-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 'Mano de obra demolicion', null, 'labor', 450.00, 21, '2026-06-02', null, null)
+      on conflict (id) do update
+      set title = excluded.title,
+          description = excluded.description,
+          category = excluded.category,
+          amount = excluded.amount,
+          tax_rate = excluded.tax_rate,
+          cost_date = excluded.cost_date,
+          supplier_name = excluded.supplier_name,
+          document_id = excluded.document_id,
+          updated_at = now();
+    $ins$;
+    raise notice 'project_costs: seeded demo rows (table exists and is compatible).';
+  end if;
+end $$;
 
--- 6.6) Purchases + items (project 1)
-insert into public.project_purchases (
-  id, organization_id, project_id, created_by_user_id, title, supplier_name, status, expected_date, received_date, notes
-)
-values
-  ('55555555-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 'Compra materiales fontanería', 'Suministros Centro', 'ordered', '2026-06-05', null, 'Pedido demo para QA.')
-on conflict (id) do update
-set title = excluded.title,
-    supplier_name = excluded.supplier_name,
-    status = excluded.status,
-    expected_date = excluded.expected_date,
-    received_date = excluded.received_date,
-    notes = excluded.notes,
-    updated_at = now();
+-- 6.5) Budget + lines (project 1) - optional module
+do $$
+begin
+  if to_regclass('public.project_budgets') is null then
+    raise notice 'project_budgets: skipped seed module because table public.project_budgets does not exist (legacy staging schema not yet migrated for this module).';
+  elsif not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'project_budgets' and column_name = 'project_id'
+      ) then
+    raise notice 'project_budgets: skipped seed module because column public.project_budgets.project_id does not exist.';
+  else
+    execute $ins$
+      insert into public.project_budgets (
+            id, organization_id, project_id, title, status, notes
+          )
+      values
+        ('77777777-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', 'Presupuesto bano (demo)', 'draft', 'Presupuesto demo para QA. Sin validez comercial.')
+      on conflict (id) do update
+      set title = excluded.title,
+          status = excluded.status,
+          notes = excluded.notes,
+          updated_at = now();
+    $ins$;
+    raise notice 'project_budgets: seeded demo rows (table exists and is compatible).';
+  end if;
 
-insert into public.project_purchase_items (
-  id, organization_id, purchase_id, project_id, description, quantity, unit, unit_price, tax_rate, sort_order
-)
-values
-  ('44444444-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '55555555-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Tubo PVC 32mm', 12, 'm', 4.50, 21, 10),
-  ('44444444-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '55555555-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Codos y uniones', 1, 'lote', 25.00, 21, 20)
-on conflict (id) do update
-set description = excluded.description,
-    quantity = excluded.quantity,
-    unit = excluded.unit,
-    unit_price = excluded.unit_price,
-    tax_rate = excluded.tax_rate,
-    sort_order = excluded.sort_order,
-    updated_at = now();
+  if to_regclass('public.project_budget_lines') is null then
+    raise notice 'project_budget_lines: skipped seed module because table public.project_budget_lines does not exist (legacy staging schema not yet migrated for this module).';
+  elsif not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'project_budget_lines' and column_name = 'budget_id'
+      ) then
+    raise notice 'project_budget_lines: skipped seed module because column public.project_budget_lines.budget_id does not exist.';
+  elsif to_regclass('public.project_budgets') is null then
+    raise notice 'project_budget_lines: skipped seed module because parent table public.project_budgets does not exist.';
+  else
+    execute $ins$
+      insert into public.project_budget_lines (
+            id, organization_id, budget_id, project_id, description, quantity, unit_price, tax_rate, sort_order
+          )
+      values
+        ('66666666-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '77777777-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Retirada de sanitarios', 1, 280.00, 21, 10),
+        ('66666666-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '77777777-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Instalacion fontaneria', 1, 520.00, 21, 20),
+        ('66666666-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', '77777777-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Alicatado y pintura', 1, 740.00, 21, 30)
+      on conflict (id) do update
+      set description = excluded.description,
+          quantity = excluded.quantity,
+          unit_price = excluded.unit_price,
+          tax_rate = excluded.tax_rate,
+          sort_order = excluded.sort_order,
+          updated_at = now();
+    $ins$;
+    raise notice 'project_budget_lines: seeded demo rows (table exists and is compatible).';
+  end if;
+end $$;
+
+-- 6.6) Purchases + items (project 1) - optional module
+do $$
+begin
+  if to_regclass('public.project_purchases') is null then
+    raise notice 'project_purchases: skipped seed module because table public.project_purchases does not exist (legacy staging schema not yet migrated for this module).';
+  elsif not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'project_purchases' and column_name = 'project_id'
+      ) then
+    raise notice 'project_purchases: skipped seed module because column public.project_purchases.project_id does not exist.';
+  else
+    execute $ins$
+      insert into public.project_purchases (
+            id, organization_id, project_id, created_by_user_id, title, supplier_name, status, expected_date, received_date, notes
+          )
+      values
+        ('55555555-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-000000000001', '__OWNER1_USER_ID__'::uuid, 'Compra materiales fontaneria', 'Suministros Centro', 'ordered', '2026-06-05', null, 'Pedido demo para QA.')
+      on conflict (id) do update
+      set title = excluded.title,
+          supplier_name = excluded.supplier_name,
+          status = excluded.status,
+          expected_date = excluded.expected_date,
+          received_date = excluded.received_date,
+          notes = excluded.notes,
+          updated_at = now();
+    $ins$;
+    raise notice 'project_purchases: seeded demo rows (table exists and is compatible).';
+  end if;
+
+  if to_regclass('public.project_purchase_items') is null then
+    raise notice 'project_purchase_items: skipped seed module because table public.project_purchase_items does not exist (legacy staging schema not yet migrated for this module).';
+  elsif not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'project_purchase_items' and column_name = 'purchase_id'
+      ) then
+    raise notice 'project_purchase_items: skipped seed module because column public.project_purchase_items.purchase_id does not exist.';
+  elsif to_regclass('public.project_purchases') is null then
+    raise notice 'project_purchase_items: skipped seed module because parent table public.project_purchases does not exist.';
+  else
+    execute $ins$
+      insert into public.project_purchase_items (
+            id, organization_id, purchase_id, project_id, description, quantity, unit, unit_price, tax_rate, sort_order
+          )
+      values
+        ('44444444-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '55555555-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Tubo PVC 32mm', 12, 'm', 4.50, 21, 10),
+        ('44444444-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '55555555-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Codos y uniones', 1, 'lote', 25.00, 21, 20)
+      on conflict (id) do update
+      set description = excluded.description,
+          quantity = excluded.quantity,
+          unit = excluded.unit,
+          unit_price = excluded.unit_price,
+          tax_rate = excluded.tax_rate,
+          sort_order = excluded.sort_order,
+          updated_at = now();
+    $ins$;
+    raise notice 'project_purchase_items: seeded demo rows (table exists and is compatible).';
+  end if;
+end $$;
+
+-- 6.7) Task comments - optional module, NOT seeded on purpose
+-- (kept for parity with project_documents: no demo comments are inserted here;
+-- this just reports whether the table exists on this environment)
+do $$
+begin
+  if to_regclass('public.project_task_comments') is null then
+    raise notice 'project_task_comments: table does not exist on this environment (legacy staging schema); nothing to seed.';
+  else
+    raise notice 'project_task_comments: table exists but is intentionally NOT seeded by this script (optional module, no demo rows defined).';
+  end if;
+end $$;
 
 commit;
