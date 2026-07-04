@@ -24,13 +24,33 @@ create table if not exists public.project_tasks (
   updated_at timestamptz not null default now()
 );
 
-alter table public.project_tasks
-  add constraint project_tasks_status_check
-  check (status in ('pending','in_progress','done','blocked'));
+DO $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'project_tasks_status_check'
+      and conrelid = 'public.project_tasks'::regclass
+  ) then
+    alter table public.project_tasks
+      add constraint project_tasks_status_check
+      check (status in ('pending','in_progress','done','blocked'));
+  end if;
+end $$;
 
-alter table public.project_tasks
-  add constraint project_tasks_priority_check
-  check (priority in ('low','medium','high','urgent'));
+DO $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'project_tasks_priority_check'
+      and conrelid = 'public.project_tasks'::regclass
+  ) then
+    alter table public.project_tasks
+      add constraint project_tasks_priority_check
+      check (priority in ('low','medium','high','urgent'));
+  end if;
+end $$;
 
 create index if not exists project_tasks_org_idx on public.project_tasks(organization_id);
 create index if not exists project_tasks_project_idx on public.project_tasks(project_id);
