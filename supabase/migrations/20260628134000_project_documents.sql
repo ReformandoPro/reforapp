@@ -24,9 +24,19 @@ create table if not exists public.project_documents (
   created_at timestamptz not null default now()
 );
 
-alter table public.project_documents
-  add constraint project_documents_category_check
-  check (category in ('general','budget','invoice','photo','license','plan','report'));
+DO $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'project_documents_category_check'
+      and conrelid = 'public.project_documents'::regclass
+  ) then
+    alter table public.project_documents
+      add constraint project_documents_category_check
+      check (category in ('general','budget','invoice','photo','license','plan','report'));
+  end if;
+end $$;
 
 create index if not exists project_documents_org_project_created_idx
   on public.project_documents(organization_id, project_id, created_at desc);
