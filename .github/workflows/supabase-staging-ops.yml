@@ -236,39 +236,39 @@ jobs:
 
           Q="$RUNNER_TEMP/verify.sql"
           cat > "$Q" <<'SQL'
--- Counts
-select 'organizations' as table, count(*)::int as count from public.organizations;
-select 'memberships' as table, count(*)::int as count from public.memberships;
-select 'clients' as table, count(*)::int as count from public.clients;
-select 'projects' as table, count(*)::int as count from public.projects;
+          -- Counts
+          select 'organizations' as table, count(*)::int as count from public.organizations;
+          select 'memberships' as table, count(*)::int as count from public.memberships;
+          select 'clients' as table, count(*)::int as count from public.clients;
+          select 'projects' as table, count(*)::int as count from public.projects;
 
--- Optional module tables (may exist)
-select 'project_phases' as table, count(*)::int as count from public.project_phases;
-select 'project_tasks' as table, count(*)::int as count from public.project_tasks;
-select 'project_budgets' as table, count(*)::int as count from public.project_budgets;
-select 'project_costs' as table, count(*)::int as count from public.project_costs;
-select 'project_purchases' as table, count(*)::int as count from public.project_purchases;
+          -- Optional module tables (may exist)
+          select 'project_phases' as table, count(*)::int as count from public.project_phases;
+          select 'project_tasks' as table, count(*)::int as count from public.project_tasks;
+          select 'project_budgets' as table, count(*)::int as count from public.project_budgets;
+          select 'project_costs' as table, count(*)::int as count from public.project_costs;
+          select 'project_purchases' as table, count(*)::int as count from public.project_purchases;
 
--- Invariants
--- no-membership user must not have memberships
-select count(*)::int as no_membership_user_memberships
-from public.memberships
-where user_id = '__NO_MEMBERSHIP_USER_ID__'::uuid;
+          -- Invariants
+          -- no-membership user must not have memberships
+          select count(*)::int as no_membership_user_memberships
+          from public.memberships
+          where user_id = '__NO_MEMBERSHIP_USER_ID__'::uuid;
 
--- documents should NOT be seeded
--- if table exists, count should be 0 (seed does not insert)
-do $$
-begin
-  if to_regclass('public.project_documents') is null then
-    raise notice 'project_documents table not found; skipping documents check.';
-  end if;
-end $$;
+          -- documents should NOT be seeded
+          -- if table exists, count should be 0 (seed does not insert)
+          do $$
+          begin
+            if to_regclass('public.project_documents') is null then
+              raise notice 'project_documents table not found; skipping documents check.';
+            end if;
+          end $$;
 
-select case
-  when to_regclass('public.project_documents') is null then null
-  else (select count(*)::int from public.project_documents)
-end as project_documents_count;
-SQL
+          select case
+            when to_regclass('public.project_documents') is null then null
+            else (select count(*)::int from public.project_documents)
+          end as project_documents_count;
+          SQL
 
           # Replace placeholder in verify SQL
           sed -i \
