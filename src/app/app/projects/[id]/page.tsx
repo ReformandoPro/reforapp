@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { getDemoOrganization } from "@/lib/services/demo-organization";
-import { createMockProjectsReader, toProjectDetailState } from "@/lib/services/private-projects";
+import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { createSupabaseProjectsReader, toProjectDetailState } from "@/lib/services/private-projects";
+import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -20,16 +23,51 @@ const futureSections = ["Fases", "Tareas", "Presupuesto", "Documentos", "Activid
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const organization = await getDemoOrganization();
-  const reader = createMockProjectsReader();
-  const state = await toProjectDetailState(await reader.getProject(organization.id, id));
+  const ctx = await getOrganizationContextForRequest();
+
+  if (!ctx.ok) {
+    if (ctx.reason === "missing_membership") {
+      redirect("/app/onboarding");
+    }
+
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <ErrorState
+          title="No se pudo cargar la obra"
+          description="No pudimos resolver tu organización. Inicia sesión e inténtalo de nuevo."
+        />
+      </section>
+    );
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const reader = createSupabaseProjectsReader(supabase);
+  const state = await reader
+    .getProject(ctx.organizationId, id)
+    .then(toProjectDetailState)
+    .catch((error: unknown) => ({
+      status: "error" as const,
+      message: error instanceof Error ? error.message : "No pudimos cargar la obra.",
+    }));
 
   if (state.status === "not_found") {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <EmptyState
           title="Obra no encontrada"
-          description="No hemos encontrado esta obra en los datos demo del MVP."
+          description="No hemos encontrado esta obra dentro de tu organización activa."
+          actions={<LinkButton href="/app/projects">Volver a obras</LinkButton>}
+        />
+      </section>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <ErrorState
+          title="No se pudo cargar la obra"
+          description="Ha ocurrido un error leyendo el proyecto real de la organización."
           actions={<LinkButton href="/app/projects">Volver a obras</LinkButton>}
         />
       </section>
