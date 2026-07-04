@@ -207,9 +207,8 @@ jobs:
             "$SRC" > "$OUT"
 
           # Execute seed
-          supabase db execute \
-            --db-url "$SUPABASE_STAGING_DB_URL" \
-            --file "$OUT"
+          command -v psql >/dev/null 2>&1 || { sudo apt-get update -y && sudo apt-get install -y postgresql-client; }
+          psql "$SUPABASE_STAGING_DB_URL" -v ON_ERROR_STOP=1 -f "$OUT"
 
           # Cleanup temp seed
           rm -f "$OUT"
@@ -275,8 +274,7 @@ jobs:
             -e "s/__NO_MEMBERSHIP_USER_ID__/${{ inputs.NO_MEMBERSHIP_USER_ID }}/g" \
             "$Q"
 
-          supabase db execute \
-            --db-url "$SUPABASE_STAGING_DB_URL" \
-            --file "$Q"
+          command -v psql >/dev/null 2>&1 || { sudo apt-get update -y && sudo apt-get install -y postgresql-client; }
+          psql "$SUPABASE_STAGING_DB_URL" -v ON_ERROR_STOP=1 -f "$Q"
 
           rm -f "$Q"
