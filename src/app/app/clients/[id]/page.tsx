@@ -1,179 +1,116 @@
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/Badge";
+import { StatusBadge } from "@/components/app/StatusBadge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { getOrganizationContextForRequest } from "@/lib/services/org-context";
-import { createServerSupabaseClient } from "@/lib/supabase/ssr";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { createMockClientsReader, toClientDetailState } from "@/lib/services/clients";
+import { getDemoOrganization } from "@/lib/services/demo-organization";
+import { createMockProjectsReader } from "@/lib/services/private-projects";
 
 export const dynamic = "force-dynamic";
 
-type ClientRow = {
-  id: string;
-  display_name: string;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  notes: string | null;
-};
-
-type ProjectRow = {
-  id: string;
-  name: string;
-  status: string;
-  updated_at: string | null;
-};
-
-function formatUpdatedAt(value: string | null): string {
+function formatDate(value?: string | null) {
   if (!value) return "—";
-  try {
-    return new Intl.DateTimeFormat("es-ES", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
+  return new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(value));
 }
 
-export default async function ClientDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id: clientId } = await params;
+const futureSections = ["Comunicaciones", "Documentos", "Presupuestos", "Historial"];
 
-  const ctx = await getOrganizationContextForRequest();
-  if (!ctx.ok) {
+export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const organization = await getDemoOrganization();
+  const clientsReader = createMockClientsReader();
+  const projectsReader = createMockProjectsReader();
+  const [clientState, projects] = await Promise.all([
+    toClientDetailState(await clientsReader.getClient(organization.id, id)),
+    projectsReader.listProjects(organization.id),
+  ]);
+
+  if (clientState.status === "not_found") {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="p-6 shadow-none">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Cliente</h1>
-          <p className="mt-2 text-sm text-content-secondary sm:text-base">
-            Inicia sesión para ver este cliente.
-          </p>
-        </Card>
-      </section>
-    );
-  }
-
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
-  const supabase = await createServerSupabaseClient();
-
-  const { data: client, error: clientError } = await supabase
-    .from("clients")
-    .select("id, display_name, email, phone, address, notes")
-    .eq("organization_id", ctx.organizationId)
-    .eq("id", clientId)
-    .maybeSingle();
-
-  if (clientError) {
-    return (
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <EmptyState title="No pudimos cargar el cliente" description="Revisa tu conexión e inténtalo." />
-      </section>
-    );
-  }
-
-  if (!client) {
-    return (
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Link
-          href="/app/clients"
-          className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-        >
-          ← Volver a clientes
-        </Link>
         <EmptyState
           title="Cliente no encontrado"
-          description="No hemos encontrado este cliente dentro de tu organización."
+          description="No hemos encontrado este cliente en los datos demo del MVP."
+          actions={<LinkButton href="/app/clients">Volver a clientes</LinkButton>}
         />
       </section>
     );
   }
 
-  const { data: projects } = await supabase
-    .from("projects")
-    .select("id, name, status, updated_at")
-    .eq("organization_id", ctx.organizationId)
-    .eq("client_id", clientId)
-    .order("updated_at", { ascending: false, nullsFirst: false });
+  if (clientState.status !== "ready") return null;
 
-  const row = client as unknown as ClientRow;
-  const projectRows = (projects ?? []) as ProjectRow[];
+  const client = clientState.item;
+  const associatedProjects = projects.filter((project) => project.clientId === client.id);
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <PageHeader
-        backLink={<BackLink href="/app/clients">← Volver a clientes</BackLink>}
-        title={row.display_name}
-        description={
-          <>
-            {row.email ? `Email: ${row.email}` : ""}
-            {row.email && row.phone ? " · " : ""}
-            {row.phone ? `Tel: ${row.phone}` : ""}
-            {!row.email && !row.phone ? "—" : ""}
-          </>
-        }
-        meta={
-          <>
-            {row.address ? (
-              <p className="mt-2 text-sm text-content-secondary">Dirección: {row.address}</p>
-            ) : null}
-            {row.notes ? (
-              <p className="mt-3 whitespace-pre-wrap text-sm text-content-primary">{row.notes}</p>
-            ) : null}
-          </>
-        }
-        actions={
-          <>
-            <Badge tone="neutral">Obras: {projectRows.length}</Badge>
-            {canWrite ? (
-              <>
-                <LinkButton href={`/app/clients/${clientId}/edit`} variant="secondary">
-                  Editar cliente
-                </LinkButton>
-                <LinkButton href={`/app/projects/new?clientId=${clientId}`}>
-                  Nueva obra para este cliente
-                </LinkButton>
-              </>
-            ) : null}
-          </>
-        }
+        backLink={<Link href="/app/clients" className="text-sm font-medium text-content-secondary hover:text-content-primary">← Volver a clientes</Link>}
+        title={client.displayName}
+        description="Ficha de cliente para centralizar contacto, obras asociadas y documentación comercial."
+        actions={<LinkButton href="/app/clients" variant="secondary">Listado de clientes</LinkButton>}
       />
 
-      <Card className="p-6 shadow-none">
-        <h2 className="text-lg font-semibold tracking-tight">Obras asociadas</h2>
+      <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+        <Card padding="lg" shadow="none">
+          <h2 className="text-lg font-semibold">Datos de contacto</h2>
+          <dl className="mt-5 space-y-4 text-sm">
+            <div><dt className="font-medium text-content-primary">Email</dt><dd className="mt-1 text-content-secondary">{client.email ?? "—"}</dd></div>
+            <div><dt className="font-medium text-content-primary">Teléfono</dt><dd className="mt-1 text-content-secondary">{client.phone ?? "—"}</dd></div>
+            <div><dt className="font-medium text-content-primary">Dirección</dt><dd className="mt-1 text-content-secondary">{client.address ?? "—"}</dd></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><dt className="font-medium text-content-primary">Alta</dt><dd className="mt-1 text-content-secondary">{formatDate(client.createdAt)}</dd></div>
+              <div><dt className="font-medium text-content-primary">Actualizado</dt><dd className="mt-1 text-content-secondary">{formatDate(client.updatedAt)}</dd></div>
+            </div>
+          </dl>
+          {client.notes ? (
+            <div className="mt-5 rounded-2xl border border-subtle bg-bg-raised p-4">
+              <p className="text-sm font-medium">Notas internas</p>
+              <p className="mt-1 text-sm text-content-secondary">{client.notes}</p>
+            </div>
+          ) : null}
+        </Card>
 
-        {projectRows.length === 0 ? (
-          <p className="mt-3 text-sm text-content-secondary">Este cliente no tiene obras todavía.</p>
-        ) : (
-          <div className="mt-4 grid gap-3">
-            {projectRows.map((p) => (
-              <Card
-                key={p.id}
-                className="p-0 shadow-none"
-              >
-                <Link
-                  href={`/app/projects/${p.id}`}
-                  className="block p-5 hover:bg-bg-raised"
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <Card padding="lg" shadow="none">
+          <h2 className="text-lg font-semibold">Obras asociadas</h2>
+          <p className="mt-1 text-sm text-content-secondary">
+            Relación inicial entre cliente y proyectos para validar el flujo del MVP.
+          </p>
+          {associatedProjects.length === 0 ? (
+            <EmptyState className="mt-5" title="Sin obras asociadas" description="Este cliente todavía no tiene obras vinculadas." />
+          ) : (
+            <div className="mt-5 grid gap-3">
+              {associatedProjects.map((project) => (
+                <Link key={project.id} href={`/app/projects/${project.id}`} className="rounded-2xl border border-subtle bg-bg-raised p-4 transition-colors hover:bg-bg-surface">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-base font-semibold tracking-tight">{p.name}</p>
-                      <p className="mt-1 text-sm text-content-secondary">
-                        Estado: {p.status} · Actualizado: {formatUpdatedAt(p.updated_at)}
-                      </p>
+                      <h3 className="font-semibold">{project.name}</h3>
+                      <p className="mt-1 text-sm text-content-secondary">{project.type ?? "Tipo pendiente"} · {project.address ?? "Dirección pendiente"}</p>
                     </div>
+                    <StatusBadge status={project.status} />
                   </div>
+                  <ProgressBar value={project.progress} showValue label="Avance" className="mt-4" tone="info" />
                 </Link>
-              </Card>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <Card padding="lg" shadow="none">
+        <h2 className="text-lg font-semibold">Próximas secciones de cliente</h2>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {futureSections.map((section) => (
+            <div key={section} className="rounded-2xl border border-dashed border-subtle bg-bg-raised p-4">
+              <p className="font-medium">{section}</p>
+              <p className="mt-2 text-xs leading-5 text-content-tertiary">Placeholder para el siguiente incremento funcional.</p>
+            </div>
+          ))}
+        </div>
       </Card>
     </section>
   );

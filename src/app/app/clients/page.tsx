@@ -1,110 +1,63 @@
-import { Badge } from "@/components/ui/Badge";
+import Link from "next/link";
+
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { CardLinkRow } from "@/components/ui/CardLinkRow";
-import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { getOrganizationContextForRequest } from "@/lib/services/org-context";
-import { createServerSupabaseClient } from "@/lib/supabase/ssr";
+import { createMockClientsReader, toClientsListState } from "@/lib/services/clients";
+import { getDemoOrganization } from "@/lib/services/demo-organization";
 
 export const dynamic = "force-dynamic";
 
-type ClientRow = {
-  id: string;
-  display_name: string;
-  phone: string | null;
-  email: string | null;
-};
-
 export default async function AppClientsPage() {
-  const ctx = await getOrganizationContextForRequest();
-
-  if (!ctx.ok) {
-    return (
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card className="p-6 shadow-none">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Clientes</h1>
-          <p className="mt-2 text-sm text-content-secondary sm:text-base">
-            Inicia sesión para ver clientes.
-          </p>
-        </Card>
-      </section>
-    );
-  }
-
-  const supabase = await createServerSupabaseClient();
-
-  const { data: clients, error } = await supabase
-    .from("clients")
-    .select("id, display_name, phone, email")
-    .eq("organization_id", ctx.organizationId)
-    .order("display_name", { ascending: true });
-
-  if (error) {
-    return (
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <EmptyState
-          title="No pudimos cargar los clientes"
-          description="Revisa tu conexión e inténtalo de nuevo."
-        />
-      </section>
-    );
-  }
-
-  const rows = (clients ?? []) as ClientRow[];
-
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const organization = await getDemoOrganization();
+  const reader = createMockClientsReader();
+  const state = await toClientsListState(await reader.listClients(organization.id));
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <BackLink
-        href="/app"
-        className="inline-flex text-sm font-medium text-content-secondary hover:text-content-primary"
-      >
-        ← Volver al panel
-      </BackLink>
-
       <PageHeader
         title="Clientes"
-        description="Clientes de tu organización."
-        actions={
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Badge tone="neutral">Total: {rows.length}</Badge>
-            {canWrite ? <LinkButton href="/app/clients/new">Nuevo cliente</LinkButton> : null}
-          </div>
-        }
+        description="Expedientes de clientes vinculados a obras, presupuestos y documentación."
+        actions={<LinkButton href="/app" variant="secondary">Volver al panel</LinkButton>}
       />
 
-      {rows.length === 0 ? (
+      {state.status === "empty" ? (
         <EmptyState
-          title="Sin clientes"
-          description={
-            canWrite
-              ? "Crea tu primer cliente para asociar obras."
-              : "Aún no hay clientes en tu organización."
-          }
-          actions={canWrite ? <LinkButton href="/app/clients/new">Nuevo cliente</LinkButton> : null}
+          title="Todavía no hay clientes"
+          description="Cuando se cree el primer cliente, aparecerá aquí con sus datos de contacto y obras asociadas."
         />
-      ) : (
-        <div className="grid gap-3">
-          {rows.map((c) => (
-            <CardLinkRow
-              key={c.id}
-              href={`/app/clients/${c.id}`}
-              heading={c.display_name}
-              description={
-                <>
-                  {c.email ? `Email: ${c.email}` : ""}
-                  {c.email && c.phone ? " · " : ""}
-                  {c.phone ? `Tel: ${c.phone}` : ""}
-                  {!c.email && !c.phone ? "—" : ""}
-                </>
-              }
-            />
+      ) : null}
+
+      {state.status === "ready" ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {state.items.map((client) => (
+            <Card key={client.id} padding="lg" shadow="none">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold">{client.displayName}</h2>
+                  <dl className="mt-3 space-y-2 text-sm text-content-secondary">
+                    <div><dt className="font-medium text-content-primary">Email</dt><dd>{client.email ?? "—"}</dd></div>
+                    <div><dt className="font-medium text-content-primary">Teléfono</dt><dd>{client.phone ?? "—"}</dd></div>
+                    <div><dt className="font-medium text-content-primary">Dirección</dt><dd>{client.address ?? "—"}</dd></div>
+                  </dl>
+                </div>
+                <Link
+                  href={`/app/clients/${client.id}`}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary transition-colors hover:bg-bg-raised"
+                >
+                  Ver ficha
+                </Link>
+              </div>
+              {client.notes ? (
+                <p className="mt-5 rounded-2xl border border-subtle bg-bg-raised p-4 text-sm text-content-secondary">
+                  {client.notes}
+                </p>
+              ) : null}
+            </Card>
           ))}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
