@@ -206,7 +206,7 @@ values
     'Reparación Fachada - Comunidad C/ Mayor, 22',
     'Comunidad de Vecinos C/ Mayor, 22',
     '2026-04-20T00:00:00Z',
-    'budgeting',
+    'lead',
     'C/ Mayor 22, Valencia',
     'facade',
     10
