@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { StatCard } from "@/components/app/StatCard";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -11,15 +12,16 @@ import { mockOrganization } from "@/lib/mock/reformando";
 import { createMockClientsReader } from "@/lib/services/clients";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { getOrganizationById } from "@/lib/services/organizations";
-import { createMockProjectsReader } from "@/lib/services/private-projects";
+import { createSupabaseProjectsReader } from "@/lib/services/private-projects";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
-function average(values: number[]) {
-  if (values.length === 0) return 0;
-  return Math.round(values.reduce((total, value) => total + value, 0) / values.length);
-}
+const mockProjectMetrics = {
+  activeProjectsCount: 1,
+  budgetingProjectsCount: 1,
+  averageProgress: 27,
+};
 
 export default async function AppDashboardPage() {
   const ctx = await getOrganizationContextForRequest();
@@ -58,18 +60,12 @@ export default async function AppDashboardPage() {
   }
 
   const organization = organizationResult.organization;
-  const projectsReader = createMockProjectsReader();
+  const projectsReader = createSupabaseProjectsReader(supabase);
   const clientsReader = createMockClientsReader();
   const [projects, clients] = await Promise.all([
-    projectsReader.listProjects(mockOrganization.id),
+    projectsReader.listProjects(ctx.organizationId),
     clientsReader.listClients(mockOrganization.id),
   ]);
-
-  const activeProjects = projects.filter((project) =>
-    ["approved", "scheduled", "in_progress", "paused"].includes(project.status)
-  );
-  const budgetingProjects = projects.filter((project) => project.status === "budgeting");
-  const averageProgress = average(projects.map((project) => project.progress));
 
   const recentActivity = [
     "Presupuesto pendiente de revisión en Adecuación local Serrano.",
@@ -96,10 +92,10 @@ export default async function AppDashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Obras activas" value={activeProjects.length} helper="En producción o planificación" />
-        <StatCard label="En presupuesto" value={budgetingProjects.length} helper="Pendientes de cierre comercial" />
+        <StatCard label="Obras activas" value={mockProjectMetrics.activeProjectsCount} helper="En producción o planificación" />
+        <StatCard label="En presupuesto" value={mockProjectMetrics.budgetingProjectsCount} helper="Pendientes de cierre comercial" />
         <StatCard label="Clientes registrados" value={clients.length} helper="Contactos con expediente" />
-        <StatCard label="Avance medio" value={`${averageProgress}%`} helper="Estimación operativa mock" />
+        <StatCard label="Avance medio" value={`${mockProjectMetrics.averageProgress}%`} helper="Estimación operativa mock" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
@@ -116,26 +112,34 @@ export default async function AppDashboardPage() {
             </Link>
           </div>
 
-          <div className="mt-5 grid gap-4">
-            {projects.map((project) => (
-              <Link
-                key={project.id}
-                href={`/app/projects/${project.id}`}
-                className="rounded-2xl border border-subtle bg-bg-raised p-4 transition-colors hover:bg-bg-surface"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="font-semibold">{project.name}</h3>
-                    <p className="mt-1 text-sm text-content-secondary">
-                      {project.clientName ?? "Cliente sin asignar"} · {project.address ?? "Dirección pendiente"}
-                    </p>
+          {projects.length === 0 ? (
+            <EmptyState
+              className="mt-5"
+              title="No projects yet"
+              description="Cuando esta organización tenga obras reales, aparecerán aquí."
+            />
+          ) : (
+            <div className="mt-5 grid gap-4">
+              {projects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/app/projects/${project.id}`}
+                  className="rounded-2xl border border-subtle bg-bg-raised p-4 transition-colors hover:bg-bg-surface"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="font-semibold">{project.name}</h3>
+                      <p className="mt-1 text-sm text-content-secondary">
+                        {project.clientName ?? "Cliente sin asignar"} · {project.address ?? "Dirección pendiente"}
+                      </p>
+                    </div>
+                    <StatusBadge status={project.status} />
                   </div>
-                  <StatusBadge status={project.status} />
-                </div>
-                <ProgressBar value={project.progress} showValue label="Avance" className="mt-4" tone="info" />
-              </Link>
-            ))}
-          </div>
+                  <ProgressBar value={project.progress} showValue label="Avance" className="mt-4" tone="info" />
+                </Link>
+              ))}
+            </div>
+          )}
         </Card>
 
         <Card padding="lg" shadow="none">
