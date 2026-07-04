@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { mockClients } from "@/lib/mock/reformando";
 import type { Client, ListState, DetailState } from "@/lib/types/reformando";
 
@@ -44,6 +46,38 @@ export function createMockClientsReader(): ClientsReader {
           (client) => client.organizationId === organizationId && client.id === clientId
         ) ?? null
       );
+    },
+  };
+}
+
+export function createSupabaseClientsReader(supabase: SupabaseClient): ClientsReader {
+  return {
+    async listClients(organizationId) {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, organization_id, display_name, email, phone, address, notes, created_at, updated_at")
+        .eq("organization_id", organizationId)
+        .order("display_name", { ascending: true });
+
+      if (error) {
+        return [];
+      }
+
+      return ((data ?? []) as ClientRow[]).map(mapClientRow);
+    },
+    async getClient(organizationId, clientId) {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, organization_id, display_name, email, phone, address, notes, created_at, updated_at")
+        .eq("organization_id", organizationId)
+        .eq("id", clientId)
+        .maybeSingle();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return mapClientRow(data as ClientRow);
     },
   };
 }

@@ -8,8 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { mockOrganization } from "@/lib/mock/reformando";
-import { createMockClientsReader } from "@/lib/services/clients";
+import { createSupabaseClientsReader } from "@/lib/services/clients";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { getOrganizationById } from "@/lib/services/organizations";
 import { createSupabaseProjectsReader } from "@/lib/services/private-projects";
@@ -61,10 +60,10 @@ export default async function AppDashboardPage() {
 
   const organization = organizationResult.organization;
   const projectsReader = createSupabaseProjectsReader(supabase);
-  const clientsReader = createMockClientsReader();
+  const clientsReader = createSupabaseClientsReader(supabase);
   const [projects, clients] = await Promise.all([
     projectsReader.listProjects(ctx.organizationId),
-    clientsReader.listClients(mockOrganization.id),
+    clientsReader.listClients(ctx.organizationId),
   ]);
 
   const recentActivity = [
