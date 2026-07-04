@@ -48,10 +48,14 @@ end $$;
 
 -- 2) Defense in depth: harden the trigger function so user creation also
 --    succeeds when "id" is NOT NULL without a default and step (1) above
---    could not set a safe default (e.g. a non-uuid legacy type). Behavior
---    for schemas without a legacy "id" column is unchanged: the original
---    insert (user_id, email) and the existing invalid_column_reference
---    fallback are preserved exactly as before.
+--    could not set a safe default. The retry below only ever runs when
+--    "id" exists AND is of type uuid, since inserting a uuid value into a
+--    non-uuid "id" column would fail anyway and would silently mask a
+--    schema problem that must be reviewed manually instead. If "id" exists
+--    but is not uuid, the original not_null_violation is re-raised
+--    unchanged (no type change, no silent failure). Behavior for schemas
+--    without a legacy "id" column, and the existing invalid_column_reference
+--    fallback, are both unchanged from the original migration.
 create or replace function public.handle_new_auth_user()
 returns trigger
 language plpgsql
@@ -59,14 +63,14 @@ security definer
 set search_path = public
 as $$
 declare
-  v_has_id_column boolean;
+  v_id_data_type text;
 begin
-  select exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public'
-        and table_name = 'profiles'
-        and column_name = 'id'
-    ) into v_has_id_column;
+  select data_type
+  into v_id_data_type
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name = 'profiles'
+    and column_name = 'id';
 
   begin
     insert into public.profiles (user_id, email)
@@ -82,11 +86,13 @@ begin
         insert into public.profiles (user_id, email) values (new.id, new.email);
       end if;
     when not_null_violation then
-      -- Legacy public.profiles.id is NOT NULL without a usable default
-      -- (e.g. non-uuid type that step 1 above intentionally left alone).
-      -- Retry once, generating an id explicitly, but only if that column
-      -- actually exists; otherwise re-raise the original error unchanged.
-      if v_has_id_column then
+      -- Legacy public.profiles.id is NOT NULL without a usable default.
+      -- Only retry with an explicit id when that column exists AND is
+      -- uuid, since gen_random_uuid() would otherwise be inserted into an
+      -- incompatible column type. Any other case re-raises the original
+      -- error unchanged instead of hiding a schema problem that needs
+      -- manual review.
+      if v_id_data_type = 'uuid' then
         execute 'insert into public.profiles (id, user_id, email) values (gen_random_uuid(), $1, $2) on conflict (user_id) do update set email = excluded.email'
           using new.id, new.email;
       else
