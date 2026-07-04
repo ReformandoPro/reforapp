@@ -51,6 +51,14 @@ function normalizeProjectStatus(status: string): ProjectLifecycleStatus {
   throw new Error(`Unknown project status from Supabase: ${status}`);
 }
 
+function normalizeProjectProgress(progress: number | null): number {
+  if (typeof progress !== "number" || !Number.isFinite(progress)) {
+    throw new Error("Project progress from Supabase is missing or invalid");
+  }
+
+  return progress;
+}
+
 export function mapProjectRow(row: ProjectRow): Project {
   return {
     id: row.id,
@@ -60,7 +68,7 @@ export function mapProjectRow(row: ProjectRow): Project {
     status: normalizeProjectStatus(row.status),
     address: row.address,
     type: row.type,
-    progress: row.progress ?? 0,
+    progress: normalizeProjectProgress(row.progress),
     clientName: normalizeClientName(row),
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
@@ -95,7 +103,7 @@ export function createSupabaseProjectsReader(supabase: SupabaseClient): Projects
         .order("updated_at", { ascending: false, nullsFirst: false });
 
       if (error) {
-        return [];
+        throw new Error(`Unable to read projects from Supabase: ${error.message}`);
       }
 
       return ((data ?? []) as ProjectRow[]).map(mapProjectRow);
@@ -110,7 +118,11 @@ export function createSupabaseProjectsReader(supabase: SupabaseClient): Projects
         .eq("id", projectId)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        throw new Error(`Unable to read project from Supabase: ${error.message}`);
+      }
+
+      if (!data) {
         return null;
       }
 
