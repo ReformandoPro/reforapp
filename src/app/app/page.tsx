@@ -8,8 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { mockOrganization } from "@/lib/mock/reformando";
-import { createMockClientsReader } from "@/lib/services/clients";
+import { createSupabaseClientsReader } from "@/lib/services/clients";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { getOrganizationById } from "@/lib/services/organizations";
 import { createSupabaseProjectsReader } from "@/lib/services/private-projects";
@@ -61,11 +60,18 @@ export default async function AppDashboardPage() {
 
   const organization = organizationResult.organization;
   const projectsReader = createSupabaseProjectsReader(supabase);
-  const clientsReader = createMockClientsReader();
-  const [projects, clients] = await Promise.all([
+  const clientsReader = createSupabaseClientsReader(supabase);
+  const [projects, clientsResult] = await Promise.all([
     projectsReader.listProjects(ctx.organizationId),
-    clientsReader.listClients(mockOrganization.id),
+    clientsReader
+      .listClients(ctx.organizationId)
+      .then((items) => ({ ok: true as const, items }))
+      .catch((error: unknown) => ({
+        ok: false as const,
+        message: error instanceof Error ? error.message : "No pudimos cargar los clientes.",
+      })),
   ]);
+  const clients = clientsResult.ok ? clientsResult.items : [];
 
   const recentActivity = [
     "Presupuesto pendiente de revisión en Adecuación local Serrano.",
@@ -94,7 +100,11 @@ export default async function AppDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Obras activas" value={mockProjectMetrics.activeProjectsCount} helper="En producción o planificación" />
         <StatCard label="En presupuesto" value={mockProjectMetrics.budgetingProjectsCount} helper="Pendientes de cierre comercial" />
-        <StatCard label="Clientes registrados" value={clients.length} helper="Contactos con expediente" />
+        <StatCard
+          label="Clientes registrados"
+          value={clientsResult.ok ? clients.length : "—"}
+          helper={clientsResult.ok ? "Contactos con expediente" : "Error leyendo clientes"}
+        />
         <StatCard label="Avance medio" value={`${mockProjectMetrics.averageProgress}%`} helper="Estimación operativa mock" />
       </div>
 
