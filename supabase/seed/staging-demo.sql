@@ -158,6 +158,60 @@ set display_name = excluded.display_name,
 -- 5) Projects
 -- -----------------------------------------------------------------------------
 -- Note: projects has both (name) and legacy columns (title, client_name, start_date)
+
+-- Resolve a projects.status value that the REAL projects_status_check
+-- constraint (deployed in this environment) actually accepts. Two prior
+-- attempts hardcoded a value from the canonical status list in
+-- supabase/migrations/20260627090300_projects.sql ('budgeting', then
+-- 'lead') and BOTH were rejected by the real legacy constraint on staging,
+-- which differs from that migration (its "create table if not exists" is
+-- a no-op against an already-existing legacy projects table). Instead of
+-- guessing another literal, inspect the real constraint at runtime and use
+-- the first candidate it actually allows for every demo project below.
+create temporary table if not exists __seed_runtime_values (
+  key text primary key,
+  value text
+  );
+
+do $$
+  declare
+  constraint_def text;
+allowed_values text[];
+candidates text[] := array['scheduled', 'in_progress', 'active', 'open', 'draft', 'pending', 'completed'];
+chosen text;
+candidate text;
+begin
+  select pg_get_constraintdef(con.oid)
+  into constraint_def
+  from pg_constraint con
+  where con.conname = 'projects_status_check'
+  and con.conrelid = 'public.projects'::regclass;
+
+if constraint_def is null then
+  raise exception 'Seed aborted: could not find constraint projects_status_check on public.projects. Refusing to guess a projects.status value.';
+end if;
+
+select coalesce(array_agg(m[1]), array[]::text[])
+  into allowed_values
+  from regexp_matches(constraint_def, '''([^'']*)''', 'g') as m;
+
+foreach candidate in array candidates loop
+  if candidate = any (allowed_values) then
+  chosen := candidate;
+exit;
+end if;
+end loop;
+
+if chosen is null then
+  raise exception 'Seed aborted: none of the candidate projects.status values (%) are accepted by the real constraint. projects_status_check definition: %. Update the candidate list in supabase/seed/staging-demo.sql with a value this environment actually allows.', candidates, constraint_def;
+end if;
+
+insert into __seed_runtime_values (key, value) values ('project_status', chosen)
+  on conflict (key) do update set value = excluded.value;
+
+raise notice 'Seed: resolved projects.status = % (constraint allows: %)', chosen, allowed_values;
+end $$;
+
 insert into public.projects (
   id,
   organization_id,
@@ -180,10 +234,10 @@ values
     'Reforma Integral Baño - Familia Pérez',
     'Familia Pérez',
     '2026-06-01T00:00:00Z',
-    'in_progress',
-    'C/ Jardines 7, Madrid',
-    'bathroom',
-    35
+      (select value from __seed_runtime_values where key = 'project_status'),
+      'C/ Jardines 7, Madrid',
+        'bathroom',
+  35
   ),
   (
     'cccccccc-0000-0000-0000-000000000002',
@@ -193,9 +247,9 @@ values
     'Habilitación Oficina Planta 3 - Oficinas Central S.A.',
     'Oficinas Central S.A.',
     '2026-05-15T00:00:00Z',
-    'scheduled',
-    'Av. Empresa 12, Barcelona',
-    'office',
+      (select value from __seed_runtime_values where key = 'project_status'),
+        'Av. Empresa 12, Barcelona',
+          'office',
     0
   ),
   (
@@ -206,8 +260,8 @@ values
     'Reparación Fachada - Comunidad C/ Mayor, 22',
     'Comunidad de Vecinos C/ Mayor, 22',
     '2026-04-20T00:00:00Z',
-    'lead',
-    'C/ Mayor 22, Valencia',
+(select value from __seed_runtime_values where key = 'project_status'),
+  'C/ Mayor 22, Valencia',
     'facade',
     10
   ),
@@ -220,8 +274,8 @@ values
     'Proyecto Demo Org 2',
     'Cliente Demo Org 2',
     '2026-06-10T00:00:00Z',
-    'in_progress',
-    'C/ Segura 3, Sevilla',
+(select value from __seed_runtime_values where key = 'project_status'),
+  'C/ Segura 3, Sevilla',
     'general',
     20
   )
