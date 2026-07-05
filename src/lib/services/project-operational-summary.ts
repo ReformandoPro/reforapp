@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { computeBudgetTotals, formatMoneyEUR, type BudgetStatus } from "./budgets-basic";
+import { formatMoneyEUR, type BudgetStatus } from "./budgets-basic";
 import { computeCostTotals } from "./costs";
 import type { PurchaseStatus } from "./purchases";
+import { computeBudgetTotalsFromSupabaseLineTotalsRows } from "./project-budgets";
 
 type BlockResult<T> =
   | { status: "ready"; data: T }
@@ -11,7 +12,7 @@ type BlockResult<T> =
 type TaskRow = { id: string; title: string; status: string; due_date: string | null; updated_at: string | null };
 type PhaseRow = { id: string; title: string; status: string; start_date: string | null; end_date: string | null; sort_order: number | null };
 type BudgetRow = { id: string; title: string; status: BudgetStatus; updated_at: string | null };
-type BudgetLineRow = { budget_id: string; quantity: number; unit_price: number; tax_rate: number };
+type BudgetLineRow = { budget_id: string; quantity: string | number | null | undefined; unit_price: string | number | null | undefined; tax_rate: string | number | null | undefined };
 type PurchaseRow = { id: string; title: string; supplier_name: string | null; status: PurchaseStatus; expected_date: string | null; updated_at: string | null };
 type CostRow = { id: string; amount: number; tax_rate: number; cost_date: string; created_at: string };
 type DocumentRow = { id: string; file_name: string; category: string; created_at: string };
@@ -118,13 +119,7 @@ async function readBudget(supabase: SupabaseClient, organizationId: string, proj
   if (linesError) throw linesError;
 
   const budgetLines = (lines ?? []) as BudgetLineRow[];
-  const totals = computeBudgetTotals(
-    budgetLines.map((line) => ({
-      quantity: Number(line.quantity ?? 0),
-      unitPrice: Number(line.unit_price ?? 0),
-      taxRate: Number(line.tax_rate ?? 0),
-    })),
-  );
+  const totals = computeBudgetTotalsFromSupabaseLineTotalsRows(budgetLines);
   return {
     status: "ready",
     data: {
