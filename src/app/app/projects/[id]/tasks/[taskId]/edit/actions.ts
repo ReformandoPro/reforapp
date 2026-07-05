@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import { PROJECT_TASK_PRIORITIES, PROJECT_TASK_STATUSES, type ProjectTaskPriority, type ProjectTaskStatus } from "@/lib/services/project-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -56,7 +57,7 @@ export async function updateProjectTask(formData: FormData) {
     redirect(`/login?redirectTo=/app/projects/${projectId}/tasks/${taskId}/edit`);
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectTasks(ctx.role);
   if (!canWrite) {
     backToEditWithError(projectId, taskId, "No tienes permisos para editar tareas.");
   }

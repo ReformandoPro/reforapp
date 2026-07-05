@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import type { ProjectTaskPriority, ProjectTaskStatus } from "@/lib/services/project-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 import { updateProjectTask } from "./actions";
@@ -50,7 +51,7 @@ export default async function EditProjectTaskPage({
     );
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectTasks(ctx.role);
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">

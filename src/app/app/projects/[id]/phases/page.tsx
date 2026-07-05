@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PHASE_STATUSES, type PhaseStatus } from "@/lib/services/phases";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectPhases } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +54,7 @@ export default async function AppProjectPhasesPage({
     );
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectPhases(ctx.role);
   const supabase = await createServerSupabaseClient();
 
   const { data: project } = await supabase

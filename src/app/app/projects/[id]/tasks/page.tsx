@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import type { ProjectTaskPriority, ProjectTaskStatus } from "@/lib/services/project-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -90,7 +91,7 @@ export default async function AppProjectTasksPage({
     );
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectTasks(ctx.role);
   const supabase = await createServerSupabaseClient();
 
   // Validate project belongs to org

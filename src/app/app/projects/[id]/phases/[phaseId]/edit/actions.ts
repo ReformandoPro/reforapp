@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { PHASE_STATUSES, type PhaseStatus } from "@/lib/services/phases";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectPhases } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 function backToEditWithError(projectId: string, phaseId: string, message: string): never {
@@ -41,7 +42,7 @@ export async function updateProjectPhaseAction(formData: FormData) {
   const ctx = await getOrganizationContextForRequest();
   if (!ctx.ok) redirect(`/login?redirectTo=/app/projects/${projectId}/phases/${phaseId}/edit`);
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectPhases(ctx.role);
   if (!canWrite) backToEditWithError(projectId, phaseId, "No tienes permisos para editar fases.");
 
   const title = String(formData.get("title") ?? "").trim();
@@ -100,7 +101,7 @@ export async function deleteProjectPhaseAction(formData: FormData) {
   const ctx = await getOrganizationContextForRequest();
   if (!ctx.ok) redirect(`/login?redirectTo=/app/projects/${projectId}/phases/${phaseId}/edit`);
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectPhases(ctx.role);
   if (!canWrite) backToEditWithError(projectId, phaseId, "No tienes permisos para eliminar fases.");
 
   const supabase = await createServerSupabaseClient();

@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { FormActions } from "@/components/ui/FormActions";
 import { PHASE_STATUSES } from "@/lib/services/phases";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectPhases } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 import { createProjectPhaseAction } from "./actions";
@@ -35,7 +36,7 @@ export default async function NewProjectPhasePage({
     );
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectPhases(ctx.role);
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
