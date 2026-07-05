@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { getProjectOperationalSummary } from "@/lib/services/project-operational-summary";
 import { createSupabaseProjectsReader, toProjectDetailState } from "@/lib/services/private-projects";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -19,7 +20,18 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(value));
 }
 
-const futureSections = ["Fases", "Tareas", "Presupuesto", "Documentos", "Actividad"];
+function shortDate(value?: string | null) {
+  if (!value) return "Sin fecha";
+  return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short" }).format(new Date(value));
+}
+
+function BlockError({ message }: { message: string }) {
+  return <p className="mt-4 rounded-xl border border-danger-500/20 bg-danger-500/10 p-3 text-sm text-danger-100">{message}</p>;
+}
+
+function EmptyCopy({ children }: { children: React.ReactNode }) {
+  return <p className="mt-4 text-sm leading-6 text-content-secondary">{children}</p>;
+}
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,10 +57,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const state = await reader
     .getProject(ctx.organizationId, id)
     .then(toProjectDetailState)
-    .catch((error: unknown) => ({
-      status: "error" as const,
-      message: error instanceof Error ? error.message : "No pudimos cargar la obra.",
-    }));
+    .catch((error: unknown) => {
+      console.error("Project detail query failed", error);
+
+      return {
+        status: "error" as const,
+        message: "No pudimos cargar la obra.",
+      };
+    });
 
   if (state.status === "not_found") {
     return (
@@ -67,7 +83,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <ErrorState
           title="No se pudo cargar la obra"
-          description="Ha ocurrido un error leyendo el proyecto real de la organización."
+          description={state.message}
           actions={<LinkButton href="/app/projects">Volver a obras</LinkButton>}
         />
       </section>
@@ -77,6 +93,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   if (state.status !== "ready") return null;
 
   const project = state.item;
+  const summary = await getProjectOperationalSummary({
+    supabase,
+    organizationId: ctx.organizationId,
+    projectId: project.id,
+    currentProgress: project.progress,
+  });
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-7">
@@ -88,8 +110,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         }
         eyebrow={<StatusBadge status={project.status} />}
         title={project.name}
-        description="Ficha operativa para entender el estado de la obra, su contexto y los módulos que se conectarán en los próximos incrementos."
-        actions={<LinkButton href="/app/projects" variant="secondary">Listado de obras</LinkButton>}
+        description={`${project.clientName ?? "Cliente sin asignar"} · ${project.address ?? "Dirección pendiente"}`}
+        actions={
+          <>
+            <LinkButton href={`/app/projects/${project.id}/edit`} variant="secondary">Editar obra</LinkButton>
+            <LinkButton href="/app/projects" variant="ghost">Listado</LinkButton>
+          </>
+        }
       />
 
       <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
@@ -102,11 +129,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               <dd className="mt-1 text-content-primary">{project.clientName ?? "Sin cliente asignado"}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Dirección</dt>
-              <dd className="mt-1 text-content-secondary">{project.address ?? "Pendiente"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Tipo de obra</dt>
+              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Tipo</dt>
               <dd className="mt-1 text-content-secondary">{project.type ?? "Pendiente"}</dd>
             </div>
             <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
@@ -124,43 +147,98 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
         <Card padding="lg" variant="raised">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Control</p>
-          <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Avance y próximos pasos</h2>
-          <p className="mt-2 text-sm leading-6 text-content-secondary">
-            Vista inicial para validar el flujo del MVP antes de conectar todos los módulos operativos.
-          </p>
-          <ProgressBar value={project.progress} showValue label="Avance estimado" className="mt-6" tone="info" />
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
-              <p className="font-semibold text-content-primary">Siguiente decisión</p>
-              <p className="mt-2 text-sm leading-5 text-content-secondary">Revisar planificación de fase y tareas críticas.</p>
+          <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Cómo va esta obra</h2>
+          <ProgressBar value={project.progress} showValue label="Avance actual" className="mt-6" tone="info" />
+          {summary.progress.status === "error" ? (
+            <BlockError message={summary.progress.message} />
+          ) : summary.progress.data.latest ? (
+            <div className="mt-6 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+              <p className="text-sm font-semibold text-content-primary">Último avance: {summary.progress.data.latest.progress}%</p>
+              <p className="mt-2 text-sm text-content-secondary">{summary.progress.data.latest.note ?? "Sin nota asociada."}</p>
+              <p className="mt-3 text-xs text-content-tertiary">{formatDate(summary.progress.data.latest.created_at)}</p>
             </div>
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
-              <p className="font-semibold text-content-primary">Riesgo operativo</p>
-              <p className="mt-2 text-sm leading-5 text-content-secondary">Confirmar materiales y documentación pendiente.</p>
-            </div>
-          </div>
+          ) : (
+            <EmptyCopy>No hay avances registrados todavía.</EmptyCopy>
+          )}
         </Card>
       </div>
 
-      <Card padding="lg" variant="surface">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Módulos</p>
-            <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Sistema operativo de la obra</h2>
-          </div>
-          <p className="max-w-xl text-sm leading-6 text-content-secondary">
-            Placeholders para visualizar la navegación futura del MVP privado.
-          </p>
-        </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {futureSections.map((section) => (
-            <div key={section} className="rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.025] p-4">
-              <p className="font-semibold text-content-primary">{section}</p>
-              <p className="mt-2 text-xs leading-5 text-content-tertiary">Pendiente de conectar en próximos incrementos.</p>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Card padding="lg" variant="surface">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Tareas</p>
+              <h2 className="mt-2 text-xl font-semibold">Qué requiere atención</h2>
             </div>
-          ))}
-        </div>
-      </Card>
+            <LinkButton href={`/app/projects/${project.id}/tasks`} variant="ghost">Ver</LinkButton>
+          </div>
+          {summary.tasks.status === "error" ? <BlockError message={summary.tasks.message} /> : (
+            <>
+              <div className="mt-5 grid grid-cols-3 gap-2 text-center text-sm">
+                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.open}</p><p className="text-content-tertiary">Abiertas</p></div>
+                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.inProgress}</p><p className="text-content-tertiary">En curso</p></div>
+                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.completed}</p><p className="text-content-tertiary">Hechas</p></div>
+              </div>
+              {summary.tasks.data.next.length === 0 ? <EmptyCopy>No hay tareas pendientes.</EmptyCopy> : (
+                <ul className="mt-4 space-y-2 text-sm text-content-secondary">
+                  {summary.tasks.data.next.map((task) => <li key={task.id}>• {task.title} <span className="text-content-tertiary">{shortDate(task.due_date)}</span></li>)}
+                </ul>
+              )}
+            </>
+          )}
+        </Card>
+
+        <Card padding="lg" variant="surface">
+          <div className="flex items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Fases</p><h2 className="mt-2 text-xl font-semibold">Planificación</h2></div>
+            <LinkButton href={`/app/projects/${project.id}/phases`} variant="ghost">Ver</LinkButton>
+          </div>
+          {summary.phases.status === "error" ? <BlockError message={summary.phases.message} /> : (
+            <div className="mt-5">
+              <p className="font-num text-4xl font-bold">{summary.phases.data.count}</p>
+              {summary.phases.data.current ? <p className="mt-3 text-sm text-content-secondary">Fase actual: <span className="text-content-primary">{summary.phases.data.current.title}</span></p> : <EmptyCopy>No hay fases definidas todavía.</EmptyCopy>}
+            </div>
+          )}
+        </Card>
+
+        <Card padding="lg" variant="surface">
+          <div className="flex items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Presupuesto</p><h2 className="mt-2 text-xl font-semibold">Importe principal</h2></div>
+            <LinkButton href={`/app/projects/${project.id}/budgets`} variant="ghost">Ver</LinkButton>
+          </div>
+          {summary.budget.status === "error" ? <BlockError message={summary.budget.message} /> : summary.budget.data.main ? (
+            <div className="mt-5"><p className="font-num text-3xl font-bold">{summary.budget.data.main.formattedTotal}</p><p className="mt-2 text-sm text-content-secondary">{summary.budget.data.main.title} · {summary.budget.data.main.status}</p></div>
+          ) : <EmptyCopy>No hay presupuestos todavía.</EmptyCopy>}
+        </Card>
+
+        <Card padding="lg" variant="surface">
+          <div className="flex items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Costes</p><h2 className="mt-2 text-xl font-semibold">Gasto acumulado</h2></div>
+            <LinkButton href={`/app/projects/${project.id}/costs`} variant="ghost">Ver</LinkButton>
+          </div>
+          {summary.costs.status === "error" ? <BlockError message={summary.costs.message} /> : <p className="mt-5 font-num text-3xl font-bold">{summary.costs.data.formattedTotal}</p>}
+        </Card>
+
+        <Card padding="lg" variant="surface">
+          <div className="flex items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Compras</p><h2 className="mt-2 text-xl font-semibold">Pendientes y últimas</h2></div>
+            <LinkButton href={`/app/projects/${project.id}/purchases`} variant="ghost">Ver</LinkButton>
+          </div>
+          {summary.purchases.status === "error" ? <BlockError message={summary.purchases.message} /> : (
+            <><p className="mt-5 font-num text-3xl font-bold">{summary.purchases.data.pending}</p><p className="text-sm text-content-secondary">compras pendientes</p>{summary.purchases.data.latest.length === 0 ? <EmptyCopy>No hay compras todavía.</EmptyCopy> : <ul className="mt-4 space-y-2 text-sm text-content-secondary">{summary.purchases.data.latest.map((purchase) => <li key={purchase.id}>• {purchase.title} <span className="text-content-tertiary">{purchase.supplier_name ?? "Sin proveedor"}</span></li>)}</ul>}</>
+          )}
+        </Card>
+
+        <Card padding="lg" variant="surface">
+          <div className="flex items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Documentos</p><h2 className="mt-2 text-xl font-semibold">Archivo de obra</h2></div>
+            <LinkButton href={`/app/projects/${project.id}/documents`} variant="ghost">Ver</LinkButton>
+          </div>
+          {summary.documents.status === "error" ? <BlockError message={summary.documents.message} /> : (
+            <><p className="mt-5 font-num text-3xl font-bold">{summary.documents.data.count}</p>{summary.documents.data.latest.length === 0 ? <EmptyCopy>No hay documentos todavía.</EmptyCopy> : <ul className="mt-4 space-y-2 text-sm text-content-secondary">{summary.documents.data.latest.map((doc) => <li key={doc.id}>• {doc.file_name} <span className="text-content-tertiary">{shortDate(doc.created_at)}</span></li>)}</ul>}</>
+          )}
+        </Card>
+      </div>
     </section>
   );
 }
