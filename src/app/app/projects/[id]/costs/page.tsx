@@ -7,10 +7,11 @@ import { CardActionRow } from "@/components/ui/CardActionRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { computeBudgetTotals, formatMoneyEUR, type BudgetStatus } from "@/lib/services/budgets-basic";
+import { formatMoneyEUR } from "@/lib/services/budgets-basic";
 import { COST_CATEGORIES, computeCostTotals, type CostCategory } from "@/lib/services/costs";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { readAcceptedBudgetsTotals } from "@/lib/services/project-budgets";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
@@ -26,18 +27,6 @@ type CostRow = {
   supplier_name: string | null;
   document_id: string | null;
   created_at: string;
-};
-
-type AcceptedBudgetRow = {
-  id: string;
-  status: BudgetStatus;
-};
-
-type BudgetLineRow = {
-  budget_id: string;
-  quantity: string | number;
-  unit_price: string | number;
-  tax_rate: string | number;
 };
 
 function formatDate(value: string): string {
@@ -133,35 +122,16 @@ export default async function AppProjectCostsPage({
   }
 
   // Accepted budgets comparison
-  const { data: acceptedBudgets } = await supabase
-    .from("project_budgets")
-    .select("id, status")
-    .eq("organization_id", ctx.organizationId)
-    .eq("project_id", projectId)
-    .eq("status", "accepted");
-
-  const accepted = (acceptedBudgets ?? []) as AcceptedBudgetRow[];
-  const acceptedIds = accepted.map((b) => b.id);
-
-  const { data: acceptedLines } = acceptedIds.length
-    ? await supabase
-        .from("project_budget_lines")
-        .select("budget_id, quantity, unit_price, tax_rate")
-        .eq("organization_id", ctx.organizationId)
-        .eq("project_id", projectId)
-        .in("budget_id", acceptedIds)
-    : { data: [] as unknown[] };
-
-  const acceptedLineRows = (acceptedLines ?? []) as BudgetLineRow[];
-  const acceptedTotals = computeBudgetTotals(
-    acceptedLineRows.map((l) => ({
-      quantity: Number(l.quantity),
-      unitPrice: Number(l.unit_price),
-      taxRate: Number(l.tax_rate),
-    }))
+  const acceptedTotalsResult = await readAcceptedBudgetsTotals(
+    supabase,
+    ctx.organizationId,
+    projectId
   );
 
-  const hasAcceptedBudget = acceptedIds.length > 0;
+  const hasAcceptedBudget = acceptedTotalsResult.ok && acceptedTotalsResult.data.hasAcceptedBudget;
+  const acceptedTotals = acceptedTotalsResult.ok
+    ? acceptedTotalsResult.data.totals
+    : { subtotal: 0, tax: 0, total: 0 };
   const diff = hasAcceptedBudget ? acceptedTotals.total - totals.total : null;
 
   return (
