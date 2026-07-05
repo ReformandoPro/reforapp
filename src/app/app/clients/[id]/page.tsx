@@ -1,14 +1,17 @@
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { createMockClientsReader, toClientDetailState } from "@/lib/services/clients";
-import { getDemoOrganization } from "@/lib/services/demo-organization";
-import { createMockProjectsReader } from "@/lib/services/private-projects";
+import { createSupabaseClientsReader, toClientDetailState } from "@/lib/services/clients";
+import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { createSupabaseProjectsReader } from "@/lib/services/private-projects";
+import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -21,20 +24,62 @@ const futureSections = ["Comunicaciones", "Documentos", "Presupuestos", "Histori
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const organization = await getDemoOrganization();
-  const clientsReader = createMockClientsReader();
-  const projectsReader = createMockProjectsReader();
-  const [clientState, projects] = await Promise.all([
-    toClientDetailState(await clientsReader.getClient(organization.id, id)),
-    projectsReader.listProjects(organization.id),
+  const ctx = await getOrganizationContextForRequest();
+
+  if (!ctx.ok) {
+    if (ctx.reason === "missing_membership") {
+      redirect("/app/onboarding");
+    }
+
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <ErrorState
+          title="No se pudo cargar el cliente"
+          description="No pudimos resolver tu organización. Inicia sesión e inténtalo de nuevo."
+        />
+      </section>
+    );
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const clientsReader = createSupabaseClientsReader(supabase);
+  const projectsReader = createSupabaseProjectsReader(supabase);
+  const [clientState, projectsResult] = await Promise.all([
+    clientsReader
+      .getClient(ctx.organizationId, id)
+      .then(toClientDetailState)
+      .catch((error: unknown) => {
+        console.error("Client detail query failed", error);
+
+        return {
+          status: "error" as const,
+          message: "No se pudo cargar el cliente.",
+        };
+      }),
+    projectsReader
+      .listProjects(ctx.organizationId)
+      .then((projects) => ({ status: "ready" as const, projects }))
+      .catch((error: unknown) => {
+        console.error("Client associated projects query failed", error);
+
+        return {
+          status: "error" as const,
+          message: "No se pudieron cargar las obras asociadas.",
+          projects: [],
+        };
+      }),
   ]);
 
   if (clientState.status === "not_found") {
+    notFound();
+  }
+
+  if (clientState.status === "error") {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <EmptyState
-          title="Cliente no encontrado"
-          description="No hemos encontrado este cliente en los datos demo del MVP."
+        <ErrorState
+          title="No se pudo cargar el cliente"
+          description={clientState.message}
           actions={<LinkButton href="/app/clients">Volver a clientes</LinkButton>}
         />
       </section>
@@ -44,7 +89,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (clientState.status !== "ready") return null;
 
   const client = clientState.item;
-  const associatedProjects = projects.filter((project) => project.clientId === client.id);
+  const associatedProjects = projectsResult.projects.filter((project) => project.clientId === client.id);
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -80,8 +125,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <p className="mt-1 text-sm text-content-secondary">
             Relación inicial entre cliente y proyectos para validar el flujo del MVP.
           </p>
-          {associatedProjects.length === 0 ? (
-            <EmptyState className="mt-5" title="Sin obras asociadas" description="Este cliente todavía no tiene obras vinculadas." />
+          {projectsResult.status === "error" ? (
+            <ErrorState className="mt-5" title="No se pudieron cargar las obras asociadas" description={projectsResult.message} />
+          ) : associatedProjects.length === 0 ? (
+            <EmptyState className="mt-5" title="Sin obras asociadas" description="No hay obras asociadas todavía." />
           ) : (
             <div className="mt-5 grid gap-3">
               {associatedProjects.map((project) => (
