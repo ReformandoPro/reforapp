@@ -61,6 +61,9 @@ jobs:
           cd "$REPO"
 
           git status --short
+          git config --unset-all core.sshCommand || true
+          git remote set-url origin https://github.com/ReformandoPro/reforapp.git
+          git remote -v
           git fetch origin main
           git checkout main
           git pull --ff-only origin main
