@@ -1,18 +1,48 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { createMockClientsReader, toClientsListState } from "@/lib/services/clients";
-import { getDemoOrganization } from "@/lib/services/demo-organization";
+import { createSupabaseClientsReader, toClientsListState } from "@/lib/services/clients";
+import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppClientsPage() {
-  const organization = await getDemoOrganization();
-  const reader = createMockClientsReader();
-  const state = await toClientsListState(await reader.listClients(organization.id));
+  const ctx = await getOrganizationContextForRequest();
+
+  if (!ctx.ok) {
+    if (ctx.reason === "missing_membership") {
+      redirect("/app/onboarding");
+    }
+
+    return (
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <ErrorState
+          title="No se pudieron cargar los clientes"
+          description="No pudimos resolver tu organización. Inicia sesión e inténtalo de nuevo."
+        />
+      </section>
+    );
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const reader = createSupabaseClientsReader(supabase);
+  const state = await reader
+    .listClients(ctx.organizationId)
+    .then(toClientsListState)
+    .catch((error: unknown) => {
+      console.error("Clients list query failed", error);
+
+      return {
+        status: "error" as const,
+        message: "No se pudieron cargar los clientes.",
+      };
+    });
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -22,10 +52,18 @@ export default async function AppClientsPage() {
         actions={<LinkButton href="/app" variant="secondary">Volver al panel</LinkButton>}
       />
 
+      {state.status === "error" ? (
+        <ErrorState
+          title="No se pudieron cargar los clientes"
+          description={state.message}
+        />
+      ) : null}
+
       {state.status === "empty" ? (
         <EmptyState
           title="Todavía no hay clientes"
           description="Cuando se cree el primer cliente, aparecerá aquí con sus datos de contacto y obras asociadas."
+          actions={<LinkButton href="/app/clients/new">Nuevo cliente</LinkButton>}
         />
       ) : null}
 
