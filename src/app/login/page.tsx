@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     : "/app/projects";
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md items-center px-4 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-10">
       <Card className="w-full border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
         <h1 className="text-2xl font-semibold tracking-tight">Acceder</h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">

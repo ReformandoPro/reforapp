@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AppShell } from "@/components/layout";
+
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -56,7 +58,8 @@ export default function BudgetsPage() {
   const budgets = getBudgetSummaries();
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <AppShell>
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Card className="border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-[var(--text-primary)] shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-2xl">
@@ -155,6 +158,7 @@ export default function BudgetsPage() {
           ))}
         </div>
       )}
-    </section>
+      </section>
+    </AppShell>
   );
 }
