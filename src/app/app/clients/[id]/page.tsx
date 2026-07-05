@@ -57,7 +57,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         };
       }),
     projectsReader
-      .listProjects(ctx.organizationId)
+      .listProjectsByClient(ctx.organizationId, id)
       .then((projects) => ({ status: "ready" as const, projects }))
       .catch((error: unknown) => {
         console.error("Client associated projects query failed", error);
@@ -89,7 +89,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (clientState.status !== "ready") return null;
 
   const client = clientState.item;
-  const associatedProjects = projectsResult.projects.filter((project) => project.clientId === client.id);
+  const associatedProjects = projectsResult.projects;
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">

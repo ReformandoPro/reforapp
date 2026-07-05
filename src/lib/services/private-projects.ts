@@ -20,6 +20,7 @@ type ProjectRow = {
 
 export type ProjectsReader = {
   listProjects(organizationId: string): Promise<Project[]>;
+  listProjectsByClient(organizationId: string, clientId: string): Promise<Project[]>;
   getProject(organizationId: string, projectId: string): Promise<Project | null>;
 };
 
@@ -82,6 +83,11 @@ export function createMockProjectsReader(): ProjectsReader {
     async listProjects(organizationId) {
       return mockProjects.filter((project) => project.organizationId === organizationId);
     },
+    async listProjectsByClient(organizationId, clientId) {
+      return mockProjects.filter(
+        (project) => project.organizationId === organizationId && project.clientId === clientId
+      );
+    },
     async getProject(organizationId, projectId) {
       return (
         mockProjects.find(
@@ -92,16 +98,17 @@ export function createMockProjectsReader(): ProjectsReader {
   };
 }
 
+const projectSelect =
+  "id, organization_id, client_id, name, status, address, type, progress, client_name, created_at, updated_at";
+
 export function createSupabaseProjectsReader(supabase: SupabaseClient): ProjectsReader {
   return {
     async listProjects(organizationId) {
       const { data, error } = await supabase
         .from("projects")
-        .select(
-          "id, organization_id, client_id, name, status, address, type, progress, client_name, created_at, updated_at"
-        )
+        .select(projectSelect)
         .eq("organization_id", organizationId)
-        .order("updated_at", { ascending: false, nullsFirst: false });
+        .order("updated_at", { ascending: false });
 
       if (error) {
         throw new Error(`Unable to read projects from Supabase: ${error.message}`);
@@ -109,12 +116,24 @@ export function createSupabaseProjectsReader(supabase: SupabaseClient): Projects
 
       return ((data ?? []) as ProjectRow[]).map(mapProjectRow);
     },
+    async listProjectsByClient(organizationId, clientId) {
+      const { data, error } = await supabase
+        .from("projects")
+        .select(projectSelect)
+        .eq("organization_id", organizationId)
+        .eq("client_id", clientId)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        throw new Error(`Unable to read client projects from Supabase: ${error.message}`);
+      }
+
+      return ((data ?? []) as ProjectRow[]).map(mapProjectRow);
+    },
     async getProject(organizationId, projectId) {
       const { data, error } = await supabase
         .from("projects")
-        .select(
-          "id, organization_id, client_id, name, status, address, type, progress, client_name, created_at, updated_at"
-        )
+        .select(projectSelect)
         .eq("organization_id", organizationId)
         .eq("id", projectId)
         .maybeSingle();
