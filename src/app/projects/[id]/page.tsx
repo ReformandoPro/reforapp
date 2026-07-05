@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AppShell } from "@/components/layout";
+
 import { ProjectOverviewScreen } from "@/components/screens/ProjectOverviewScreen";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getProjectOverview } from "@/lib/services/projects";
@@ -15,7 +17,8 @@ export default async function ProjectDetailPage({
   const project = getProjectOverview(id);
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <AppShell>
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/projects"
         className="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"
@@ -42,6 +45,7 @@ export default async function ProjectDetailPage({
           description="No hemos encontrado una obra con este identificador."
         />
       )}
-    </section>
+      </section>
+    </AppShell>
   );
 }

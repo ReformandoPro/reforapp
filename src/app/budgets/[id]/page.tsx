@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AppShell } from "@/components/layout";
+
 import { BudgetSummaryScreen } from "@/components/screens/BudgetSummaryScreen";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getBudgetSummary } from "@/lib/services/budgets";
@@ -15,7 +17,8 @@ export default async function BudgetDetailPage({
   const budget = getBudgetSummary(id);
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <AppShell>
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Link
         href="/budgets"
         className="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"
@@ -31,6 +34,7 @@ export default async function BudgetDetailPage({
           description="No hemos encontrado un presupuesto con este identificador."
         />
       )}
-    </section>
+      </section>
+    </AppShell>
   );
 }
