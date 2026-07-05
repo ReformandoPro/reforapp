@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 export type OrgMemberWithProfile = {
   userId: string;
   role: "owner" | "admin" | "member";
+  joinedAt: string | null;
   displayName: string | null;
   email: string | null;
   phone: string | null;
@@ -12,6 +13,7 @@ export type OrgMemberWithProfile = {
 type MembershipRow = {
   user_id: string;
   role: "owner" | "admin" | "member";
+  created_at: string | null;
 };
 
 type ProfileRow = {
@@ -38,7 +40,7 @@ export async function getOrgMembersWithProfiles(
 
   const { data: memberships, error: membershipsError } = await supabase
     .from("memberships")
-    .select("user_id, role")
+    .select("user_id, role, created_at")
     .eq("organization_id", organizationId);
 
   if (membershipsError) return [];
@@ -68,6 +70,7 @@ export async function getOrgMembersWithProfiles(
       return {
         userId: m.user_id,
         role: m.role,
+        joinedAt: m.created_at ?? null,
         displayName,
         email,
         phone,
