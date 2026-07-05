@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "NODE_OPTIONS=--max-old-space-size=1024 eslint src tests middleware.ts next.config.ts tailwind.config.js postcss.config.mjs",
     "test": "vitest run"
   },
   "dependencies": {

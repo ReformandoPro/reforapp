@@ -187,11 +187,22 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </div>
           {summary.tasks.status === "error" ? <BlockError message={summary.tasks.message} /> : (
             <>
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center text-sm">
-                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.open}</p><p className="text-content-tertiary">Abiertas</p></div>
-                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.inProgress}</p><p className="text-content-tertiary">En curso</p></div>
-                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.completed}</p><p className="text-content-tertiary">Hechas</p></div>
+              <div className="mt-5 grid grid-cols-4 gap-2 text-center text-sm">
+                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.stats.pending}</p><p className="text-content-tertiary">Pend.</p></div>
+                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.stats.inProgress}</p><p className="text-content-tertiary">En curso</p></div>
+                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.stats.blocked}</p><p className="text-content-tertiary">Bloq.</p></div>
+                <div className="rounded-xl bg-white/[0.03] p-3"><p className="font-num text-2xl font-bold">{summary.tasks.data.stats.done}</p><p className="text-content-tertiary">Hechas</p></div>
               </div>
+
+              <ProgressBar
+                className="mt-4"
+                value={summary.tasks.data.stats.completionPercent}
+                label="Progreso por tareas"
+                helperText={summary.tasks.data.stats.total === 0 ? "Sin tareas todavía" : `${summary.tasks.data.stats.done}/${summary.tasks.data.stats.total} completadas`}
+                showValue
+                tone={summary.tasks.data.stats.blocked > 0 ? "danger" : summary.tasks.data.stats.completionPercent === 100 ? "success" : "info"}
+              />
+
               {summary.tasks.data.next.length === 0 ? <EmptyCopy>No hay tareas pendientes.</EmptyCopy> : (
                 <ul className="mt-4 space-y-2 text-sm text-content-secondary">
                   {summary.tasks.data.next.map((task) => <li key={task.id}>• {task.title} <span className="text-content-tertiary">{shortDate(task.due_date)}</span></li>)}

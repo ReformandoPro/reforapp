@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { formatMoneyEUR, type BudgetStatus } from "./budgets-basic";
 import { computeCostTotals } from "./costs";
+import { isProjectTaskStatus, type ProjectTaskStatus } from "./project-tasks";
 import type { PurchaseStatus } from "./purchases";
 import { readMainProjectBudgetSummary } from "./project-budgets";
 import { computeProjectMargin, type ProjectMarginStatus } from "./project-margin";
@@ -17,11 +18,31 @@ type CostRow = { id: string; amount: number; tax_rate: number; cost_date: string
 type DocumentRow = { id: string; file_name: string; category: string; created_at: string };
 type ProgressRow = { id: string; progress: number; note: string | null; created_at: string };
 
+export type TaskOperationalStats = {
+  total: number;
+  pending: number;
+  inProgress: number;
+  blocked: number;
+  done: number;
+  completionPercent: number;
+};
+
+export function computeTaskOperationalStats(rows: Array<{ status: string }>): TaskOperationalStats {
+  const normalized: ProjectTaskStatus[] = rows.map((row) => (isProjectTaskStatus(row.status) ? row.status : "pending"));
+
+  const total = normalized.length;
+  const pending = normalized.filter((status) => status === "pending").length;
+  const inProgress = normalized.filter((status) => status === "in_progress").length;
+  const blocked = normalized.filter((status) => status === "blocked").length;
+  const done = normalized.filter((status) => status === "done").length;
+  const completionPercent = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  return { total, pending, inProgress, blocked, done, completionPercent };
+}
+
 export type ProjectOperationalSummary = {
   tasks: BlockResult<{
-    open: number;
-    inProgress: number;
-    completed: number;
+    stats: TaskOperationalStats;
     next: Array<Pick<TaskRow, "id" | "title" | "status" | "due_date">>;
   }>;
   phases: BlockResult<{
@@ -71,18 +92,17 @@ async function readTasks(supabase: SupabaseClient, organizationId: string, proje
     .select("id, title, status, due_date, updated_at")
     .eq("organization_id", organizationId)
     .eq("project_id", projectId)
-    .order("due_date", { ascending: true })
-    .order("updated_at", { ascending: false });
+    .order("due_date", { ascending: true, nullsFirst: false })
+    .order("updated_at", { ascending: false, nullsFirst: false });
 
   if (error) throw error;
 
   const rows = (data ?? []) as TaskRow[];
+  const stats = computeTaskOperationalStats(rows);
   return {
     status: "ready",
     data: {
-      open: rows.filter((task) => task.status === "pending" || task.status === "blocked").length,
-      inProgress: rows.filter((task) => task.status === "in_progress").length,
-      completed: rows.filter((task) => task.status === "done").length,
+      stats,
       next: rows.filter((task) => task.status !== "done").slice(0, 3),
     },
   };
