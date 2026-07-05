@@ -22,7 +22,7 @@ type CardProps = HTMLAttributes<HTMLElement> & {
 
 const shadowClasses: Record<CardShadow, string> = {
   none: "shadow-none",
-  sm: "shadow-sm",
+  sm: "shadow-[var(--shadow-sm)]",
 };
 
 const paddingClasses: Record<CardPadding, string> = {
@@ -32,8 +32,8 @@ const paddingClasses: Record<CardPadding, string> = {
 };
 
 const variantClasses: Record<CardVariant, string> = {
-  surface: "bg-bg-surface border border-subtle text-content-primary",
-  raised: "bg-bg-raised border text-content-primary",
+  surface: "border border-subtle bg-bg-surface text-content-primary",
+  raised: "border border-subtle bg-bg-raised text-content-primary",
   active: "bg-primary-500 border border-primary-500 text-white",
   dashed: "bg-transparent border border-dashed border-strong text-content-primary",
 };
