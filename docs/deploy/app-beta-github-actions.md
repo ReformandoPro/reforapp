@@ -1,10 +1,10 @@
-# Deploy manual de app-beta con GitHub Actions
+# Deploy automático de app-beta con GitHub Actions
 
-Este documento describe el deploy manual de la app privada SaaS de Reformando en staging.
+Este documento describe el deploy automático y manual de la app privada SaaS de Reformando en staging.
 
 ## Estado validado (2026-07-05)
 
-El flujo de deploy manual (`workflow_dispatch`) quedó validado end-to-end:
+El flujo de deploy manual (`workflow_dispatch`) quedó validado end-to-end antes de activar el disparo automático a `main`:
 
 - Secrets creados en GitHub: `APP_BETA_SSH_HOST`, `APP_BETA_SSH_USER`, `APP_BETA_SSH_PORT`, `APP_BETA_SSH_PRIVATE_KEY`, `APP_BETA_SSH_KNOWN_HOSTS`.
 - Conexión SSH desde GitHub Actions hacia el VPS funcionando correctamente (paso "Configure SSH").
@@ -15,7 +15,9 @@ El flujo de deploy manual (`workflow_dispatch`) quedó validado end-to-end:
 
 ## Objetivo
 
-Desplegar main en app-beta.reformando.pro sin que Jorge tenga que entrar al terminal del VPS.
+Desplegar `main` en `app-beta.reformando.pro` sin que Jorge tenga que entrar al terminal del VPS.
+
+El workflow se dispara automáticamente tras cada push/merge a `main`. El disparador manual `workflow_dispatch` queda disponible para redeploys puntuales de `main`.
 
 Este flujo solo despliega la app privada:
 
@@ -61,7 +63,19 @@ Recomendaciones:
 - No reutilizar claves personales.
 - Guardar en APP_BETA_SSH_KNOWN_HOSTS la huella del VPS, por ejemplo obtenida con `ssh-keyscan -p <PORT> <HOST>`.
 
-## Cómo ejecutar el deploy
+## Cuándo se ejecuta
+
+El workflow se ejecuta automáticamente tras cada push/merge a `main`:
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+```
+
+También puede ejecutarse manualmente para redeployar `main`:
 
 1. Ir a GitHub Actions.
 2. Seleccionar workflow Deploy app-beta.
@@ -114,31 +128,27 @@ Además, el workflow no usa:
 
 ## Riesgos
 
-Riesgos identificados del flujo actual (manual) y de una futura automatización:
+Riesgos identificados del flujo automático:
 
-- El trigger manual depende de que una persona con acceso a GitHub Actions ejecute el workflow; no hay despliegue si nadie lo lanza.
+- Cualquier PR mergeado a `main` desplegará automáticamente a staging `app-beta`.
+- Un merge roto a `main` intentará desplegarse; si falla el build, el contenedor anterior debería seguir corriendo porque `docker compose up` no se ejecuta hasta que termina `docker compose build`.
 - Los Secrets de SSH quedan accesibles a cualquier colaborador del repositorio con permisos de Actions, según el aviso de GitHub en la página de Secrets.
-- Un `docker compose build` fallido podría dejar el contenedor anterior corriendo (no hay caída de servicio), pero el runner de GitHub Actions marcaría el job como fallido y habría que revisar el log.
-- Si en el futuro se activa el disparo automático tras merge a main, cualquier PR mergeado desplegaría inmediatamente a staging sin paso de aprobación manual, salvo que se añadan protecciones adicionales.
-- No existe todavía un mecanismo de despliegue de una versión anterior (rollback) distinto al descrito más abajo.
+- Si los Secrets SSH cambian o caducan, el deploy fallará en GitHub Actions, no en la app en ejecución.
+- El workflow despliega siempre `main`; no debe usarse para probar ramas.
+- No existe todavía un mecanismo automático de despliegue de una versión anterior distinto al rollback manual descrito abajo.
 
 ## Rollback
 
-Para rollback seguro, desplegar un commit anterior debería implementarse en un workflow separado con input `ref`, reutilizando las mismas protecciones de ruta/servicio que ya tiene `deploy-app-beta.yml`.
+Rollback seguro recomendado:
 
-Hasta que exista ese workflow, el rollback debe hacerse con cuidado y siempre sobre el servicio correcto `reformando-app-beta`, por ejemplo haciendo `git checkout <commit_anterior>` dentro de `/docker/openclaw-ejvk/data/apps/reformando-app` y repitiendo `docker compose build` + `docker compose up -d --no-deps reformando-app-beta` sobre `/docker/reformando-app-beta`.
+1. Revertir el PR problemático en GitHub o mergear un fix a `main`.
+2. Dejar que el workflow despliegue automáticamente el nuevo `main`.
+
+Si hace falta desplegar un commit anterior concreto, debe hacerse con cuidado y siempre sobre el servicio correcto `reformando-app-beta`, por ejemplo haciendo `git checkout <commit_anterior>` dentro de `/docker/openclaw-ejvk/data/apps/reformando-app` y repitiendo `docker compose build` + `docker compose up -d --no-deps reformando-app-beta` sobre `/docker/reformando-app-beta`.
 
 No usar `git reset --hard` en automatismos sin autorización explícita.
 
-## Propuesta futura: activar deploy automático tras merge a main
-
-Este primer paso es manual (`workflow_dispatch`). Esta sección deja documentada la propuesta para un segundo PR que active el deploy automático, sin implementarla todavía:
-
-- Cambiar (o añadir) el trigger del workflow de `workflow_dispatch` a `on: push: branches: [main]`, manteniendo también `workflow_dispatch` como opción manual de respaldo.
-- Mantener intactas todas las validaciones de ruta/servicio (`REPO`, `COMPOSE`, `SERVICE`) ya existentes.
-- Evaluar añadir un `environment` de GitHub con regla de protección (por ejemplo, revisión requerida) antes de permitir el deploy automático a app-beta, para no perder el control humano por completo.
-- Documentar y comunicar el cambio antes de activarlo, ya que a partir de ese momento cualquier merge a main desplegará automáticamente a staging.
-- Activar el trigger automático solo después de varias ejecuciones manuales exitosas adicionales.
+Un workflow futuro podría añadir un input manual `ref` para redeploy/rollback controlado, pero este flujo automático mantiene el alcance mínimo: desplegar `main`.
 
 ## Nota explícita: no tocar reformando-beta
 
