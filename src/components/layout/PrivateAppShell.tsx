@@ -4,64 +4,67 @@ import { logout } from "@/app/login/actions";
 
 const navigationItems = [
   { href: "/app", label: "Panel", description: "Vista general" },
-  { href: "/app/projects", label: "Obras", description: "Proyectos y producción" },
-  { href: "/app/clients", label: "Clientes", description: "Contactos y expedientes" },
-  { href: "/app/team", label: "Equipo", description: "Miembros y roles" },
-  { href: "/app/profile", label: "Mi perfil", description: "Datos personales" },
+  { href: "/app/projects", label: "Obras", description: "Producción" },
+  { href: "/app/clients", label: "Clientes", description: "Expedientes" },
+  { href: "/app/team", label: "Equipo", description: "Roles" },
+  { href: "/app/profile", label: "Perfil", description: "Cuenta" },
 ];
 
 export function PrivateAppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-bg-base text-content-primary">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col lg:flex-row">
-        <aside className="border-b border-subtle bg-bg-surface/95 px-4 py-4 shadow-[var(--shadow-sm)] lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:px-5 lg:py-6">
-          <div className="flex items-center justify-between gap-4 lg:block">
-            <Link href="/app" className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-content-tertiary">
-                Reformando
-              </span>
-              <span className="mt-1 block text-lg font-semibold tracking-tight">
-                Zona privada
-              </span>
-            </Link>
-            <form action={logout} className="lg:hidden">
-              <button type="submit" className="text-sm font-medium text-content-secondary hover:text-content-primary">
-                Salir
-              </button>
-            </form>
-          </div>
+    <div className="min-h-screen overflow-hidden bg-bg-base text-content-primary">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(45,127,249,0.16),transparent_34rem),radial-gradient(circle_at_80%_0%,rgba(111,168,246,0.09),transparent_28rem)]" />
 
-          <nav className="mt-5 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+      <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-bg-base/78 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <Link href="/app" className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-500 text-sm font-bold text-white shadow-primary">
+              R
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold leading-5 text-content-primary">Reformando.app</span>
+              <span className="block truncate text-xs text-content-tertiary">Gestión integral de reformas</span>
+            </span>
+          </Link>
+
+          <nav className="hidden items-center gap-1 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-1 lg:flex">
             {navigationItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="min-w-fit rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:border-subtle hover:bg-bg-raised hover:text-content-primary lg:px-4 lg:py-3"
+                className="rounded-xl px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:bg-white/[0.05] hover:text-content-primary"
               >
-                <span className="block text-content-primary">{item.label}</span>
-                <span className="hidden text-xs font-normal text-content-tertiary lg:block">
-                  {item.description}
-                </span>
+                {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="mt-8 hidden rounded-lg border border-subtle bg-bg-raised p-4 lg:block">
-            <p className="text-sm font-medium">MVP privado</p>
-            <p className="mt-1 text-xs leading-5 text-content-secondary">
-              Pantallas preparadas para conectar services/adapters con Supabase sin acoplar la UI.
-            </p>
-          </div>
-
-          <form action={logout} className="mt-6 hidden lg:block">
-            <button type="submit" className="text-sm font-medium text-content-secondary hover:text-content-primary">
+          <form action={logout}>
+            <button
+              type="submit"
+              className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:bg-white/[0.06] hover:text-content-primary"
+            >
               Salir
             </button>
           </form>
-        </aside>
+        </div>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
-      </div>
+        <nav className="mx-auto flex w-full max-w-7xl gap-2 overflow-x-auto px-4 pb-4 sm:px-6 lg:hidden">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="min-w-fit rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:bg-white/[0.06] hover:text-content-primary"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
+        {children}
+      </main>
     </div>
   );
 }

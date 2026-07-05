@@ -79,57 +79,83 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const project = state.item;
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-7">
       <PageHeader
-        backLink={<Link href="/app/projects" className="text-sm font-medium text-content-secondary hover:text-content-primary">← Volver a obras</Link>}
+        backLink={
+          <Link href="/app/projects" className="text-sm font-semibold text-content-secondary hover:text-content-primary">
+            ← Volver a obras
+          </Link>
+        }
         eyebrow={<StatusBadge status={project.status} />}
         title={project.name}
-        description="Ficha operativa de obra para coordinar avance, presupuesto, tareas y documentación."
+        description="Ficha operativa para entender el estado de la obra, su contexto y los módulos que se conectarán en los próximos incrementos."
         actions={<LinkButton href="/app/projects" variant="secondary">Listado de obras</LinkButton>}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <Card padding="lg" shadow="none">
-          <h2 className="text-lg font-semibold">Resumen de obra</h2>
-          <dl className="mt-5 space-y-4 text-sm">
-            <div><dt className="font-medium text-content-primary">Cliente</dt><dd className="mt-1 text-content-secondary">{project.clientName ?? "Sin cliente asignado"}</dd></div>
-            <div><dt className="font-medium text-content-primary">Dirección</dt><dd className="mt-1 text-content-secondary">{project.address ?? "Pendiente"}</dd></div>
-            <div><dt className="font-medium text-content-primary">Tipo de obra</dt><dd className="mt-1 text-content-secondary">{project.type ?? "Pendiente"}</dd></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><dt className="font-medium text-content-primary">Creada</dt><dd className="mt-1 text-content-secondary">{formatDate(project.createdAt)}</dd></div>
-              <div><dt className="font-medium text-content-primary">Actualizada</dt><dd className="mt-1 text-content-secondary">{formatDate(project.updatedAt)}</dd></div>
+      <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <Card padding="lg" variant="surface">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Resumen</p>
+          <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Datos de obra</h2>
+          <dl className="mt-6 space-y-5 text-sm">
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Cliente</dt>
+              <dd className="mt-1 text-content-primary">{project.clientName ?? "Sin cliente asignado"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Dirección</dt>
+              <dd className="mt-1 text-content-secondary">{project.address ?? "Pendiente"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Tipo de obra</dt>
+              <dd className="mt-1 text-content-secondary">{project.type ?? "Pendiente"}</dd>
+            </div>
+            <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Creada</dt>
+                <dd className="mt-1 text-content-secondary">{formatDate(project.createdAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">Actualizada</dt>
+                <dd className="mt-1 text-content-secondary">{formatDate(project.updatedAt)}</dd>
+              </div>
             </div>
           </dl>
         </Card>
 
-        <Card padding="lg" shadow="none">
-          <h2 className="text-lg font-semibold">Avance y control</h2>
-          <p className="mt-1 text-sm text-content-secondary">
-            Vista inicial para validar el flujo del MVP antes de conectar datos reales.
+        <Card padding="lg" variant="raised">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Control</p>
+          <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Avance y próximos pasos</h2>
+          <p className="mt-2 text-sm leading-6 text-content-secondary">
+            Vista inicial para validar el flujo del MVP antes de conectar todos los módulos operativos.
           </p>
-          <ProgressBar value={project.progress} showValue label="Avance estimado" className="mt-5" tone="info" />
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-subtle bg-bg-raised p-4">
-              <p className="text-sm font-medium">Siguiente decisión</p>
-              <p className="mt-1 text-sm text-content-secondary">Revisar planificación de fase y tareas críticas.</p>
+          <ProgressBar value={project.progress} showValue label="Avance estimado" className="mt-6" tone="info" />
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+              <p className="font-semibold text-content-primary">Siguiente decisión</p>
+              <p className="mt-2 text-sm leading-5 text-content-secondary">Revisar planificación de fase y tareas críticas.</p>
             </div>
-            <div className="rounded-2xl border border-subtle bg-bg-raised p-4">
-              <p className="text-sm font-medium">Riesgo operativo</p>
-              <p className="mt-1 text-sm text-content-secondary">Confirmar materiales y documentación pendiente.</p>
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+              <p className="font-semibold text-content-primary">Riesgo operativo</p>
+              <p className="mt-2 text-sm leading-5 text-content-secondary">Confirmar materiales y documentación pendiente.</p>
             </div>
           </div>
         </Card>
       </div>
 
-      <Card padding="lg" shadow="none">
-        <h2 className="text-lg font-semibold">Módulos de la obra</h2>
-        <p className="mt-1 text-sm text-content-secondary">
-          Placeholders para visualizar la navegación futura del MVP privado.
-        </p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <Card padding="lg" variant="surface">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Módulos</p>
+            <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Sistema operativo de la obra</h2>
+          </div>
+          <p className="max-w-xl text-sm leading-6 text-content-secondary">
+            Placeholders para visualizar la navegación futura del MVP privado.
+          </p>
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {futureSections.map((section) => (
-            <div key={section} className="rounded-2xl border border-dashed border-subtle bg-bg-raised p-4">
-              <p className="font-medium">{section}</p>
+            <div key={section} className="rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.025] p-4">
+              <p className="font-semibold text-content-primary">{section}</p>
               <p className="mt-2 text-xs leading-5 text-content-tertiary">Pendiente de conectar en próximos incrementos.</p>
             </div>
           ))}

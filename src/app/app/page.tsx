@@ -28,9 +28,9 @@ export default async function AppDashboardPage() {
 
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card padding="lg" shadow="none">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Panel de control</h1>
-          <p className="mt-2 text-sm text-content-secondary sm:text-base">
+        <Card padding="xl" variant="hero">
+          <h1 className="font-num text-3xl font-bold tracking-tight">Panel de control</h1>
+          <p className="mt-3 text-sm leading-6 text-content-secondary sm:text-base">
             No pudimos resolver tu organización. Inicia sesión e inténtalo de nuevo.
           </p>
         </Card>
@@ -44,9 +44,9 @@ export default async function AppDashboardPage() {
   if (!organizationResult.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <Card padding="lg" shadow="none">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Panel de control</h1>
-          <p className="mt-2 text-sm text-content-secondary sm:text-base">
+        <Card padding="xl" variant="hero">
+          <h1 className="font-num text-3xl font-bold tracking-tight">Panel de control</h1>
+          <p className="mt-3 text-sm leading-6 text-content-secondary sm:text-base">
             Tu membership existe, pero no pudimos cargar la organización asociada.
           </p>
         </Card>
@@ -78,39 +78,27 @@ export default async function AppDashboardPage() {
   const recentActivity = buildDashboardActivity({ projects: projectsResult, clients: clientsResult });
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-7">
       <PageHeader
         eyebrow={
-          <span className="text-sm font-medium text-content-tertiary">
-            {organization.name} · rol {ctx.role}
+          <span className="inline-flex rounded-full border border-primary-300/20 bg-primary-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary-100">
+            {organization.name} · {ctx.role}
           </span>
         }
-        title="Panel de control"
-        description="Resumen operativo de clientes, obras y próximos pasos para la empresa de reformas."
+        title="Tu centro de operaciones"
+        description="Controla obras, clientes, avance y actividad desde una vista privada pensada para gestionar reformas reales sin perder contexto."
         actions={
-          <div className="flex flex-wrap gap-2">
+          <>
             <LinkButton href="/app/projects">Ver obras</LinkButton>
             <LinkButton href="/app/clients" variant="secondary">Ver clientes</LinkButton>
-          </div>
+          </>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Obras activas"
-          value={metrics.activeProjectsCount.value}
-          helper={metrics.activeProjectsCount.helper}
-        />
-        <StatCard
-          label="En presupuesto"
-          value={metrics.budgetingProjectsCount.value}
-          helper={metrics.budgetingProjectsCount.helper}
-        />
-        <StatCard
-          label="Clientes registrados"
-          value={metrics.clientsCount.value}
-          helper={metrics.clientsCount.helper}
-        />
+        <StatCard label="Obras activas" value={metrics.activeProjectsCount.value} helper={metrics.activeProjectsCount.helper} />
+        <StatCard label="En presupuesto" value={metrics.budgetingProjectsCount.value} helper={metrics.budgetingProjectsCount.helper} />
+        <StatCard label="Clientes" value={metrics.clientsCount.value} helper={metrics.clientsCount.helper} />
         <StatCard
           label="Avance medio"
           value={metrics.averageProgress.ok ? `${metrics.averageProgress.value}%` : metrics.averageProgress.value}
@@ -118,76 +106,76 @@ export default async function AppDashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-        <Card padding="lg" shadow="none">
-          <div className="flex items-start justify-between gap-4">
+      <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+        <Card padding="lg" variant="surface">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Obras prioritarias</h2>
-              <p className="mt-1 text-sm text-content-secondary">
-                Seguimiento rápido de producción, presupuesto y avance.
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Producción</p>
+              <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Obras prioritarias</h2>
+              <p className="mt-2 text-sm leading-6 text-content-secondary">
+                Avance, cliente y estado de las obras que ya están conectadas a Supabase.
               </p>
             </div>
-            <Link href="/app/projects" className="text-sm font-medium text-content-secondary hover:text-content-primary">
-              Ver todas
-            </Link>
+            <LinkButton href="/app/projects" variant="ghost">Ver todas</LinkButton>
           </div>
 
           {projects.length === 0 ? (
             <EmptyState
-              className="mt-5"
-              title="No projects yet"
+              className="mt-6"
+              title="No hay obras todavía"
               description="Cuando esta organización tenga obras reales, aparecerán aquí."
             />
           ) : (
-            <div className="mt-5 grid gap-4">
-              {projects.map((project) => (
+            <div className="mt-6 grid gap-4">
+              {projects.slice(0, 4).map((project) => (
                 <Link
                   key={project.id}
                   href={`/app/projects/${project.id}`}
-                  className="rounded-2xl border border-subtle bg-bg-raised p-4 transition-colors hover:bg-bg-surface"
+                  className="group block rounded-2xl border border-white/[0.06] bg-white/[0.025] p-5 transition-all hover:-translate-y-0.5 hover:border-primary-300/25 hover:bg-primary-500/[0.06]"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 className="font-semibold">{project.name}</h3>
-                      <p className="mt-1 text-sm text-content-secondary">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-num text-lg font-semibold text-content-primary">{project.name}</h3>
+                      <p className="mt-1 text-sm leading-5 text-content-secondary">
                         {project.clientName ?? "Cliente sin asignar"} · {project.address ?? "Dirección pendiente"}
                       </p>
                     </div>
                     <StatusBadge status={project.status} />
                   </div>
-                  <ProgressBar value={project.progress} showValue label="Avance" className="mt-4" tone="info" />
+                  <ProgressBar value={project.progress} showValue label="Avance" className="mt-5" tone="info" />
                 </Link>
               ))}
             </div>
           )}
         </Card>
 
-        <Card padding="lg" shadow="none">
-          <h2 className="text-lg font-semibold">Actividad reciente</h2>
-          <p className="mt-1 text-sm text-content-secondary">
-            Últimos movimientos reales de clientes y obras de la organización.
+        <Card padding="lg" variant="raised">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Actividad</p>
+          <h2 className="mt-2 font-num text-2xl font-bold tracking-tight">Últimos movimientos</h2>
+          <p className="mt-2 text-sm leading-6 text-content-secondary">
+            Cambios reales registrados en clientes y obras de la organización.
           </p>
           {!recentActivity.ok ? (
-            <div className="mt-5 rounded-2xl border border-subtle bg-bg-raised p-4 text-sm text-content-secondary">
+            <div className="mt-6 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-content-secondary">
               {recentActivity.message}
             </div>
           ) : recentActivity.items.length === 0 ? (
             <EmptyState
-              className="mt-5"
+              className="mt-6"
               title="Sin actividad reciente"
-              description="Cuando haya clientes u obras con fechas reales, aparecerán aquí."
+              description="Cuando haya fechas reales, aparecerán aquí."
             />
           ) : (
-            <ul className="mt-5 space-y-3">
+            <ul className="mt-6 space-y-3">
               {recentActivity.items.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className="block rounded-2xl border border-subtle bg-bg-raised p-4 text-sm transition-colors hover:bg-bg-surface"
+                    className="block rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4 text-sm transition-colors hover:border-primary-300/25 hover:bg-primary-500/[0.06]"
                   >
-                    <span className="font-medium text-content-primary">{item.label}</span>
-                    <span className="mt-1 block text-content-secondary">{item.description}</span>
-                    <time className="mt-2 block text-xs text-content-tertiary" dateTime={item.occurredAt}>
+                    <span className="font-semibold text-content-primary">{item.label}</span>
+                    <span className="mt-1 block leading-5 text-content-secondary">{item.description}</span>
+                    <time className="mt-3 block text-xs text-content-tertiary" dateTime={item.occurredAt}>
                       {new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(item.occurredAt))}
                     </time>
                   </Link>
