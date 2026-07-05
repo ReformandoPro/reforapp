@@ -47,13 +47,13 @@ export function buildDashboardActivity({
   clients: DashboardDataResult<Client[]>;
   limit?: number;
 }): DashboardActivityResult {
-  if (!projects.ok || !clients.ok) {
-    return { ok: false, message: "Error leyendo actividad reciente" };
+  if (!projects.ok && !clients.ok) {
+    return { ok: false, message: "No se pudo cargar la actividad reciente." };
   }
 
   const items = [
-    ...projects.data.map(projectCreatedActivity),
-    ...clients.data.map(clientCreatedActivity),
+    ...(projects.ok ? projects.data.map(projectCreatedActivity) : []),
+    ...(clients.ok ? clients.data.map(clientCreatedActivity) : []),
   ]
     .filter((item): item is DashboardActivityItem => item !== null)
     .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))

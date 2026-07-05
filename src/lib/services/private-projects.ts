@@ -28,35 +28,36 @@ function normalizeClientName(row: ProjectRow): string | null {
   return normalized?.display_name ?? row.client_name ?? null;
 }
 
-function normalizeProjectStatus(status: string): ProjectLifecycleStatus {
-  if (status === "on_hold") return "paused";
+const projectStatusMap: Record<string, ProjectLifecycleStatus> = {
+  lead: "lead",
+  draft: "lead",
+  pending: "budgeting",
+  budgeting: "budgeting",
+  approved: "approved",
+  scheduled: "scheduled",
+  active: "in_progress",
+  open: "in_progress",
+  in_progress: "in_progress",
+  on_hold: "paused",
+  paused: "paused",
+  completed: "completed",
+  delivered: "delivered",
+  closed: "closed",
+  cancelled: "cancelled",
+};
 
-  const allowed: ProjectLifecycleStatus[] = [
-    "lead",
-    "budgeting",
-    "approved",
-    "scheduled",
-    "in_progress",
-    "paused",
-    "completed",
-    "delivered",
-    "closed",
-    "cancelled",
-  ];
+export function normalizeProjectStatus(status: string | null): ProjectLifecycleStatus {
+  if (!status) return "lead";
 
-  if (allowed.includes(status as ProjectLifecycleStatus)) {
-    return status as ProjectLifecycleStatus;
-  }
-
-  throw new Error(`Unknown project status from Supabase: ${status}`);
+  return projectStatusMap[status] ?? "lead";
 }
 
-function normalizeProjectProgress(progress: number | null): number {
+export function normalizeProjectProgress(progress: number | null): number {
   if (typeof progress !== "number" || !Number.isFinite(progress)) {
-    throw new Error("Project progress from Supabase is missing or invalid");
+    return 0;
   }
 
-  return progress;
+  return Math.min(100, Math.max(0, Math.round(progress)));
 }
 
 export function mapProjectRow(row: ProjectRow): Project {
