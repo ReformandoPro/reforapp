@@ -2,30 +2,14 @@ import { BackLink } from "@/components/ui/BackLink";
 
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { type BudgetLineInput } from "@/lib/services/budgets-basic";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { readProjectBudgetEditorState } from "@/lib/services/project-budgets";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 import { BudgetEditorClient } from "../../BudgetEditorClient";
 import { updateProjectBudgetAction } from "./actions";
 
 export const dynamic = "force-dynamic";
-
-type BudgetRow = {
-  id: string;
-  title: string;
-  status: "draft" | "sent" | "accepted" | "rejected";
-  notes: string | null;
-};
-
-type LineRow = {
-  id: string;
-  description: string;
-  quantity: string | number;
-  unit_price: string | number;
-  tax_rate: string | number;
-  sort_order: number;
-};
 
 export default async function EditBudgetPage({
   params,
@@ -82,15 +66,24 @@ export default async function EditBudgetPage({
     );
   }
 
-  const { data: budget } = await supabase
-    .from("project_budgets")
-    .select("id, title, status, notes")
-    .eq("organization_id", ctx.organizationId)
-    .eq("project_id", projectId)
-    .eq("id", budgetId)
-    .maybeSingle();
+  const editorStateResult = await readProjectBudgetEditorState(
+    supabase,
+    ctx.organizationId,
+    projectId,
+    budgetId
+  );
 
-  if (!budget) {
+  if (!editorStateResult.ok) {
+    return (
+      <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+        <BackLink href={`/app/projects/${projectId}/budgets/${budgetId}`}>← Volver al presupuesto</BackLink>
+        <EmptyState title="No pudimos cargar el presupuesto" description="Revisa tu conexión e inténtalo de nuevo." />
+      </section>
+    );
+  }
+
+  const editorState = editorStateResult.data;
+  if (!editorState) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <BackLink href={`/app/projects/${projectId}/budgets`}>← Volver a presupuestos</BackLink>
@@ -101,28 +94,6 @@ export default async function EditBudgetPage({
       </section>
     );
   }
-
-  const { data: lines } = await supabase
-    .from("project_budget_lines")
-    .select("id, description, quantity, unit_price, tax_rate, sort_order")
-    .eq("organization_id", ctx.organizationId)
-    .eq("project_id", projectId)
-    .eq("budget_id", budgetId)
-    .order("sort_order", { ascending: true });
-
-  const budgetRow = budget as unknown as BudgetRow;
-  const lineRows = (lines ?? []) as LineRow[];
-  const initialLines: BudgetLineInput[] =
-    lineRows.length > 0
-      ? lineRows.map((l) => ({
-          id: l.id,
-          description: l.description,
-          quantity: Number(l.quantity),
-          unitPrice: Number(l.unit_price),
-          taxRate: Number(l.tax_rate),
-          sortOrder: l.sort_order,
-        }))
-      : [{ description: "", quantity: 1, unitPrice: 0, taxRate: 21, sortOrder: 1 }];
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -145,10 +116,10 @@ export default async function EditBudgetPage({
 
           <BudgetEditorClient
             mode="edit"
-            initialTitle={budgetRow.title}
-            initialStatus={budgetRow.status}
-            initialNotes={budgetRow.notes ?? ""}
-            initialLines={initialLines}
+            initialTitle={editorState.budget.title}
+            initialStatus={editorState.budget.status}
+            initialNotes={editorState.budget.notes}
+            initialLines={editorState.initialLines}
           />
 
           <div className="flex items-center justify-between gap-4">

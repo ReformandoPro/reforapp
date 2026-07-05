@@ -7,30 +7,12 @@ import { CardLinkRow } from "@/components/ui/CardLinkRow";
 import { BackLink } from "@/components/ui/BackLink";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import {
-  BUDGET_STATUSES,
-  computeBudgetTotals,
-  formatMoneyEUR,
-  type BudgetStatus,
-} from "@/lib/services/budgets-basic";
+import { BUDGET_STATUSES } from "@/lib/services/budgets-basic";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { readProjectBudgetSummaries } from "@/lib/services/project-budgets";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
-
-type BudgetRow = {
-  id: string;
-  title: string;
-  status: BudgetStatus;
-  updated_at: string;
-};
-
-type LineRow = {
-  budget_id: string;
-  quantity: string | number;
-  unit_price: string | number;
-  tax_rate: string | number;
-};
 
 function formatDateTime(value: string): string {
   try {
@@ -91,14 +73,13 @@ export default async function AppProjectBudgetsPage({
     );
   }
 
-  const { data: budgets, error: budgetsError } = await supabase
-    .from("project_budgets")
-    .select("id, title, status, updated_at")
-    .eq("organization_id", ctx.organizationId)
-    .eq("project_id", projectId)
-    .order("updated_at", { ascending: false });
+  const budgetsResult = await readProjectBudgetSummaries(
+    supabase,
+    ctx.organizationId,
+    projectId
+  );
 
-  if (budgetsError) {
+  if (!budgetsResult.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <EmptyState
@@ -109,25 +90,7 @@ export default async function AppProjectBudgetsPage({
     );
   }
 
-  const budgetRows = (budgets ?? []) as BudgetRow[];
-  const budgetIds = budgetRows.map((b) => b.id);
-
-  const { data: lines } = budgetIds.length
-    ? await supabase
-        .from("project_budget_lines")
-        .select("budget_id, quantity, unit_price, tax_rate")
-        .eq("organization_id", ctx.organizationId)
-        .eq("project_id", projectId)
-        .in("budget_id", budgetIds)
-    : { data: [] as unknown[] };
-
-  const lineRows = (lines ?? []) as LineRow[];
-  const linesByBudget = new Map<string, LineRow[]>();
-  for (const line of lineRows) {
-    const list = linesByBudget.get(line.budget_id) ?? [];
-    list.push(line);
-    linesByBudget.set(line.budget_id, list);
-  }
+  const budgetRows = budgetsResult.data;
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -162,15 +125,6 @@ export default async function AppProjectBudgetsPage({
             const statusLabel =
               BUDGET_STATUSES.find((s) => s.value === budget.status)?.label ?? budget.status;
 
-            const lineList = linesByBudget.get(budget.id) ?? [];
-            const totals = computeBudgetTotals(
-              lineList.map((l) => ({
-                quantity: Number(l.quantity),
-                unitPrice: Number(l.unit_price),
-                taxRate: Number(l.tax_rate),
-              }))
-            );
-
             return (
               <CardLinkRow
                 key={budget.id}
@@ -178,10 +132,11 @@ export default async function AppProjectBudgetsPage({
                 heading={budget.title}
                 description={
                   <>
-                    {statusLabel} · Actualizado: {formatDateTime(budget.updated_at)}
+                    {statusLabel} · Actualizado:{" "}
+                    {budget.updatedAt ? formatDateTime(budget.updatedAt) : "—"}
                   </>
                 }
-                trailing={<Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>}
+                trailing={<Badge tone="neutral">Total: {budget.formattedTotal}</Badge>}
               />
             );
           })}

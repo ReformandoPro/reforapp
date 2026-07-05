@@ -7,31 +7,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { BudgetActionsClient } from "./BudgetActionsClient";
 import {
   BUDGET_STATUSES,
-  computeBudgetTotals,
   formatMoneyEUR,
-  type BudgetStatus,
 } from "@/lib/services/budgets-basic";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { readProjectBudgetDetail } from "@/lib/services/project-budgets";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
-
-type BudgetRow = {
-  id: string;
-  title: string;
-  status: BudgetStatus;
-  notes: string | null;
-  updated_at: string;
-};
-
-type LineRow = {
-  id: string;
-  description: string;
-  quantity: string | number;
-  unit_price: string | number;
-  tax_rate: string | number;
-  sort_order: number;
-};
 
 function formatDateTime(value: string): string {
   try {
@@ -95,15 +77,14 @@ export default async function BudgetDetailPage({
     );
   }
 
-  const { data: budget, error: budgetError } = await supabase
-    .from("project_budgets")
-    .select("id, title, status, notes, updated_at")
-    .eq("organization_id", ctx.organizationId)
-    .eq("project_id", projectId)
-    .eq("id", budgetId)
-    .maybeSingle();
+  const budgetResult = await readProjectBudgetDetail(
+    supabase,
+    ctx.organizationId,
+    projectId,
+    budgetId
+  );
 
-  if (budgetError) {
+  if (!budgetResult.ok) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <EmptyState
@@ -114,7 +95,8 @@ export default async function BudgetDetailPage({
     );
   }
 
-  if (!budget) {
+  const budgetDetail = budgetResult.data;
+  if (!budgetDetail) {
     return (
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
@@ -131,38 +113,10 @@ export default async function BudgetDetailPage({
     );
   }
 
-  const { data: lines, error: linesError } = await supabase
-    .from("project_budget_lines")
-    .select("id, description, quantity, unit_price, tax_rate, sort_order")
-    .eq("organization_id", ctx.organizationId)
-    .eq("project_id", projectId)
-    .eq("budget_id", budgetId)
-    .order("sort_order", { ascending: true });
-
-  if (linesError) {
-    return (
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <EmptyState
-          title="No pudimos cargar las líneas"
-          description="Revisa tu conexión e inténtalo de nuevo."
-        />
-      </section>
-    );
-  }
-
-  const budgetRow = budget as unknown as BudgetRow;
-  const lineRows = (lines ?? []) as LineRow[];
-
-  const totals = computeBudgetTotals(
-    lineRows.map((l) => ({
-      quantity: Number(l.quantity),
-      unitPrice: Number(l.unit_price),
-      taxRate: Number(l.tax_rate),
-    }))
-  );
+  const { budget, lines, totals, formattedTotal } = budgetDetail;
 
   const statusLabel =
-    BUDGET_STATUSES.find((s) => s.value === budgetRow.status)?.label ?? budgetRow.status;
+    BUDGET_STATUSES.find((s) => s.value === budget.status)?.label ?? budget.status;
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -176,13 +130,14 @@ export default async function BudgetDetailPage({
       <Card className="p-6 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{budgetRow.title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{budget.title}</h1>
             <p className="mt-2 text-sm text-content-secondary sm:text-base">
-              {project.name} · {formatDateTime(budgetRow.updated_at)}
+              {project.name} ·{" "}
+              {budget.updatedAt ? formatDateTime(budget.updatedAt) : "—"}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge tone="neutral">Estado: {statusLabel}</Badge>
-              <Badge tone="neutral">Total: {formatMoneyEUR(totals.total)}</Badge>
+              <Badge tone="neutral">Total: {formattedTotal}</Badge>
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
@@ -198,7 +153,7 @@ export default async function BudgetDetailPage({
                 <BudgetActionsClient
                   projectId={projectId}
                   budgetId={budgetId}
-                  currentStatus={budgetRow.status}
+                  currentStatus={budget.status}
                 />
               </>
             ) : null}
@@ -211,22 +166,22 @@ export default async function BudgetDetailPage({
           </p>
         ) : null}
 
-        {budgetRow.notes ? (
-          <p className="mt-5 whitespace-pre-wrap text-sm text-content-primary">{budgetRow.notes}</p>
+        {budget.notes ? (
+          <p className="mt-5 whitespace-pre-wrap text-sm text-content-primary">{budget.notes}</p>
         ) : null}
       </Card>
 
       <Card className="p-6 shadow-none">
         <h2 className="text-lg font-semibold tracking-tight">Líneas</h2>
 
-        {lineRows.length === 0 ? (
+        {lines.length === 0 ? (
           <p className="mt-4 text-sm text-content-secondary">Sin líneas.</p>
         ) : (
           <div className="mt-4 grid gap-3">
-            {lineRows.map((line) => {
-              const qty = Number(line.quantity);
-              const unit = Number(line.unit_price);
-              const taxRate = Number(line.tax_rate);
+            {lines.map((line) => {
+              const qty = line.quantity;
+              const unit = line.unitPrice;
+              const taxRate = line.taxRate;
               const subtotal = qty * unit;
               const tax = subtotal * (taxRate / 100);
               const total = subtotal + tax;
