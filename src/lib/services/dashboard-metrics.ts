@@ -4,9 +4,7 @@ export type DashboardDataResult<T> =
   | { ok: true; data: T }
   | { ok: false; message: string };
 
-export type DashboardMetric =
-  | { ok: true; value: number; helper: string }
-  | { ok: false; value: "—"; helper: string };
+export type DashboardMetric = { ok: boolean; value: number | "—"; helper: string };
 
 export type DashboardMetrics = {
   activeProjectsCount: DashboardMetric;
@@ -22,7 +20,7 @@ function average(values: number[]): number {
   return Math.round(values.reduce((total, value) => total + value, 0) / values.length);
 }
 
-function metricError(helper: string): DashboardMetric {
+function metricUnavailable(helper: string): DashboardMetric {
   return { ok: false, value: "—", helper };
 }
 
@@ -52,9 +50,9 @@ export function calculateDashboardMetrics({
         },
       }
     : {
-        activeProjectsCount: metricError("Error leyendo obras"),
-        budgetingProjectsCount: metricError("Error leyendo obras"),
-        averageProgress: metricError("Error leyendo obras"),
+        activeProjectsCount: metricUnavailable("No se pudieron cargar las obras"),
+        budgetingProjectsCount: metricUnavailable("No se pudieron cargar las obras"),
+        averageProgress: metricUnavailable("No se pudo calcular el avance"),
       };
 
   return {
@@ -65,6 +63,6 @@ export function calculateDashboardMetrics({
           value: clients.data.length,
           helper: "Contactos con expediente",
         }
-      : metricError("Error leyendo clientes"),
+      : metricUnavailable("No se pudieron cargar los clientes"),
   };
 }

@@ -61,19 +61,27 @@ export default async function AppDashboardPage() {
     projectsReader
       .listProjects(ctx.organizationId)
       .then((data) => ({ ok: true as const, data }))
-      .catch((error: unknown) => ({
-        ok: false as const,
-        message: error instanceof Error ? error.message : "No pudimos cargar las obras.",
-      })),
+      .catch((error: unknown) => {
+        console.error("Dashboard projects query failed", error);
+
+        return {
+          ok: false as const,
+          message: "No se pudieron cargar las obras.",
+        };
+      }),
     clientsReader
       .listClients(ctx.organizationId)
       .then((data) => ({ ok: true as const, data }))
-      .catch((error: unknown) => ({
-        ok: false as const,
-        message: error instanceof Error ? error.message : "No pudimos cargar los clientes.",
-      })),
+      .catch((error: unknown) => {
+        console.error("Dashboard clients query failed", error);
+
+        return {
+          ok: false as const,
+          message: "No se pudieron cargar los clientes.",
+        };
+      }),
   ]);
-  const projects = projectsResult.ok ? projectsResult.data : [];
+  const projects = projectsResult.ok ? projectsResult.data.slice(0, 5) : [];
   const metrics = calculateDashboardMetrics({ projects: projectsResult, clients: clientsResult });
   const recentActivity = buildDashboardActivity({ projects: projectsResult, clients: clientsResult });
 
@@ -135,7 +143,7 @@ export default async function AppDashboardPage() {
           {projects.length === 0 ? (
             <EmptyState
               className="mt-5"
-              title="No projects yet"
+              title="No hay obras todavía"
               description="Cuando esta organización tenga obras reales, aparecerán aquí."
             />
           ) : (
