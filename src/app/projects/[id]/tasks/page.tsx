@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AppShell } from "@/components/layout";
+
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getProjectOverview } from "@/lib/services/projects";
 import { getProjectTasks } from "@/lib/services/tasks";
@@ -16,7 +18,8 @@ export default async function ProjectTasksPage({ params }: ProjectTasksPageProps
 
   if (!project) {
     return (
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <AppShell>
+        <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/projects"
           className="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"
@@ -28,14 +31,16 @@ export default async function ProjectTasksPage({ params }: ProjectTasksPageProps
           title="Obra no encontrada"
           description="No hemos encontrado una obra con este identificador."
         />
-      </section>
+        </section>
+      </AppShell>
     );
   }
 
   const tasks = getProjectTasks(id);
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <AppShell>
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div className="flex flex-col gap-3">
         <Link
           href={`/projects/${id}`}
@@ -61,6 +66,7 @@ export default async function ProjectTasksPage({ params }: ProjectTasksPageProps
       ) : (
         <ProjectTasksClient tasks={tasks} />
       )}
-    </section>
+      </section>
+    </AppShell>
   );
 }
