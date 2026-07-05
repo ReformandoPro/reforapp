@@ -11,11 +11,11 @@ type ProgressBarProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const trackClasses: Record<ProgressBarTone, string> = {
-  neutral: "bg-bg-raised border-subtle",
-  info: "bg-bg-raised border-subtle",
-  success: "bg-bg-raised border-subtle",
-  warning: "bg-bg-raised border-subtle",
-  danger: "bg-bg-raised border-subtle",
+  neutral: "border-white/[0.06] bg-white/[0.04]",
+  info: "border-white/[0.06] bg-white/[0.04]",
+  success: "border-white/[0.06] bg-white/[0.04]",
+  warning: "border-white/[0.06] bg-white/[0.04]",
+  danger: "border-white/[0.06] bg-white/[0.04]",
 };
 
 const fillClasses: Record<ProgressBarTone, string> = {
@@ -53,7 +53,7 @@ export function ProgressBar({
         aria-valuenow={clampedValue}
         aria-label={label ?? "Progress"}
         className={[
-          "h-2 overflow-hidden rounded-full border",
+          "h-2.5 overflow-hidden rounded-full border",
           trackClasses[tone],
         ].join(" ")}
       >

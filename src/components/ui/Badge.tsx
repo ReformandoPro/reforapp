@@ -17,11 +17,11 @@ type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
 };
 
 const toneClasses: Record<BadgeTone, string> = {
-  neutral: "bg-bg-raised text-content-secondary border border-subtle",
-  success: "bg-success-900 text-success-100",
-  warning: "bg-warning-900 text-warning-100",
-  danger: "bg-danger-900 text-danger-100",
-  info: "bg-primary-900 text-primary-100",
+  neutral: "border border-white/[0.08] bg-white/[0.04] text-content-secondary",
+  success: "border border-success-500/20 bg-success-500/12 text-success-100",
+  warning: "border border-warning-500/20 bg-warning-500/12 text-warning-100",
+  danger: "border border-danger-500/20 bg-danger-500/12 text-danger-100",
+  info: "border border-primary-300/20 bg-primary-500/12 text-primary-100",
 };
 
 const dotClasses: Record<BadgeTone, string> = {
@@ -49,7 +49,7 @@ export function Badge({
         "inline-flex items-center",
         dot && "gap-1.5",
         pill ? "rounded-full" : "rounded-md",
-        "px-3 py-1 text-xs font-medium",
+        "px-3 py-1 text-xs font-semibold",
         toneClasses[resolvedTone],
         className
       )}
