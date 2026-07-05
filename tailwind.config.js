@@ -109,6 +109,8 @@ module.exports = {
       },
 
       boxShadow: {
+        sm: "0 1px 0 rgba(255,255,255,0.03), 0 10px 22px rgba(0,0,0,0.28)",
+        primary: "0 8px 24px rgba(45,127,249,0.35)",
         fab: "0 8px 24px rgba(45,127,249,0.35)",
         sheet: "0 -8px 32px rgba(0,0,0,0.45)",
         focus: "0 0 0 3px rgba(45,127,249,0.45)",

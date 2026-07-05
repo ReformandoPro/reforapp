@@ -12,9 +12,9 @@ const navigationItems = [
 
 export function PrivateAppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-bg-raised text-content-primary">
+    <div className="min-h-screen bg-bg-base text-content-primary">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col lg:flex-row">
-        <aside className="border-b border-subtle bg-bg-surface px-4 py-4 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:px-5 lg:py-6">
+        <aside className="border-b border-subtle bg-bg-surface/95 px-4 py-4 shadow-[var(--shadow-sm)] lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:px-5 lg:py-6">
           <div className="flex items-center justify-between gap-4 lg:block">
             <Link href="/app" className="block">
               <span className="text-xs font-semibold uppercase tracking-[0.24em] text-content-tertiary">
@@ -36,7 +36,7 @@ export function PrivateAppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="min-w-fit rounded-2xl border border-transparent px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:border-subtle hover:bg-bg-raised hover:text-content-primary lg:px-4 lg:py-3"
+                className="min-w-fit rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:border-subtle hover:bg-bg-raised hover:text-content-primary lg:px-4 lg:py-3"
               >
                 <span className="block text-content-primary">{item.label}</span>
                 <span className="hidden text-xs font-normal text-content-tertiary lg:block">
@@ -46,7 +46,7 @@ export function PrivateAppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-8 hidden rounded-2xl border border-subtle bg-bg-raised p-4 lg:block">
+          <div className="mt-8 hidden rounded-lg border border-subtle bg-bg-raised p-4 lg:block">
             <p className="text-sm font-medium">MVP privado</p>
             <p className="mt-1 text-xs leading-5 text-content-secondary">
               Pantallas preparadas para conectar services/adapters con Supabase sin acoplar la UI.

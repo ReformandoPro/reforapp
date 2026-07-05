@@ -9,6 +9,7 @@
   --bg-base: #0a0f1a;
   --bg-surface: #0e1626;
   --bg-surface-raised: #162132;
+  --bg-raised: var(--bg-surface-raised);
   --bg-overlay: #1c2940;
 
   --text-primary: #f4f7fc;
@@ -17,9 +18,12 @@
   --text-disabled: #4a5366;
 
   /* Border tokens must be colors (not 1px solid shorthands) */
-  --border-subtle: #1f2a3d;
-  --border-default: #2d3a52;
-  --border-strong: #43516a;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --b-subtle: var(--border-subtle);
+  --b-default: var(--border-default);
+  --b-strong: var(--border-strong);
 
   --primary-100: #c7defd;
   --primary-300: #6fa8f6;
@@ -39,7 +43,8 @@
   --danger-900: #501313;
 
   /* Used by focus-visible:ring-[var(--primary-300)] today; kept as a separate token for future use. */
-  --focus-ring: #7db3ff;
+  --focus-ring: rgba(45, 127, 249, 0.55);
+  --focus: var(--focus-ring);
 
   /* ---------------------------------------------------------------------
    * Compatibility layer (design-system ZIP)
@@ -61,7 +66,9 @@
 
   /* ZIP token names */
   --ring-focus: var(--focus-ring);
-  --shadow-fab: 0 8px 24px rgba(45, 127, 249, 0.35);
+  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.03), 0 10px 22px rgba(0, 0, 0, 0.28);
+  --shadow-primary: 0 8px 24px rgba(45, 127, 249, 0.35);
+  --shadow-fab: var(--shadow-primary);
 
   /* Placeholder guild color family (can be re-aligned once ZIP is integrated) */
   --guild: var(--primary-500);
@@ -104,6 +111,7 @@
 
   --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-num: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-headings: "Space Grotesk", "Inter", system-ui, sans-serif;
 
   --fs-display: 34px;
   --lh-display: 40px;
@@ -225,7 +233,11 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(45, 127, 249, 0.14), transparent 34rem),
+    radial-gradient(circle at top right, rgba(111, 168, 246, 0.08), transparent 28rem),
+    var(--bg-base);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
