@@ -6,6 +6,7 @@ import {
   demoteOtherAcceptedBudgets,
   mapSupabaseBudgetLineRowToBudgetLineDomain,
   mapSupabaseBudgetLineTotalsRowToBudgetLineForTotals,
+  readMainProjectBudgetSummary,
   selectMainBudget,
   selectMainBudgetId,
   type BudgetLineRow,
@@ -141,6 +142,135 @@ describe("project-budgets service", () => {
     ).resolves.toEqual({
       ok: false,
       message: "No pudimos actualizar el resto de presupuestos aceptados.",
+    });
+  });
+
+  it("readMainProjectBudgetSummary returns null when there are no budgets", async () => {
+    const order = vi.fn().mockResolvedValue({ data: [], error: null });
+    const eq2 = vi.fn(() => ({ order }));
+    const eq1 = vi.fn(() => ({ eq: eq2 }));
+    const selectBudgets = vi.fn(() => ({ eq: eq1 }));
+    const from = vi.fn(() => ({ select: selectBudgets }));
+
+    const supabase = { from } as unknown as SupabaseClient;
+
+    await expect(readMainProjectBudgetSummary(supabase, "org1", "project1")).resolves.toEqual({
+      ok: true,
+      data: null,
+    });
+  });
+
+  it("readMainProjectBudgetSummary prefers accepted and returns kind=accepted", async () => {
+    const budgets: BudgetRow[] = [
+      { id: "b1", title: "Draft", status: "draft", updated_at: "2026-01-01T00:00:00Z" },
+      { id: "b2", title: "Accepted", status: "accepted", updated_at: "2026-01-02T00:00:00Z" },
+    ];
+
+    const lines: BudgetLineTotalsRow[] = [{ budget_id: "b2", quantity: 2, unit_price: 10, tax_rate: 21 }];
+
+    const budgetsOrder = vi.fn().mockResolvedValue({ data: budgets, error: null });
+    const budgetsEq2 = vi.fn(() => ({ order: budgetsOrder }));
+    const budgetsEq1 = vi.fn(() => ({ eq: budgetsEq2 }));
+    const selectBudgets = vi.fn(() => ({ eq: budgetsEq1 }));
+
+    const linesEq3 = vi.fn().mockResolvedValue({ data: lines, error: null });
+    const linesEq2 = vi.fn(() => ({ eq: linesEq3 }));
+    const linesEq1 = vi.fn(() => ({ eq: linesEq2 }));
+    const selectLines = vi.fn(() => ({ eq: linesEq1 }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "project_budgets") return { select: selectBudgets };
+      if (table === "project_budget_lines") return { select: selectLines };
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const supabase = { from } as unknown as SupabaseClient;
+
+    const result = await readMainProjectBudgetSummary(supabase, "org1", "project1");
+    expect(result.ok).toBe(true);
+    if (!result.ok || !result.data) throw new Error("Expected data");
+
+    expect(result.data.kind).toBe("accepted");
+    expect(result.data.id).toBe("b2");
+    expect(result.data.totals.total).toBe(24.2);
+  });
+
+  it("readMainProjectBudgetSummary falls back to most recent and returns kind=fallback", async () => {
+    const budgets: BudgetRow[] = [
+      { id: "b1", title: "Sent", status: "sent", updated_at: "2026-01-03T00:00:00Z" },
+      { id: "b0", title: "Draft", status: "draft", updated_at: "2026-01-01T00:00:00Z" },
+    ];
+
+    const lines: BudgetLineTotalsRow[] = [{ budget_id: "b1", quantity: 1, unit_price: 100, tax_rate: 21 }];
+
+    const budgetsOrder = vi.fn().mockResolvedValue({ data: budgets, error: null });
+    const budgetsEq2 = vi.fn(() => ({ order: budgetsOrder }));
+    const budgetsEq1 = vi.fn(() => ({ eq: budgetsEq2 }));
+    const selectBudgets = vi.fn(() => ({ eq: budgetsEq1 }));
+
+    const linesEq3 = vi.fn().mockResolvedValue({ data: lines, error: null });
+    const linesEq2 = vi.fn(() => ({ eq: linesEq3 }));
+    const linesEq1 = vi.fn(() => ({ eq: linesEq2 }));
+    const selectLines = vi.fn(() => ({ eq: linesEq1 }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "project_budgets") return { select: selectBudgets };
+      if (table === "project_budget_lines") return { select: selectLines };
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const supabase = { from } as unknown as SupabaseClient;
+
+    const result = await readMainProjectBudgetSummary(supabase, "org1", "project1");
+    expect(result.ok).toBe(true);
+    if (!result.ok || !result.data) throw new Error("Expected data");
+
+    expect(result.data.kind).toBe("fallback");
+    expect(result.data.id).toBe("b1");
+    expect(result.data.totals.total).toBe(121);
+  });
+
+  it("readMainProjectBudgetSummary returns an error when budgets query fails", async () => {
+    const budgetsOrder = vi.fn().mockResolvedValue({ data: null, error: new Error("fail") });
+    const budgetsEq2 = vi.fn(() => ({ order: budgetsOrder }));
+    const budgetsEq1 = vi.fn(() => ({ eq: budgetsEq2 }));
+    const selectBudgets = vi.fn(() => ({ eq: budgetsEq1 }));
+    const from = vi.fn(() => ({ select: selectBudgets }));
+
+    const supabase = { from } as unknown as SupabaseClient;
+
+    await expect(readMainProjectBudgetSummary(supabase, "org1", "project1")).resolves.toEqual({
+      ok: false,
+      message: "No pudimos cargar los presupuestos.",
+    });
+  });
+
+  it("readMainProjectBudgetSummary returns an error when lines query fails", async () => {
+    const budgets: BudgetRow[] = [
+      { id: "b1", title: "Sent", status: "sent", updated_at: "2026-01-03T00:00:00Z" },
+    ];
+
+    const budgetsOrder = vi.fn().mockResolvedValue({ data: budgets, error: null });
+    const budgetsEq2 = vi.fn(() => ({ order: budgetsOrder }));
+    const budgetsEq1 = vi.fn(() => ({ eq: budgetsEq2 }));
+    const selectBudgets = vi.fn(() => ({ eq: budgetsEq1 }));
+
+    const linesEq3 = vi.fn().mockResolvedValue({ data: null, error: new Error("fail") });
+    const linesEq2 = vi.fn(() => ({ eq: linesEq3 }));
+    const linesEq1 = vi.fn(() => ({ eq: linesEq2 }));
+    const selectLines = vi.fn(() => ({ eq: linesEq1 }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "project_budgets") return { select: selectBudgets };
+      if (table === "project_budget_lines") return { select: selectLines };
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const supabase = { from } as unknown as SupabaseClient;
+
+    await expect(readMainProjectBudgetSummary(supabase, "org1", "project1")).resolves.toEqual({
+      ok: false,
+      message: "No pudimos cargar las líneas del presupuesto.",
     });
   });
 });
