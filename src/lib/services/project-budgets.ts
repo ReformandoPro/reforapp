@@ -327,3 +327,97 @@ export async function readProjectBudgetEditorState(
     },
   };
 }
+
+export async function readMainProjectBudgetSummary(
+  supabase: SupabaseClient,
+  organizationId: string,
+  projectId: string
+): Promise<
+  ServiceResult<
+    | {
+        id: string;
+        title: string;
+        status: BudgetStatus;
+        totals: BudgetTotals;
+        formattedTotal: string;
+      }
+    | null
+  >
+> {
+  const { data: budgets, error: budgetsError } = await supabase
+    .from("project_budgets")
+    .select("id, title, status, updated_at")
+    .eq("organization_id", organizationId)
+    .eq("project_id", projectId)
+    .order("updated_at", { ascending: false });
+
+  if (budgetsError) {
+    return { ok: false, message: "No pudimos cargar los presupuestos." };
+  }
+
+  const budgetRows = (budgets ?? []) as BudgetRow[];
+  const mainBudget = budgetRows.find((budget) => budget.status === "accepted") ?? budgetRows[0] ?? null;
+
+  if (!mainBudget) return { ok: true, data: null };
+
+  const { data: lines, error: linesError } = await supabase
+    .from("project_budget_lines")
+    .select("budget_id, quantity, unit_price, tax_rate")
+    .eq("organization_id", organizationId)
+    .eq("project_id", projectId)
+    .eq("budget_id", mainBudget.id);
+
+  if (linesError) {
+    return { ok: false, message: "No pudimos cargar las líneas del presupuesto." };
+  }
+
+  const totals = computeBudgetTotalsFromSupabaseLineTotalsRows((lines ?? []) as BudgetLineTotalsRow[]);
+
+  return {
+    ok: true,
+    data: {
+      id: mainBudget.id,
+      title: mainBudget.title,
+      status: mainBudget.status,
+      totals,
+      formattedTotal: formatMoneyEUR(totals.total),
+    },
+  };
+}
+
+export async function readAcceptedBudgetsTotals(
+  supabase: SupabaseClient,
+  organizationId: string,
+  projectId: string
+): Promise<ServiceResult<{ hasAcceptedBudget: boolean; totals: BudgetTotals }>> {
+  const { data: acceptedBudgets, error: acceptedBudgetsError } = await supabase
+    .from("project_budgets")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("project_id", projectId)
+    .eq("status", "accepted");
+
+  if (acceptedBudgetsError) {
+    return { ok: false, message: "No pudimos cargar los presupuestos aceptados." };
+  }
+
+  const acceptedIds = (acceptedBudgets ?? []).map((row: { id: string }) => String(row.id));
+  if (acceptedIds.length === 0) {
+    return {
+      ok: true,
+      data: { hasAcceptedBudget: false, totals: computeBudgetTotals([]) },
+    };
+  }
+
+  const { data: acceptedLines, error: acceptedLinesError } = await supabase
+    .from("project_budget_lines")
+    .select("budget_id, quantity, unit_price, tax_rate")
+    .eq("organization_id", organizationId)
+    .eq("project_id", projectId)
+    .in("budget_id", acceptedIds);
+
+  const lineRows = (acceptedLinesError ? [] : (acceptedLines ?? [])) as BudgetLineTotalsRow[];
+  const totals = computeBudgetTotalsFromSupabaseLineTotalsRows(lineRows);
+
+  return { ok: true, data: { hasAcceptedBudget: true, totals } };
+}

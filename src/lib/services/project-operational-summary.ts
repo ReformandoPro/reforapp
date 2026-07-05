@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { computeBudgetTotals, formatMoneyEUR, type BudgetStatus } from "./budgets-basic";
+import { formatMoneyEUR, type BudgetStatus } from "./budgets-basic";
 import { computeCostTotals } from "./costs";
 import type { PurchaseStatus } from "./purchases";
+import { readMainProjectBudgetSummary } from "./project-budgets";
 
 type BlockResult<T> =
   | { status: "ready"; data: T }
@@ -10,8 +11,6 @@ type BlockResult<T> =
 
 type TaskRow = { id: string; title: string; status: string; due_date: string | null; updated_at: string | null };
 type PhaseRow = { id: string; title: string; status: string; start_date: string | null; end_date: string | null; sort_order: number | null };
-type BudgetRow = { id: string; title: string; status: BudgetStatus; updated_at: string | null };
-type BudgetLineRow = { budget_id: string; quantity: number; unit_price: number; tax_rate: number };
 type PurchaseRow = { id: string; title: string; supplier_name: string | null; status: PurchaseStatus; expected_date: string | null; updated_at: string | null };
 type CostRow = { id: string; amount: number; tax_rate: number; cost_date: string; created_at: string };
 type DocumentRow = { id: string; file_name: string; category: string; created_at: string };
@@ -94,37 +93,12 @@ async function readPhases(supabase: SupabaseClient, organizationId: string, proj
 }
 
 async function readBudget(supabase: SupabaseClient, organizationId: string, projectId: string): Promise<ProjectOperationalSummary["budget"]> {
-  const { data: budgets, error: budgetsError } = await supabase
-    .from("project_budgets")
-    .select("id, title, status, updated_at")
-    .eq("organization_id", organizationId)
-    .eq("project_id", projectId)
-    .order("updated_at", { ascending: false });
+  const mainResult = await readMainProjectBudgetSummary(supabase, organizationId, projectId);
+  if (!mainResult.ok) throw new Error(mainResult.message);
 
-  if (budgetsError) throw budgetsError;
-
-  const budgetRows = (budgets ?? []) as BudgetRow[];
-  const mainBudget = budgetRows.find((budget) => budget.status === "accepted") ?? budgetRows[0] ?? null;
-
+  const mainBudget = mainResult.data;
   if (!mainBudget) return { status: "ready", data: { main: null } };
 
-  const { data: lines, error: linesError } = await supabase
-    .from("project_budget_lines")
-    .select("budget_id, quantity, unit_price, tax_rate")
-    .eq("organization_id", organizationId)
-    .eq("project_id", projectId)
-    .eq("budget_id", mainBudget.id);
-
-  if (linesError) throw linesError;
-
-  const budgetLines = (lines ?? []) as BudgetLineRow[];
-  const totals = computeBudgetTotals(
-    budgetLines.map((line) => ({
-      quantity: Number(line.quantity ?? 0),
-      unitPrice: Number(line.unit_price ?? 0),
-      taxRate: Number(line.tax_rate ?? 0),
-    })),
-  );
   return {
     status: "ready",
     data: {
@@ -132,8 +106,8 @@ async function readBudget(supabase: SupabaseClient, organizationId: string, proj
         id: mainBudget.id,
         title: mainBudget.title,
         status: mainBudget.status,
-        total: totals.total,
-        formattedTotal: formatMoneyEUR(totals.total),
+        total: mainBudget.totals.total,
+        formattedTotal: mainBudget.formattedTotal,
       },
     },
   };
