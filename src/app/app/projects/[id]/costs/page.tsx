@@ -11,7 +11,8 @@ import { formatMoneyEUR } from "@/lib/services/budgets-basic";
 import { COST_CATEGORIES, computeCostTotals, type CostCategory } from "@/lib/services/costs";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
-import { readAcceptedBudgetsTotals } from "@/lib/services/project-budgets";
+import { readMainProjectBudgetSummary } from "@/lib/services/project-budgets";
+import { computeProjectMargin } from "@/lib/services/project-margin";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,19 @@ function formatDate(value: string): string {
     return new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(value));
   } catch {
     return value;
+  }
+}
+
+function formatMarginStatus(status: "healthy" | "risk" | "loss" | "unknown") {
+  switch (status) {
+    case "healthy":
+      return "Va bien";
+    case "risk":
+      return "En riesgo";
+    case "loss":
+      return "En pérdidas";
+    case "unknown":
+      return "Sin aceptado";
   }
 }
 
@@ -121,18 +135,12 @@ export default async function AppProjectCostsPage({
     totalsByCategory.set(row.category, prev + Number(row.amount) * (1 + Number(row.tax_rate) / 100));
   }
 
-  // Accepted budgets comparison
-  const acceptedTotalsResult = await readAcceptedBudgetsTotals(
-    supabase,
-    ctx.organizationId,
-    projectId
-  );
+  const mainBudgetResult = await readMainProjectBudgetSummary(supabase, ctx.organizationId, projectId);
+  const mainBudget = mainBudgetResult.ok ? mainBudgetResult.data : null;
+  const budgetTotal = mainBudget?.totals.total ?? 0;
+  const budgetKind = mainBudget?.kind ?? "none";
 
-  const hasAcceptedBudget = acceptedTotalsResult.ok && acceptedTotalsResult.data.hasAcceptedBudget;
-  const acceptedTotals = acceptedTotalsResult.ok
-    ? acceptedTotalsResult.data.totals
-    : { subtotal: 0, tax: 0, total: 0 };
-  const diff = hasAcceptedBudget ? acceptedTotals.total - totals.total : null;
+  const margin = computeProjectMargin({ budgetTotal, realCostTotal: totals.total, budgetKind });
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -172,23 +180,33 @@ export default async function AppProjectCostsPage({
       <Card className="p-6 shadow-none">
         <div className="grid gap-2 rounded-xl border border-subtle bg-bg-raised p-4 text-sm">
           <p className="font-semibold text-content-primary">Comparativa</p>
-          {hasAcceptedBudget ? (
+          {budgetKind === "none" ? (
+            <p className="text-content-secondary">Sin presupuesto.</p>
+          ) : (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-content-secondary">Presupuesto aceptado (total)</span>
-                <span className="font-medium">{formatMoneyEUR(acceptedTotals.total)}</span>
+                <span className="text-content-secondary">
+                  {budgetKind === "accepted" ? "Presupuesto aceptado (total)" : "Presupuesto principal (no aceptado)"}
+                </span>
+                <span className="font-medium">{formatMoneyEUR(budgetTotal)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-content-secondary">Costes reales (total)</span>
                 <span className="font-medium">{formatMoneyEUR(totals.total)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-content-primary font-semibold">Diferencia</span>
-                <span className="font-semibold">{formatMoneyEUR(diff ?? 0)}</span>
+                <span className="text-content-primary font-semibold">Margen estimado</span>
+                <span className="font-semibold">{formatMoneyEUR(margin.marginAmount)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-content-secondary">Margen %</span>
+                <span className="font-medium">{margin.marginPercent == null ? "—" : `${margin.marginPercent.toFixed(1)}%`}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-content-secondary">Estado</span>
+                <span className="font-medium">{formatMarginStatus(margin.status)}</span>
               </div>
             </>
-          ) : (
-            <p className="text-content-secondary">Sin presupuesto aceptado.</p>
           )}
         </div>
       </Card>

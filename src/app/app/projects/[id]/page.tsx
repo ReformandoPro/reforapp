@@ -33,6 +33,19 @@ function EmptyCopy({ children }: { children: React.ReactNode }) {
   return <p className="mt-4 text-sm leading-6 text-content-secondary">{children}</p>;
 }
 
+function formatMarginStatus(status: "healthy" | "risk" | "loss" | "unknown") {
+  switch (status) {
+    case "healthy":
+      return "Va bien";
+    case "risk":
+      return "En riesgo";
+    case "loss":
+      return "En pérdidas";
+    case "unknown":
+      return "Sin aceptado";
+  }
+}
+
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ctx = await getOrganizationContextForRequest();
@@ -217,6 +230,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <LinkButton href={`/app/projects/${project.id}/costs`} variant="ghost">Ver</LinkButton>
           </div>
           {summary.costs.status === "error" ? <BlockError message={summary.costs.message} /> : <p className="mt-5 font-num text-3xl font-bold">{summary.costs.data.formattedTotal}</p>}
+        </Card>
+
+        <Card padding="lg" variant="surface">
+          <div className="flex items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Economía</p><h2 className="mt-2 text-xl font-semibold">Margen estimado</h2></div>
+            <LinkButton href={`/app/projects/${project.id}/costs`} variant="ghost">Ver</LinkButton>
+          </div>
+          {summary.margin.status === "error" ? (
+            <BlockError message={summary.margin.message} />
+          ) : (
+            <div className="mt-5">
+              <p className="font-num text-3xl font-bold">{summary.margin.data.formattedMarginAmount}</p>
+              <p className="mt-2 text-sm text-content-secondary">
+                {summary.margin.data.marginPercent == null ? "—" : `${summary.margin.data.marginPercent.toFixed(1)}%`} · {formatMarginStatus(summary.margin.data.status)}
+              </p>
+              <p className="mt-2 text-xs text-content-tertiary">
+                Presupuesto: {summary.margin.data.formattedBudgetTotal} · Costes: {summary.margin.data.formattedRealCostTotal}
+              </p>
+            </div>
+          )}
         </Card>
 
         <Card padding="lg" variant="surface">

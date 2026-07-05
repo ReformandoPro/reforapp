@@ -4,6 +4,7 @@ import { formatMoneyEUR, type BudgetStatus } from "./budgets-basic";
 import { computeCostTotals } from "./costs";
 import type { PurchaseStatus } from "./purchases";
 import { readMainProjectBudgetSummary } from "./project-budgets";
+import { computeProjectMargin, type ProjectMarginStatus } from "./project-margin";
 
 type BlockResult<T> =
   | { status: "ready"; data: T }
@@ -28,11 +29,23 @@ export type ProjectOperationalSummary = {
     current: Pick<PhaseRow, "id" | "title" | "status"> | null;
   }>;
   budget: BlockResult<{
-    main: { id: string; title: string; status: BudgetStatus; total: number; formattedTotal: string } | null;
+    main:
+      | { id: string; title: string; status: BudgetStatus; kind: "accepted" | "fallback"; total: number; formattedTotal: string }
+      | null;
   }>;
   costs: BlockResult<{
     total: number;
     formattedTotal: string;
+  }>;
+  margin: BlockResult<{
+    budgetTotal: number;
+    realCostTotal: number;
+    marginAmount: number;
+    marginPercent: number | null;
+    status: ProjectMarginStatus;
+    formattedBudgetTotal: string;
+    formattedRealCostTotal: string;
+    formattedMarginAmount: string;
   }>;
   purchases: BlockResult<{
     pending: number;
@@ -106,6 +119,7 @@ async function readBudget(supabase: SupabaseClient, organizationId: string, proj
         id: mainBudget.id,
         title: mainBudget.title,
         status: mainBudget.status,
+        kind: mainBudget.kind,
         total: mainBudget.totals.total,
         formattedTotal: mainBudget.formattedTotal,
       },
@@ -131,6 +145,28 @@ async function readCosts(supabase: SupabaseClient, organizationId: string, proje
     })),
   );
   return { status: "ready", data: { total: totals.total, formattedTotal: formatMoneyEUR(totals.total) } };
+}
+
+function computeMargin(budget: ProjectOperationalSummary["budget"], costs: ProjectOperationalSummary["costs"]): ProjectOperationalSummary["margin"] {
+  if (budget.status === "error" || costs.status === "error") {
+    return blockError("No se pudo calcular el margen.");
+  }
+
+  const budgetTotal = budget.data.main?.total ?? 0;
+  const budgetKind = budget.data.main?.kind ?? "none";
+  const realCostTotal = costs.data.total;
+
+  const margin = computeProjectMargin({ budgetTotal, realCostTotal, budgetKind });
+
+  return {
+    status: "ready",
+    data: {
+      ...margin,
+      formattedBudgetTotal: formatMoneyEUR(margin.budgetTotal),
+      formattedRealCostTotal: formatMoneyEUR(margin.realCostTotal),
+      formattedMarginAmount: formatMoneyEUR(margin.marginAmount),
+    },
+  };
 }
 
 async function readPurchases(supabase: SupabaseClient, organizationId: string, projectId: string): Promise<ProjectOperationalSummary["purchases"]> {
@@ -209,5 +245,7 @@ export async function getProjectOperationalSummary(params: {
     safeBlock("progress", () => readProgress(supabase, organizationId, projectId, currentProgress), "No se pudo cargar el último avance."),
   ]);
 
-  return { tasks, phases, budget, costs, purchases, documents, progress };
+  const margin = computeMargin(budget, costs);
+
+  return { tasks, phases, budget, costs, margin, purchases, documents, progress };
 }
