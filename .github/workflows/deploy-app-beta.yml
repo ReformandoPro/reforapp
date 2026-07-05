@@ -1,0 +1,81 @@
+name: Deploy app-beta
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-app-beta:
+    name: Deploy reformando-app-beta
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}" > ~/.ssh/app_beta_deploy_key
+          chmod 600 ~/.ssh/app_beta_deploy_key
+
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy main to reformando-app-beta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/app_beta_deploy_key \
+            -p "${{ secrets.APP_BETA_SSH_PORT }}" \
+            "${{ secrets.APP_BETA_SSH_USER }}@${{ secrets.APP_BETA_SSH_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          REPO="/docker/openclaw-ejvk/data/apps/reformando-app"
+          COMPOSE="/docker/reformando-app-beta"
+          SERVICE="reformando-app-beta"
+
+          if [ "$REPO" != "/docker/openclaw-ejvk/data/apps/reformando-app" ]; then
+            echo "Refusing to deploy: unexpected repo path: $REPO" >&2
+            exit 1
+          fi
+
+          if [ "$COMPOSE" != "/docker/reformando-app-beta" ]; then
+            echo "Refusing to deploy: unexpected compose path: $COMPOSE" >&2
+            exit 1
+          fi
+
+          if [ "$SERVICE" != "reformando-app-beta" ]; then
+            echo "Refusing to deploy: unexpected service: $SERVICE" >&2
+            exit 1
+          fi
+
+          test -d "$REPO"
+          test -d "$COMPOSE"
+
+          cd "$REPO"
+
+          git status --short
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          echo "Deploying commit:"
+          git rev-parse HEAD
+          git --no-pager log --oneline -5
+
+          cd "$COMPOSE"
+
+          docker compose config --services | grep -qx "$SERVICE"
+
+          docker compose build "$SERVICE"
+          docker compose up -d --no-deps "$SERVICE"
+
+          docker compose ps "$SERVICE"
+          docker compose logs --tail=120 "$SERVICE"
+          REMOTE
