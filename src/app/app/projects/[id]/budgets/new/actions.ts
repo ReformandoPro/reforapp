@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { demoteOtherAcceptedBudgets } from "@/lib/services/project-budgets";
 import { validateProjectBudgetFormPayload } from "@/lib/services/project-budgets-validation";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -88,6 +89,26 @@ export async function createProjectBudgetAction(formData: FormData) {
       .eq("id", budgetId);
 
     backToNewWithError(projectId, "No pudimos guardar las líneas.");
+  }
+
+  if (status === "accepted") {
+    const demotion = await demoteOtherAcceptedBudgets(
+      supabase,
+      ctx.organizationId,
+      projectId,
+      budgetId
+    );
+
+    if (!demotion.ok) {
+      await supabase
+        .from("project_budgets")
+        .update({ status: "sent" })
+        .eq("organization_id", ctx.organizationId)
+        .eq("project_id", projectId)
+        .eq("id", budgetId);
+
+      backToNewWithError(projectId, demotion.message);
+    }
   }
 
   redirect(`/app/projects/${projectId}/budgets/${budgetId}`);

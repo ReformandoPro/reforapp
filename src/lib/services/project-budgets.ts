@@ -72,6 +72,8 @@ export type ServiceResult<T> =
   | { ok: true; data: T }
   | { ok: false; message: string };
 
+export type MainBudgetKind = "accepted" | "fallback" | "none";
+
 function toNumberOrZero(value: unknown): number {
   const n = typeof value === "number" ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -133,9 +135,19 @@ export function computeBudgetTotalsFromSupabaseBudgetLineRows(
 }
 
 export function selectMainBudgetId(budgets: BudgetRow[]): string | null {
-  const accepted = budgets.find((budget) => budget.status === "accepted");
-  if (accepted) return accepted.id;
-  return budgets[0]?.id ?? null;
+  return selectMainBudget(budgets).budget?.id ?? null;
+}
+
+export function selectMainBudget(
+  budgets: BudgetRow[]
+): { kind: MainBudgetKind; budget: BudgetRow | null } {
+  const accepted = budgets.find((budget) => budget.status === "accepted") ?? null;
+  if (accepted) return { kind: "accepted", budget: accepted };
+
+  const fallback = budgets[0] ?? null;
+  if (fallback) return { kind: "fallback", budget: fallback };
+
+  return { kind: "none", budget: null };
 }
 
 export function mapBudgetLineDomainToBudgetLineInput(
@@ -338,6 +350,7 @@ export async function readMainProjectBudgetSummary(
         id: string;
         title: string;
         status: BudgetStatus;
+        kind: Exclude<MainBudgetKind, "none">;
         totals: BudgetTotals;
         formattedTotal: string;
       }
@@ -356,16 +369,15 @@ export async function readMainProjectBudgetSummary(
   }
 
   const budgetRows = (budgets ?? []) as BudgetRow[];
-  const mainBudget = budgetRows.find((budget) => budget.status === "accepted") ?? budgetRows[0] ?? null;
-
-  if (!mainBudget) return { ok: true, data: null };
+  const selection = selectMainBudget(budgetRows);
+  if (!selection.budget) return { ok: true, data: null };
 
   const { data: lines, error: linesError } = await supabase
     .from("project_budget_lines")
     .select("budget_id, quantity, unit_price, tax_rate")
     .eq("organization_id", organizationId)
     .eq("project_id", projectId)
-    .eq("budget_id", mainBudget.id);
+    .eq("budget_id", selection.budget.id);
 
   if (linesError) {
     return { ok: false, message: "No pudimos cargar las líneas del presupuesto." };
@@ -376,13 +388,34 @@ export async function readMainProjectBudgetSummary(
   return {
     ok: true,
     data: {
-      id: mainBudget.id,
-      title: mainBudget.title,
-      status: mainBudget.status,
+      id: selection.budget.id,
+      title: selection.budget.title,
+      status: selection.budget.status,
+      kind: selection.kind === "accepted" ? "accepted" : "fallback",
       totals,
       formattedTotal: formatMoneyEUR(totals.total),
     },
   };
+}
+
+export async function demoteOtherAcceptedBudgets(
+  supabase: SupabaseClient,
+  organizationId: string,
+  projectId: string,
+  keepBudgetId: string
+): Promise<ServiceResult<null>> {
+  const { error } = await supabase
+    .from("project_budgets")
+    .update({ status: "sent" })
+    .eq("organization_id", organizationId)
+    .eq("project_id", projectId)
+    .eq("status", "accepted")
+    .neq("id", keepBudgetId);
+
+  if (error) {
+    return { ok: false, message: "No pudimos actualizar el resto de presupuestos aceptados." };
+  }
+  return { ok: true, data: null };
 }
 
 export async function readAcceptedBudgetsTotals(
