@@ -1,9 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   computeBudgetTotalsFromSupabaseLineTotalsRows,
+  demoteOtherAcceptedBudgets,
   mapSupabaseBudgetLineRowToBudgetLineDomain,
   mapSupabaseBudgetLineTotalsRowToBudgetLineForTotals,
+  selectMainBudget,
   selectMainBudgetId,
   type BudgetLineRow,
   type BudgetLineTotalsRow,
@@ -92,6 +95,52 @@ describe("project-budgets service", () => {
     expect(selectMainBudgetId(budgets)).toBe("b2");
     expect(selectMainBudgetId(budgets.filter((b) => b.id !== "b2"))).toBe("b1");
     expect(selectMainBudgetId([])).toBeNull();
+
+    expect(selectMainBudget(budgets)).toEqual({ kind: "accepted", budget: budgets[1] });
+    expect(selectMainBudget(budgets.filter((b) => b.id !== "b2"))).toEqual({
+      kind: "fallback",
+      budget: budgets[0],
+    });
+    expect(selectMainBudget([])).toEqual({ kind: "none", budget: null });
+  });
+
+  it("demotes other accepted budgets when one becomes accepted", async () => {
+    const neq = vi.fn().mockResolvedValue({ error: null });
+    const eq3 = vi.fn(() => ({ neq }));
+    const eq2 = vi.fn(() => ({ eq: eq3 }));
+    const eq1 = vi.fn(() => ({ eq: eq2 }));
+    const update = vi.fn(() => ({ eq: eq1 }));
+    const from = vi.fn(() => ({ update }));
+
+    const supabase = { from } as unknown as SupabaseClient;
+
+    await expect(
+      demoteOtherAcceptedBudgets(supabase, "org1", "project1", "keep1")
+    ).resolves.toEqual({ ok: true, data: null });
+
+    expect(from).toHaveBeenCalledWith("project_budgets");
+    expect(update).toHaveBeenCalledWith({ status: "sent" });
+    expect(eq1).toHaveBeenCalledWith("organization_id", "org1");
+    expect(eq2).toHaveBeenCalledWith("project_id", "project1");
+    expect(eq3).toHaveBeenCalledWith("status", "accepted");
+    expect(neq).toHaveBeenCalledWith("id", "keep1");
+  });
+
+  it("fails when demoting accepted budgets errors", async () => {
+    const neq = vi.fn().mockResolvedValue({ error: new Error("fail") });
+    const eq3 = vi.fn(() => ({ neq }));
+    const eq2 = vi.fn(() => ({ eq: eq3 }));
+    const eq1 = vi.fn(() => ({ eq: eq2 }));
+    const update = vi.fn(() => ({ eq: eq1 }));
+    const from = vi.fn(() => ({ update }));
+
+    const supabase = { from } as unknown as SupabaseClient;
+
+    await expect(
+      demoteOtherAcceptedBudgets(supabase, "org1", "project1", "keep1")
+    ).resolves.toEqual({
+      ok: false,
+      message: "No pudimos actualizar el resto de presupuestos aceptados.",
+    });
   });
 });
-

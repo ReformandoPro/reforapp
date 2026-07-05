@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { demoteOtherAcceptedBudgets } from "@/lib/services/project-budgets";
 import { validateProjectBudgetFormPayload } from "@/lib/services/project-budgets-validation";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -51,7 +52,7 @@ export async function updateProjectBudgetAction(formData: FormData) {
   // Validate budget belongs to org + project.
   const { data: budgetRow, error: budgetError } = await supabase
     .from("project_budgets")
-    .select("id")
+    .select("id, status")
     .eq("organization_id", ctx.organizationId)
     .eq("project_id", projectId)
     .eq("id", budgetId)
@@ -60,6 +61,8 @@ export async function updateProjectBudgetAction(formData: FormData) {
   if (budgetError || !budgetRow) {
     backToEditWithError(projectId, budgetId, "Presupuesto inválido para esta obra.");
   }
+
+  const previousStatus = String((budgetRow as { status?: string }).status ?? "draft");
 
   const { error: updateBudgetError } = await supabase
     .from("project_budgets")
@@ -70,6 +73,26 @@ export async function updateProjectBudgetAction(formData: FormData) {
 
   if (updateBudgetError) {
     backToEditWithError(projectId, budgetId, "No pudimos guardar la cabecera.");
+  }
+
+  if (status === "accepted") {
+    const demotion = await demoteOtherAcceptedBudgets(
+      supabase,
+      ctx.organizationId,
+      projectId,
+      budgetId
+    );
+
+    if (!demotion.ok) {
+      await supabase
+        .from("project_budgets")
+        .update({ status: previousStatus })
+        .eq("organization_id", ctx.organizationId)
+        .eq("project_id", projectId)
+        .eq("id", budgetId);
+
+      backToEditWithError(projectId, budgetId, demotion.message);
+    }
   }
 
   const { data: existingLines, error: existingLinesError } = await supabase
