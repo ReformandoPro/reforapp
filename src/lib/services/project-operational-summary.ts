@@ -117,7 +117,14 @@ async function readBudget(supabase: SupabaseClient, organizationId: string, proj
 
   if (linesError) throw linesError;
 
-  const totals = computeBudgetTotals((lines ?? []) as BudgetLineRow[]);
+  const budgetLines = (lines ?? []) as BudgetLineRow[];
+  const totals = computeBudgetTotals(
+    budgetLines.map((line) => ({
+      quantity: Number(line.quantity ?? 0),
+      unitPrice: Number(line.unit_price ?? 0),
+      taxRate: Number(line.tax_rate ?? 0),
+    })),
+  );
   return {
     status: "ready",
     data: {
@@ -142,7 +149,13 @@ async function readCosts(supabase: SupabaseClient, organizationId: string, proje
 
   if (error) throw error;
 
-  const totals = computeCostTotals((data ?? []) as CostRow[]);
+  const costRows = (data ?? []) as CostRow[];
+  const totals = computeCostTotals(
+    costRows.map((row) => ({
+      amount: Number(row.amount ?? 0),
+      taxRate: Number(row.tax_rate ?? 0),
+    })),
+  );
   return { status: "ready", data: { total: totals.total, formattedTotal: formatMoneyEUR(totals.total) } };
 }
 
