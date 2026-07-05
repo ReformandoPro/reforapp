@@ -141,6 +141,15 @@ export default async function BudgetDetailPage({
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
+            <Link
+              href={`/app/projects/${projectId}/budgets/${budgetId}/print`}
+              target="_blank"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              rel="noreferrer"
+            >
+              Vista imprimible
+            </Link>
+
             {canWrite ? (
               <>
                 <Link
