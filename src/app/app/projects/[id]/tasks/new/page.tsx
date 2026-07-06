@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { FormActions } from "@/components/ui/FormActions";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 import { createProjectTask } from "./actions";
 
@@ -39,7 +40,7 @@ export default async function NewProjectTaskPage({
     );
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectTasks(ctx.role);
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -229,4 +230,3 @@ export default async function NewProjectTaskPage({
     </section>
   );
 }
-

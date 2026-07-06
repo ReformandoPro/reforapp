@@ -9,18 +9,17 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
+import type { ProjectTaskPriority, ProjectTaskStatus } from "@/lib/services/project-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
-type TaskStatus = "pending" | "in_progress" | "done" | "blocked";
-type TaskPriority = "low" | "medium" | "high" | "urgent";
-
 type TaskRow = {
   id: string;
   title: string;
-  status: TaskStatus;
-  priority: TaskPriority;
+  status: ProjectTaskStatus;
+  priority: ProjectTaskPriority;
   due_date: string | null;
   updated_at: string | null;
   assignee_user_id: string | null;
@@ -28,28 +27,28 @@ type TaskRow = {
   phase?: { title: string } | { title: string }[] | null;
 };
 
-const statusLabels: Record<TaskStatus, string> = {
+const statusLabels: Record<ProjectTaskStatus, string> = {
   pending: "Pendiente",
   in_progress: "En curso",
   blocked: "Bloqueada",
   done: "Hecha",
 };
 
-const statusTones: Record<TaskStatus, "neutral" | "success" | "warning" | "danger" | "info"> = {
+const statusTones: Record<ProjectTaskStatus, "neutral" | "success" | "warning" | "danger" | "info"> = {
   pending: "neutral",
   in_progress: "info",
   blocked: "danger",
   done: "success",
 };
 
-const priorityLabels: Record<TaskPriority, string> = {
+const priorityLabels: Record<ProjectTaskPriority, string> = {
   low: "Baja",
   medium: "Media",
   high: "Alta",
   urgent: "Urgente",
 };
 
-const priorityTones: Record<TaskPriority, "neutral" | "success" | "warning" | "danger" | "info"> = {
+const priorityTones: Record<ProjectTaskPriority, "neutral" | "success" | "warning" | "danger" | "info"> = {
   low: "neutral",
   medium: "info",
   high: "warning",
@@ -92,7 +91,7 @@ export default async function AppProjectTasksPage({
     );
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectTasks(ctx.role);
   const supabase = await createServerSupabaseClient();
 
   // Validate project belongs to org
@@ -249,4 +248,3 @@ export default async function AppProjectTasksPage({
     </section>
   );
 }
-

@@ -1,0 +1,18 @@
+import { describe, expect, it } from "vitest";
+
+import { canWriteProjectPhases, canWriteProjectTasks } from "../../src/lib/services/project-operational-permissions";
+
+describe("project-operational-permissions", () => {
+  it("restricts phases writes to owner/admin", () => {
+    expect(canWriteProjectPhases("owner")).toBe(true);
+    expect(canWriteProjectPhases("admin")).toBe(true);
+    expect(canWriteProjectPhases("member")).toBe(false);
+  });
+
+  it("allows task writes for owner/admin/member (MVP)", () => {
+    expect(canWriteProjectTasks("owner")).toBe(true);
+    expect(canWriteProjectTasks("admin")).toBe(true);
+    expect(canWriteProjectTasks("member")).toBe(true);
+  });
+});
+

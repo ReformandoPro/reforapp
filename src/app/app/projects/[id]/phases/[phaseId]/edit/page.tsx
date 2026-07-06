@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PHASE_STATUSES, type PhaseStatus } from "@/lib/services/phases";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectPhases } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 import { deleteProjectPhaseAction, updateProjectPhaseAction } from "./actions";
@@ -44,7 +45,7 @@ export default async function EditProjectPhasePage({
     );
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectPhases(ctx.role);
   if (!canWrite) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">

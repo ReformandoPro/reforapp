@@ -3,13 +3,9 @@
 import { redirect } from "next/navigation";
 
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
+import { PROJECT_TASK_PRIORITIES, PROJECT_TASK_STATUSES, type ProjectTaskPriority, type ProjectTaskStatus } from "@/lib/services/project-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
-
-type TaskStatus = "pending" | "in_progress" | "done" | "blocked";
-type TaskPriority = "low" | "medium" | "high" | "urgent";
-
-const taskStatuses: TaskStatus[] = ["pending", "in_progress", "done", "blocked"];
-const taskPriorities: TaskPriority[] = ["low", "medium", "high", "urgent"];
 
 function backToEditWithError(projectId: string, taskId: string, message: string) {
   const url = new URL(
@@ -61,15 +57,15 @@ export async function updateProjectTask(formData: FormData) {
     redirect(`/login?redirectTo=/app/projects/${projectId}/tasks/${taskId}/edit`);
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectTasks(ctx.role);
   if (!canWrite) {
     backToEditWithError(projectId, taskId, "No tienes permisos para editar tareas.");
   }
 
   const title = readRequiredText(formData, "title", "Título", projectId, taskId);
   const description = readOptionalText(formData, "description");
-  const status = readEnum(formData, "status", taskStatuses, "pending");
-  const priority = readEnum(formData, "priority", taskPriorities, "medium");
+  const status = readEnum<ProjectTaskStatus>(formData, "status", PROJECT_TASK_STATUSES, "pending");
+  const priority = readEnum<ProjectTaskPriority>(formData, "priority", PROJECT_TASK_PRIORITIES, "medium");
   const dueDateRaw = readOptionalText(formData, "due_date");
   const due_date = dueDateRaw;
 
@@ -156,4 +152,3 @@ export async function updateProjectTask(formData: FormData) {
 
   redirect(`/app/projects/${projectId}/tasks`);
 }
-

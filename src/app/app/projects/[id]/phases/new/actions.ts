@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { PHASE_STATUSES, type PhaseStatus } from "@/lib/services/phases";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectPhases } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 function backToNewWithError(projectId: string, message: string): never {
@@ -40,7 +41,7 @@ export async function createProjectPhaseAction(formData: FormData) {
   const ctx = await getOrganizationContextForRequest();
   if (!ctx.ok) redirect(`/login?redirectTo=/app/projects/${projectId}/phases/new`);
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
+  const canWrite = canWriteProjectPhases(ctx.role);
   if (!canWrite) backToNewWithError(projectId, "No tienes permisos para crear fases.");
 
   const title = String(formData.get("title") ?? "").trim();
