@@ -3,11 +3,18 @@
 import { redirect } from "next/navigation";
 
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
-function backToTaskWithError(projectId: string, taskId: string, message: string) {
+function backToTaskWithError(projectId: string, taskId: string, message: string): never {
   const url = new URL(`/app/projects/${projectId}/tasks/${taskId}`, "http://local");
   url.searchParams.set("error", message);
+  redirect(url.pathname + url.search);
+}
+
+function backToTaskWithIssueError(projectId: string, taskId: string, message: string): never {
+  const url = new URL(`/app/projects/${projectId}/tasks/${taskId}`, "http://local");
+  url.searchParams.set("issueError", message);
   redirect(url.pathname + url.search);
 }
 
@@ -16,11 +23,12 @@ function readRequiredText(
   key: string,
   label: string,
   projectId: string,
-  taskId: string
+  taskId: string,
+  onError: (message: string) => never = (message) => backToTaskWithError(projectId, taskId, message)
 ) {
   const value = String(formData.get(key) ?? "").trim();
   if (!value) {
-    backToTaskWithError(projectId, taskId, `${label} es obligatorio.`);
+    onError(`${label} es obligatorio.`);
   }
   return value;
 }
@@ -62,6 +70,67 @@ async function validateTaskContextOrThrow(params: {
   }
 
   return { ctx, supabase };
+}
+
+export async function createTaskIssueAction(formData: FormData) {
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const taskId = String(formData.get("taskId") ?? "").trim();
+
+  if (!projectId || !taskId) {
+    redirect("/app/projects");
+  }
+
+  // 1) Authenticated user + 2) active organization
+  const ctx = await getOrganizationContextForRequest();
+  if (!ctx.ok) {
+    redirect(`/login?redirectTo=/app/projects/${projectId}/tasks/${taskId}`);
+  }
+
+  // 3) Role: member or higher
+  const canCreate = canWriteProjectTasks(ctx.role);
+  if (!canCreate) {
+    backToTaskWithIssueError(projectId, taskId, "No tienes permisos para crear incidencias.");
+  }
+
+  const description = readRequiredText(formData, "description", "Incidencia", projectId, taskId, (message) =>
+    backToTaskWithIssueError(projectId, taskId, message)
+  );
+
+  const supabase = await createServerSupabaseClient();
+
+  // 4) Task exists
+  const { data: taskRow, error: taskError } = await supabase
+    .from("project_tasks")
+    .select("id, organization_id, project_id")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (taskError || !taskRow) {
+    backToTaskWithIssueError(projectId, taskId, "Tarea no encontrada.");
+  }
+
+  if (String(taskRow.organization_id) !== ctx.organizationId) {
+    backToTaskWithIssueError(projectId, taskId, "Tarea no encontrada.");
+  }
+
+  // 5) Task belongs to project
+  if (String(taskRow.project_id) !== projectId) {
+    backToTaskWithIssueError(projectId, taskId, "Tarea inválida para esta obra.");
+  }
+
+  const { error: insertError } = await supabase.from("project_task_issues").insert({
+    organization_id: ctx.organizationId,
+    project_id: projectId,
+    task_id: taskId,
+    reporter_user_id: ctx.user.id,
+    description,
+  });
+
+  if (insertError) {
+    backToTaskWithIssueError(projectId, taskId, "No pudimos registrar la incidencia.");
+  }
+
+  redirect(`/app/projects/${projectId}/tasks/${taskId}`);
 }
 
 export async function addTaskCommentAction(formData: FormData) {

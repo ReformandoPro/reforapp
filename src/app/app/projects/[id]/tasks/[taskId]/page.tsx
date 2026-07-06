@@ -9,6 +9,8 @@ import type { ProjectTaskPriority, ProjectTaskStatus } from "@/lib/services/proj
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 import { addTaskCommentAction } from "./actions";
+import { CreateIssueForm } from "./CreateIssueForm";
+import { IssueList, type TaskIssueListItem } from "./IssueList";
 import { TaskCommentsClient, type TaskCommentListItem } from "./TaskCommentsClient";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +30,13 @@ type CommentRow = {
   id: string;
   author_user_id: string;
   body: string;
+  created_at: string;
+};
+
+type IssueRow = {
+  id: string;
+  reporter_user_id: string;
+  description: string;
   created_at: string;
 };
 
@@ -84,10 +93,10 @@ export default async function AppProjectTaskDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string; taskId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; issueError?: string }>;
 }) {
   const { id: projectId, taskId } = await params;
-  const { error } = await searchParams;
+  const { error, issueError } = await searchParams;
 
   const ctx = await getOrganizationContextForRequest();
   if (!ctx.ok) {
@@ -180,6 +189,14 @@ export default async function AppProjectTaskDetailPage({
   const members = await getOrgMembersWithProfiles(ctx.organizationId);
   const labelByUserId = new Map(members.map((m) => [m.userId, m.label] as const));
 
+  const { data: issues, error: issuesError } = await supabase
+    .from("project_task_issues")
+    .select("id, reporter_user_id, description, created_at")
+    .eq("organization_id", ctx.organizationId)
+    .eq("project_id", projectId)
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: true });
+
   const { data: comments, error: commentsError } = await supabase
     .from("project_task_comments")
     .select("id, author_user_id, body, created_at")
@@ -200,7 +217,18 @@ export default async function AppProjectTaskDetailPage({
   }
 
   const row = task as unknown as TaskRow;
+  const issueRows = (issues ?? []) as IssueRow[];
   const commentRows = (comments ?? []) as CommentRow[];
+
+  const issueItems: TaskIssueListItem[] = issueRows.map((issue) => {
+    const reporterLabel = labelByUserId.get(issue.reporter_user_id) ?? issue.reporter_user_id;
+    return {
+      id: issue.id,
+      reporterLabel,
+      createdAtLabel: formatDateTime(issue.created_at),
+      description: issue.description,
+    };
+  });
 
   const commentItems: TaskCommentListItem[] = commentRows.map((comment) => {
     const authorLabel = labelByUserId.get(comment.author_user_id) ?? comment.author_user_id;
@@ -266,6 +294,18 @@ export default async function AppProjectTaskDetailPage({
             <p className="mt-2 whitespace-pre-wrap text-sm text-content-primary">{row.description}</p>
           </div>
         ) : null}
+      </Card>
+
+      <Card className="p-6 shadow-none">
+        <h2 className="text-lg font-semibold tracking-tight">Incidencias</h2>
+
+        {issuesError ? (
+          <p className="mt-4 text-sm text-content-secondary">No pudimos cargar las incidencias.</p>
+        ) : (
+          <IssueList issues={issueItems} />
+        )}
+
+        <CreateIssueForm projectId={projectId} taskId={taskId} error={issueError} />
       </Card>
 
       <Card className="p-6 shadow-none">
