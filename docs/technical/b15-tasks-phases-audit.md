@@ -41,7 +41,7 @@ Rama: `b15/tasks-phases-operational-mvp`
   - Check de prioridad: `low | medium | high | urgent`.
   - RLS:
     - `select`: cualquier miembro de la organización.
-    - `insert/update`: solo `owner/admin`, y valida `project_id` pertenece a `organization_id`.
+    - `insert/update`: `owner/admin/member`, y valida `project_id` pertenece a `organization_id`.
 - Asignación: `assignee_user_id` en `supabase/migrations/20260628123300_project_tasks_assignee.sql`.
   - FK preferente a `auth.users(id)`.
   - RLS de insert/update valida que el assignee (si existe) pertenece a la organización (via `memberships`).
@@ -88,3 +88,20 @@ Rama: `b15/tasks-phases-operational-mvp`
   - Fases: `start_date`, `end_date`.
   - Tareas: `due_date`.
 
+## 5) Permiso de member
+
+Desde B15, `member` puede crear y modificar tareas, pero no fases. La migración correctiva
+`20260726090100_b15_tasks_member_write.sql` alinea las políticas RLS de `project_tasks`
+con `src/lib/services/project-operational-permissions.ts` y conserva las validaciones de
+organización, proyecto, responsable y fase.
+
+`project_tasks.organization_id` es inmutable. Una tarea puede cambiar de proyecto solo si
+no tiene incidencias; si ya tiene incidencias, la base rechaza el cambio. Estas garantías
+se aplican mediante triggers en `20260726090200_parent_integrity.sql` y no dependen del rol.
+
+La garantía se aplica en `BEFORE INSERT OR UPDATE`: la organización es inmutable
+en UPDATE; el proyecto debe pertenecer a la organización; una fase debe pertenecer
+simultáneamente a la organización y al proyecto; y el responsable debe tener una
+membresía en la organización. Un cambio de proyecto se rechaza si la tarea tiene
+incidencias. La comprobación de incidencias usa una función `SECURITY DEFINER` y
+no depende de la visibilidad RLS del usuario.

@@ -3,7 +3,13 @@
 import { redirect } from "next/navigation";
 
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
-import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
+import {
+  buildTaskIssuePayload,
+  canCreateTaskIssue,
+  isTaskIssueContextValid,
+  sanitizeTaskIssueInsertError,
+  validateIssueDescription,
+} from "@/lib/services/project-task-issues";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
 function backToTaskWithError(projectId: string, taskId: string, message: string): never {
@@ -87,14 +93,16 @@ export async function createTaskIssueAction(formData: FormData) {
   }
 
   // 3) Role: member or higher
-  const canCreate = canWriteProjectTasks(ctx.role);
+  const canCreate = canCreateTaskIssue(ctx.role);
   if (!canCreate) {
     backToTaskWithIssueError(projectId, taskId, "No tienes permisos para crear incidencias.");
   }
 
-  const description = readRequiredText(formData, "description", "Incidencia", projectId, taskId, (message) =>
-    backToTaskWithIssueError(projectId, taskId, message)
-  );
+  const rawDescription = formData.get("description");
+  const descriptionResult = validateIssueDescription(rawDescription);
+  if (!descriptionResult.ok) {
+    backToTaskWithIssueError(projectId, taskId, descriptionResult.message);
+  }
 
   const supabase = await createServerSupabaseClient();
 
@@ -109,24 +117,39 @@ export async function createTaskIssueAction(formData: FormData) {
     backToTaskWithIssueError(projectId, taskId, "Tarea no encontrada.");
   }
 
-  if (String(taskRow.organization_id) !== ctx.organizationId) {
-    backToTaskWithIssueError(projectId, taskId, "Tarea no encontrada.");
-  }
-
-  // 5) Task belongs to project
-  if (String(taskRow.project_id) !== projectId) {
+  if (
+    !isTaskIssueContextValid({
+      organizationId: ctx.organizationId,
+      projectId,
+      taskId,
+      task: taskRow,
+    })
+  ) {
     backToTaskWithIssueError(projectId, taskId, "Tarea inválida para esta obra.");
   }
 
-  const { error: insertError } = await supabase.from("project_task_issues").insert({
-    organization_id: ctx.organizationId,
-    project_id: projectId,
-    task_id: taskId,
-    reporter_user_id: ctx.user.id,
-    description,
-  });
+  const { error: insertError } = await supabase
+    .from("project_task_issues")
+    .insert(
+      buildTaskIssuePayload({
+        organizationId: ctx.organizationId,
+        projectId,
+        taskId,
+        reporterUserId: ctx.user.id,
+        description: descriptionResult.value,
+      })
+    );
 
   if (insertError) {
+    const safeError = sanitizeTaskIssueInsertError(insertError);
+    console.error("[b16] create_task_issue_failed", {
+      operation: "create_task_issue",
+      projectId,
+      taskId,
+      userId: ctx.user.id,
+      errorCode: safeError.code,
+      errorMessage: safeError.message,
+    });
     backToTaskWithIssueError(projectId, taskId, "No pudimos registrar la incidencia.");
   }
 
