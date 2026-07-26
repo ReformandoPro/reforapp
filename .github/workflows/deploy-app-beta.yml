@@ -6,6 +6,13 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-app-beta
+  cancel-in-progress: false
+
 jobs:
   deploy-app-beta:
     name: Deploy reformando-app-beta
@@ -71,6 +78,13 @@ jobs:
           git checkout main
           git pull --ff-only origin main
 
+          EXPECTED_SHA="${{ github.sha }}"
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "Refusing to deploy unexpected SHA: $ACTUAL_SHA" >&2
+            exit 1
+          fi
+
           echo "Deploying commit:"
           git rev-parse HEAD
           git --no-pager log --oneline -5
@@ -79,9 +93,58 @@ jobs:
 
           docker compose config --services | grep -qx "$SERVICE"
 
-          docker compose build "$SERVICE"
+          docker compose build --build-arg GIT_COMMIT_SHA="$EXPECTED_SHA" "$SERVICE"
           docker compose up -d --no-deps "$SERVICE"
 
           docker compose ps "$SERVICE"
           docker compose logs --tail=120 "$SERVICE"
+
+          HEALTH_URL="https://app-beta.reformando.pro/api/health"
+          HEALTH_STARTED_AT="$(date +%s)"
+          HEALTH_DEADLINE="$((HEALTH_STARTED_AT + 60))"
+          ATTEMPT=0
+          while :; do
+            NOW="$(date +%s)"
+            REMAINING="$((HEALTH_DEADLINE - NOW))"
+            if [ "$REMAINING" -le 0 ]; then
+              break
+            fi
+
+            ATTEMPT="$((ATTEMPT + 1))"
+            REQUEST_TIMEOUT="$REMAINING"
+            if [ "$REQUEST_TIMEOUT" -gt 5 ]; then
+              REQUEST_TIMEOUT=5
+            fi
+
+            RESPONSE="$(curl --fail --silent --show-error --max-time "$REQUEST_TIMEOUT" "$HEALTH_URL" 2>/dev/null || true)"
+            if EXPECTED_SHA="$EXPECTED_SHA" RESPONSE="$RESPONSE" node - <<'NODE'
+          const expected = process.env.EXPECTED_SHA;
+          try {
+            const body = JSON.parse(process.env.RESPONSE || "");
+            process.exit(body.status === "ok" && body.commit === expected ? 0 : 1);
+          } catch {
+            process.exit(1);
+          }
+          NODE
+            then
+              echo "Health check passed for $EXPECTED_SHA"
+              exit 0
+            fi
+
+            NOW="$(date +%s)"
+            REMAINING="$((HEALTH_DEADLINE - NOW))"
+            if [ "$REMAINING" -le 0 ]; then
+              break
+            fi
+
+            SLEEP_SECONDS=2
+            if [ "$SLEEP_SECONDS" -gt "$REMAINING" ]; then
+              SLEEP_SECONDS="$REMAINING"
+            fi
+            echo "Health check pending (attempt $ATTEMPT; ${REMAINING}s remaining)" >&2
+            sleep "$SLEEP_SECONDS"
+          done
+
+          echo "Health check failed for expected SHA $EXPECTED_SHA after 60 seconds" >&2
+          exit 1
           REMOTE

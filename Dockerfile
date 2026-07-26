@@ -11,7 +11,9 @@ COPY . .
 RUN npm run build
 
 FROM base AS runner
+ARG GIT_COMMIT_SHA=unknown
 ENV NODE_ENV=production
+ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/.next ./.next
