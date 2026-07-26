@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { getProjectCardsForProjectsPage } from "@/lib/services/projects";
 import type { ProjectStatus } from "@/lib/domain/projects/status";
 
+export const dynamic = "force-dynamic";
+
 const statusLabels: Record<ProjectStatus, string> = {
   lead: "Lead",
   budgeting: "Presupuestando",

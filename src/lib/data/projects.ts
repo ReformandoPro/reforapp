@@ -1,12 +1,12 @@
 import { createProjectsRepository } from "@/lib/application";
 import { isProjectStatus } from "@/lib/domain/projects/status";
-import { createOptionalSupabaseClient } from "@/lib/supabase/client";
+import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { createServerSupabaseClient } from "@/lib/supabase/ssr";
+import { isSupabaseConfigured } from "@/lib/env";
 import type { ProjectCard } from "@/lib/types";
 
 const projectsRepository = createProjectsRepository({ dataSource: "mock" });
 
-const PROJECTS_ORGANIZATION_ENV = "NEXT_PUBLIC_SUPABASE_ORGANIZATION_ID";
-const PROJECTS_DEBUG_ENV = "NEXT_PUBLIC_SUPABASE_DEBUG";
 const SUPABASE_PROJECTS_LOG_PREFIX = "[supabase-projects-first-read]";
 
 type SupabaseProjectCardQueryRow = {
@@ -40,29 +40,8 @@ function getMockProjectCardsFallback(): ProjectCard[] {
   return projectsRepository.getProjectCards();
 }
 
-function readProjectsOrganizationId(): string | null {
-  const value = process.env[PROJECTS_ORGANIZATION_ENV]?.trim();
-
-  return value && value.length > 0 ? value : null;
-}
-
-function shouldLogProjectsFallback(): boolean {
-  return process.env[PROJECTS_DEBUG_ENV] === "1";
-}
-
-function warnProjectsFallback(reason: string, error?: unknown) {
-  if (!shouldLogProjectsFallback()) {
-    return;
-  }
-
-  const message = `${SUPABASE_PROJECTS_LOG_PREFIX} ${reason}`;
-
-  if (error) {
-    console.warn(message, error);
-    return;
-  }
-
-  console.warn(message);
+function logProjectsReadFailure(reason: string): void {
+  console.error(SUPABASE_PROJECTS_LOG_PREFIX, { reason });
 }
 
 export function mapSupabaseProjectRowToProjectCard(
@@ -90,22 +69,24 @@ export function mapSupabaseProjectRowToProjectCard(
 }
 
 export async function getProjectsPageCards(): Promise<ProjectCard[]> {
-  const client = createOptionalSupabaseClient();
+  if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === "production") {
+      logProjectsReadFailure("Supabase is not configured in production");
+      throw new Error("Unable to load projects from Supabase");
+    }
 
-  if (!client) {
     return getMockProjectCardsFallback();
   }
 
-  const organizationId = readProjectsOrganizationId();
+  const context = await getOrganizationContextForRequest();
 
-  if (!organizationId) {
-    warnProjectsFallback(
-      `missing ${PROJECTS_ORGANIZATION_ENV}; using mock fallback`
-    );
-    return getMockProjectCardsFallback();
+  if (!context.ok) {
+    logProjectsReadFailure(`organization context unavailable: ${context.reason}`);
+    throw new Error("Unable to load projects for the active organization");
   }
 
   try {
+    const client = await createServerSupabaseClient();
     const { data, error } = await client
       .from("projects")
       .select(
@@ -120,24 +101,23 @@ export async function getProjectsPageCards(): Promise<ProjectCard[]> {
           )
         `
       )
-      .eq("organization_id", organizationId)
+      .eq("organization_id", context.organizationId)
       .order("updated_at", { ascending: false });
 
     if (error) {
-      warnProjectsFallback("query failed; using mock fallback", error);
-      return getMockProjectCardsFallback();
+      logProjectsReadFailure("query failed");
+      throw new Error("Unable to load projects from Supabase");
     }
 
-    if (!data || data.length === 0) {
-      warnProjectsFallback("query returned no rows; using mock fallback");
-      return getMockProjectCardsFallback();
-    }
-
-    return data.map((row) =>
+    return (data ?? []).map((row) =>
       mapSupabaseProjectRowToProjectCard(row as unknown as SupabaseProjectCardQueryRow)
     );
   } catch (error) {
-    warnProjectsFallback("unexpected query error; using mock fallback", error);
-    return getMockProjectCardsFallback();
+    if (error instanceof Error && error.message === "Unable to load projects from Supabase") {
+      throw error;
+    }
+
+    logProjectsReadFailure("query or mapping failed");
+    throw new Error("Unable to load projects from Supabase");
   }
 }
