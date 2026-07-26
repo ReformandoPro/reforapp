@@ -23,6 +23,8 @@ llamada de función; podía afectar consultas posteriores de la misma transacci�
 
 - concede privilegios explícitos a `authenticated` para operaciones cubiertas
   por las políticas actuales;
+- aborta antes de conceder privilegios si `project_task_issues` no tiene RLS y
+  las políticas B16 de lectura e inserción esperadas;
 - concede DML explícito a `service_role` en las tablas de aplicación;
 - conserva RLS como control de filas para `authenticated`;
 - restaura `row_security` después de cada helper, también en excepciones;
@@ -47,3 +49,11 @@ llamada de función; podía afectar consultas posteriores de la misma transacci�
 `EXECUTE`, funciones y restauración transaccional de `row_security`. Claude Code
 debe añadir fixtures sintéticos y ejecutar la matriz RLS, los casos anon,
 authenticated y service_role, rollback y reaplicación en Docker/Supabase local.
+
+El protocolo debe ejecutar también un caso negativo sobre un baseline sin B16:
+la migración fundacional debe abortar antes de sus grants y `authenticated` no
+debe recibir `SELECT` ni `INSERT` sobre `project_task_issues`. Sobre un baseline
+con B16 aplicado, la misma migración debe continuar y superar la matriz completa.
+
+El rollback no revoca `USAGE` del esquema `public`, porque ese privilegio forma
+parte del baseline reproducible de Supabase y no lo añade esta migración.

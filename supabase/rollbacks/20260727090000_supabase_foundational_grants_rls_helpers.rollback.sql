@@ -10,7 +10,6 @@ revoke select, insert, update, delete on table
   public.project_template_phases, public.project_template_tasks,
   public.project_task_issues
 from authenticated, service_role;
-revoke usage on schema public from authenticated, service_role;
 
 revoke execute on function public.is_org_member(uuid) from authenticated;
 revoke execute on function public.is_org_admin(uuid) from authenticated;

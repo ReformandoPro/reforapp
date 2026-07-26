@@ -64,6 +64,19 @@ select 'RLS matrix requires synthetic fixtures and authenticated JWT claims' as 
 -- Verify apply -> rollback -> reapply by running this script after each phase.
 select 'rollback and reapply require disposable PostgreSQL/Supabase execution' as pending;
 
+-- Mandatory negative case on a disposable baseline without B16:
+-- the migration must fail before its table grants. After the failed process,
+-- assert in a new session that authenticated still lacks both privileges:
+--
+-- select has_table_privilege('authenticated',
+--   'public.project_task_issues', 'SELECT') = false as no_select,
+--        has_table_privilege('authenticated',
+--   'public.project_task_issues', 'INSERT') = false as no_insert;
+--
+-- The expected error is:
+-- foundational grants require B16 project_task_issues RLS protection
+-- Reset to the B16-protected baseline before continuing with the positive path.
+
 -- The following phase is intentionally executable, not a claim of prior
 -- execution. It must be run by Claude Code with the repository root as the
 -- working directory and a complete schema reconstructed from main.

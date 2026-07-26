@@ -2,6 +2,56 @@ begin;
 
 grant usage on schema public to authenticated, service_role;
 
+-- project_task_issues is protected by B16, which is delivered separately from
+-- this foundational correction. Never grant table privileges if that
+-- protection is absent: RLS policies are the fail-closed boundary here.
+do $$
+declare
+  has_rls boolean;
+  has_select_policy boolean;
+  has_insert_policy boolean;
+begin
+  select c.relrowsecurity
+    into has_rls
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public'
+    and c.relname = 'project_task_issues'
+    and c.relkind = 'r';
+
+  select exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'project_task_issues'
+      and policyname = 'project_task_issues_select_member'
+      and cmd = 'SELECT'
+      and 'authenticated' = any (roles)
+      and qual is not null
+  ) into has_select_policy;
+
+  select exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'project_task_issues'
+      and policyname = 'project_task_issues_insert_member'
+      and cmd = 'INSERT'
+      and 'authenticated' = any (roles)
+      and with_check is not null
+  ) into has_insert_policy;
+
+  if coalesce(has_rls, false) = false
+     or not has_select_policy
+     or not has_insert_policy then
+    raise exception using
+      message = 'foundational grants require B16 project_task_issues RLS protection',
+      detail = format(
+        'relrowsecurity=%, select_policy=%, insert_policy=%',
+        coalesce(has_rls, false), has_select_policy, has_insert_policy
+      );
+  end if;
+end;
+$$;
+
 -- Explicit DML for the administrative Supabase role. This role is not used by
 -- application code and is never exposed to browser or SSR user sessions.
 grant select, insert, update, delete on table
