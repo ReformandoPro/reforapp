@@ -9,6 +9,23 @@ const logFile = `${process.env.RUNNER_TEMP ?? "."}/projects-authenticated-read.l
 
 if (!url || !anonKey || !serviceRoleKey || !password) throw new Error("Missing CI-only Supabase configuration");
 const log = (message) => { appendFileSync(logFile, `${message}\n`); console.log(message); };
+const safeError = (error) => ({
+  code: typeof error?.code === "string" ? error.code : "unknown",
+  message: String(error?.message ?? error).replace(/(key|token|cookie|password|authorization)=?\S+/gi, "$1=[redacted]").slice(0, 300),
+  stack: error?.stack ? String(error.stack).split("\n").slice(0, 4).join("\n") : "",
+});
+async function operation(name, context, action) {
+  log(`fixture:start operation=${name} context=${context}`);
+  try {
+    const result = await action();
+    log(`fixture:complete operation=${name} context=${context}`);
+    return result;
+  } catch (error) {
+    const detail = safeError(error);
+    log(`fixture:failure operation=${name} context=${context} code=${detail.code} message=${JSON.stringify(detail.message)} stack=${JSON.stringify(detail.stack)}`);
+    throw error;
+  }
+}
 const admin = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
 const A = "00000000-0000-0000-0000-0000000000a1";
 const B = "00000000-0000-0000-0000-0000000000b1";
@@ -40,19 +57,19 @@ async function projects(client, expectedOrg, forbiddenOrg) {
 
 const mode = new Set(process.argv.slice(2));
 if (mode.has("--fixtures")) {
-  await ensureUser(USER_A, "projects-a@example.invalid");
-  await ensureUser(USER_B, "projects-b@example.invalid");
-  await ensureUser(USER_NONE, "projects-none@example.invalid");
-  await insert("organizations", [{ id: A, name: "CI Organization A", slug: "ci-projects-a" }, { id: B, name: "CI Organization B", slug: "ci-projects-b" }, { id: EMPTY, name: "CI Empty Organization", slug: "ci-projects-empty" }]);
-  await insert("memberships", [{ organization_id: A, user_id: USER_A, role: "owner" }, { organization_id: B, user_id: USER_B, role: "owner" }]);
-  const { data: clientA, error: clientError } = await admin.from("clients").insert({ organization_id: A, display_name: "CI Client A" }).select("id").single();
+  await operation("create auth user A", USER_A, () => ensureUser(USER_A, "projects-a@example.invalid"));
+  await operation("create auth user B", USER_B, () => ensureUser(USER_B, "projects-b@example.invalid"));
+  await operation("create auth user without membership", USER_NONE, () => ensureUser(USER_NONE, "projects-none@example.invalid"));
+  await operation("create organizations A B empty", "organizations", () => insert("organizations", [{ id: A, name: "CI Organization A", slug: "ci-projects-a" }, { id: B, name: "CI Organization B", slug: "ci-projects-b" }, { id: EMPTY, name: "CI Empty Organization", slug: "ci-projects-empty" }]));
+  await operation("create memberships", "memberships", () => insert("memberships", [{ organization_id: A, user_id: USER_A, role: "owner" }, { organization_id: B, user_id: USER_B, role: "owner" }]));
+  const { data: clientA, error: clientError } = await operation("create client A", A, () => admin.from("clients").insert({ organization_id: A, display_name: "CI Client A" }).select("id").single());
   if (clientError) throw clientError;
-  const { data: clientB, error: clientErrorB } = await admin.from("clients").insert({ organization_id: B, display_name: "CI Client B" }).select("id").single();
+  const { data: clientB, error: clientErrorB } = await operation("create client B", B, () => admin.from("clients").insert({ organization_id: B, display_name: "CI Client B" }).select("id").single());
   if (clientErrorB) throw clientErrorB;
-  await insert("projects", [
+  await operation("create projects A B", "projects", () => insert("projects", [
     { organization_id: A, client_id: clientA.id, name: "CI Project A", title: "CI Project A", client_name: "CI Client A", start_date: new Date().toISOString(), status: "in_progress", address: "CI", type: "reform" },
     { organization_id: B, client_id: clientB.id, name: "CI Project B", title: "CI Project B", client_name: "CI Client B", start_date: new Date().toISOString(), status: "in_progress", address: "CI", type: "reform" },
-  ]);
+  ]));
   log("fixtures: organizations A/B/empty; users A/B/no-membership; projects A/B");
 }
 if (mode.has("--authenticated")) {

@@ -123,7 +123,23 @@ jobs:
           echo 'Local Supabase endpoint exported without printing credentials.'
 
       - name: Create Auth and database fixtures
-        run: node scripts/ci/projects-authenticated-read.mjs --fixtures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set +e
+          node scripts/ci/projects-authenticated-read.mjs --fixtures 2>&1 | tee -a "$RUNNER_TEMP/projects-authenticated-read.log"
+          fixture_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$fixture_status" -ne 0 ]; then
+            echo "::error title=Fixture creation failed::fixture creation exited with code $fixture_status"
+            {
+              echo '## Fixture creation failure'
+              echo
+              echo "- Exit code: \`$fixture_status\`"
+              echo '- Artifact: `projects-authenticated-read-diagnostics`'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$fixture_status"
+          fi
 
       - name: Run authenticated integration cases
         run: node scripts/ci/projects-authenticated-read.mjs --authenticated
