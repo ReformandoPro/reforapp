@@ -56,12 +56,17 @@ Secrets esperados:
 - APP_BETA_SSH_PORT
 - APP_BETA_SSH_PRIVATE_KEY
 - APP_BETA_SSH_KNOWN_HOSTS
+- APP_BETA_HEALTH_USERNAME
+- APP_BETA_HEALTH_PASSWORD
 
 Recomendaciones:
 
 - Usar una clave SSH dedicada solo a deploy.
 - No reutilizar claves personales.
 - Guardar en APP_BETA_SSH_KNOWN_HOSTS la huella del VPS, por ejemplo obtenida con `ssh-keyscan -p <PORT> <HOST>`.
+- Configurar APP_BETA_HEALTH_USERNAME y APP_BETA_HEALTH_PASSWORD con las credenciales Basic Auth existentes del router Traefik de `app-beta.reformando.pro`. No inventar ni reutilizar las credenciales SSH.
+
+El workflow valida que los siete secrets estén presentes antes de conectar al VPS. Después del deploy, el health check se ejecuta desde el runner de GitHub Actions contra `https://app-beta.reformando.pro/api/health`, usando Basic Auth y verificando simultáneamente HTTP 200, JSON válido, `status: "ok"` y el SHA exacto desplegado.
 
 ## Cuándo se ejecuta
 
