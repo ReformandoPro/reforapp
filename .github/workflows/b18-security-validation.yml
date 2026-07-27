@@ -121,10 +121,40 @@ jobs:
         run: |
           set -Eeuo pipefail
           phase='Capture B18 baseline'
-          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
-          echo "=== $phase ==="
-          echo 'Executing supabase/validation/b18-security-baseline.sql'
-          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors -f supabase/validation/b18-security-baseline.sql
+          baseline_file='supabase/validation/b18-security-baseline.sql'
+          log_file="$RUNNER_TEMP/b18-baseline-failure.log"
+          trap 'status=$?; echo "ERROR phase=$phase file=$baseline_file command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          : > "$log_file"
+          echo '=================================================='
+          echo "Executing B18 baseline: $baseline_file"
+          echo '=================================================='
+          set +e
+          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors -f "$baseline_file" 2>&1 | tee "$log_file"
+          psql_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$psql_status" -ne 0 ]; then
+            echo "::error file=$baseline_file,title=B18 baseline capture failed::Baseline capture failed with psql status $psql_status"
+            {
+              echo '## B18 baseline capture failure'
+              echo
+              echo "- File: \`$baseline_file\`"
+              echo "- psql status: \`$psql_status\`"
+              echo
+              echo '```text'
+              tail -n 200 "$log_file"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$psql_status"
+          fi
+
+      - name: Upload B18 baseline failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b18-baseline-failure
+          path: ${{ runner.temp }}/b18-baseline-failure.log
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Apply B18 migrations
         shell: bash
