@@ -65,6 +65,12 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090000_b18_rls_helpers_and_issue_security.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090100_b18_table_grants.sql
           psql -v ON_ERROR_STOP=1 -f supabase/validation/b18-security-rls.sql
+          if psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090100_b18_table_grants.sql; then
+            echo 'B18 snapshot reapply unexpectedly succeeded' >&2
+            exit 1
+          else
+            echo 'B18 snapshot reapply rejected as expected; original snapshot preserved'
+          fi
           psql -v ON_ERROR_STOP=1 -f supabase/rollbacks/20260728090000_b18_rls_helpers_and_issue_security.rollback.sql
           psql -v ON_ERROR_STOP=1 -f supabase/rollbacks/20260728090100_b18_table_grants.rollback.sql
           psql -v ON_ERROR_STOP=1 -f supabase/validation/b18-security-rls-rollback.sql

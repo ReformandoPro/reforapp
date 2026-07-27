@@ -2,7 +2,7 @@ begin;
 
 do $$
 begin
-  if not exists (select 1 from public.b18_grant_baseline) then
+  if (select count(*) from public.b18_grant_baseline) <> 5 then
     raise exception 'B18 grant rollback requires its baseline snapshot';
   end if;
   if not (select had_privilege from public.b18_grant_baseline where privilege_key = 'memberships_select') then

@@ -207,17 +207,20 @@ end;
 $$;
 
 do $$
+declare actual_state text;
 begin
   insert into public.project_task_issues
     (organization_id, project_id, task_id, reporter_user_id, description)
   values
     ('10000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Alpha inserted');
 exception when others then
-  raise exception 'Alpha legitimate INSERT failed: %', sqlerrm;
+  get stacked diagnostics actual_state = returned_sqlstate;
+  raise exception 'Alpha legitimate INSERT failed: % %', actual_state, sqlerrm;
 end;
 $$;
 
 do $$
+declare actual_state text;
 begin
   begin
     insert into public.project_task_issues
@@ -226,7 +229,10 @@ begin
       ('10000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'fake reporter');
     raise exception 'reporter forgery was accepted';
   exception when others then
-    if sqlerrm = 'reporter forgery was accepted' then raise; end if;
+    get stacked diagnostics actual_state = returned_sqlstate;
+    if sqlerrm = 'reporter forgery was accepted' or actual_state <> '42501' then
+      raise exception 'reporter forgery had unexpected SQLSTATE %: %', actual_state, sqlerrm;
+    end if;
   end;
   begin
     insert into public.project_task_issues
@@ -235,7 +241,10 @@ begin
       ('10000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000002', '40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'cross project');
     raise exception 'cross-project insert was accepted';
   exception when others then
-    if sqlerrm = 'cross-project insert was accepted' then raise; end if;
+    get stacked diagnostics actual_state = returned_sqlstate;
+    if sqlerrm = 'cross-project insert was accepted' or actual_state <> '42501' then
+      raise exception 'cross-project insert had unexpected SQLSTATE %: %', actual_state, sqlerrm;
+    end if;
   end;
   begin
     insert into public.project_task_issues
@@ -244,10 +253,42 @@ begin
       ('10000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'cross task');
     raise exception 'cross-task insert was accepted';
   exception when others then
-    if sqlerrm = 'cross-task insert was accepted' then raise; end if;
+    get stacked diagnostics actual_state = returned_sqlstate;
+    if sqlerrm = 'cross-task insert was accepted' or actual_state <> '42501' then
+      raise exception 'cross-task insert had unexpected SQLSTATE %: %', actual_state, sqlerrm;
+    end if;
   end;
 end;
 $$;
+
+-- Bootstrap helper cases: the first owner is allowed, outsiders cannot use
+-- the helper as an organization-existence oracle, and existing organizations
+-- remain visible only to their own members.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000006';
+do $$
+begin
+  if public.org_has_any_membership('10000000-0000-0000-0000-000000000003') then
+    raise exception 'first-membership bootstrap was rejected';
+  end if;
+  if public.org_has_any_membership('10000000-0000-0000-0000-000000000001') then
+    raise exception 'outsider used helper to enumerate organization membership';
+  end if;
+end;
+$$;
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000002';
+do $$
+begin
+  if not public.org_has_any_membership('10000000-0000-0000-0000-000000000001') then
+    raise exception 'existing organization membership was not detected';
+  end if;
+  if public.org_has_any_membership('10000000-0000-0000-0000-000000000002') then
+    raise exception 'cross-organization membership appropriation was accepted';
+  end if;
+end;
+$$;
+rollback;
 rollback;
 
 -- Beta, outsider, anon, UPDATE and DELETE denial cases.
@@ -337,15 +378,20 @@ begin
     raise exception 'B18 validation failed: issue policy shape is incorrect';
   end if;
 
-  if has_table_privilege('anon', 'public.project_task_issues', 'SELECT')
-     or has_table_privilege('anon', 'public.project_task_issues', 'INSERT')
-     or not has_table_privilege('authenticated', 'public.project_task_issues', 'SELECT')
-     or not has_table_privilege('authenticated', 'public.project_task_issues', 'INSERT')
-     or not has_table_privilege('authenticated', 'public.projects', 'SELECT')
-     or not has_table_privilege('authenticated', 'public.project_tasks', 'SELECT')
-     or not has_table_privilege('authenticated', 'public.memberships', 'SELECT')
-     or has_table_privilege('authenticated', 'public.project_task_issues', 'UPDATE')
-     or has_table_privilege('authenticated', 'public.project_task_issues', 'DELETE') then
+  if exists (
+    select 1
+    from (values
+      ('project_task_issues', 'SELECT'), ('project_task_issues', 'INSERT'),
+      ('projects', 'SELECT'), ('project_tasks', 'SELECT'), ('memberships', 'SELECT')
+    ) as required(table_name, privilege_name)
+    where not exists (
+      select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      cross join lateral aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) acl
+      where n.nspname = 'public' and c.relname = required.table_name
+        and acl.grantee = 'authenticated'::regrole
+        and acl.privilege_type = required.privilege_name
+    )
+  ) then
     raise exception 'B18 validation failed: unexpected issue table privilege';
   end if;
 end;

@@ -110,8 +110,7 @@ begin
   perform set_config('row_security', 'off', true);
   begin
     -- A non-member must not be able to use this RPC as an organization
-    -- existence oracle. Returning true conservatively also prevents the
-    -- historical first-owner bootstrap policy from being abused.
+    -- existence oracle. Bootstrap uses the separate definer-only helper below.
     if auth.uid() is null then
       perform set_config('row_security', previous_row_security, true);
       return false;
@@ -122,7 +121,7 @@ begin
         and caller_membership.organization_id = org_has_any_membership.org_id
     ) then
       perform set_config('row_security', previous_row_security, true);
-      return true;
+      return false;
     end if;
 
     result := exists (
@@ -138,6 +137,32 @@ begin
   end;
 end;
 $$;
+
+create or replace function public.org_is_empty_for_bootstrap(org_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = pg_catalog, public
+as $$
+  select not exists (select 1 from public.memberships where organization_id = $1);
+$$;
+
+revoke all on function public.org_is_empty_for_bootstrap(uuid) from public;
+grant execute on function public.org_is_empty_for_bootstrap(uuid) to authenticated;
+
+drop policy if exists memberships_insert_owner_admin_or_bootstrap on public.memberships;
+create policy memberships_insert_owner_admin_or_bootstrap
+  on public.memberships
+  for insert
+  to authenticated
+  with check (
+    public.is_org_admin(memberships.organization_id)
+    or (
+      memberships.user_id = auth.uid()
+      and memberships.role = 'owner'
+      and public.org_is_empty_for_bootstrap(memberships.organization_id)
+    )
+  );
 
 create or replace function public.is_client_in_org(client_id uuid, org_id uuid)
 returns boolean

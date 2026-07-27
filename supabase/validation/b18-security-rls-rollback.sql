@@ -25,11 +25,18 @@ begin
     raise exception 'B18 rollback left project_task_issues policies';
   end if;
 
-  if has_table_privilege('authenticated', 'public.project_task_issues', 'SELECT')
-     or has_table_privilege('authenticated', 'public.project_task_issues', 'INSERT')
-     or has_table_privilege('authenticated', 'public.projects', 'SELECT')
-     or has_table_privilege('authenticated', 'public.project_tasks', 'SELECT')
-     or has_table_privilege('authenticated', 'public.memberships', 'SELECT') then
+  if exists (
+    select 1
+    from (values
+      ('project_task_issues', 'SELECT'), ('project_task_issues', 'INSERT'),
+      ('projects', 'SELECT'), ('project_tasks', 'SELECT'), ('memberships', 'SELECT')
+    ) as required(table_name, privilege_name)
+    join pg_class c on c.relname = required.table_name
+    join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+    cross join lateral aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) acl
+    where acl.grantee = 'authenticated'::regrole
+      and acl.privilege_type = required.privilege_name
+  ) then
     raise exception 'B18 rollback left issue table privileges';
   end if;
 

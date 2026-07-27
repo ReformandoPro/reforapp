@@ -5,17 +5,33 @@ create table if not exists public.b18_grant_baseline (
   had_privilege boolean not null
 );
 
-truncate public.b18_grant_baseline;
+do $$
+begin
+  if exists (select 1 from public.b18_grant_baseline) then
+    raise exception 'B18 grant snapshot already exists; refusing to overwrite it';
+  end if;
+end;
+$$;
 
 insert into public.b18_grant_baseline (privilege_key, had_privilege)
-select privilege_key, has_table_privilege('authenticated', table_name, privilege_name)
+select required.privilege_key,
+       exists (
+         select 1
+         from pg_class as c
+         join pg_namespace as n on n.oid = c.relnamespace
+         cross join lateral aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) as acl
+         where n.nspname = required.schema_name
+           and c.relname = required.table_name
+           and acl.grantee = 'authenticated'::regrole
+           and acl.privilege_type = required.privilege_name
+       )
 from (values
-  ('memberships_select', 'public.memberships'::text, 'SELECT'::text),
-  ('projects_select', 'public.projects'::text, 'SELECT'::text),
-  ('project_tasks_select', 'public.project_tasks'::text, 'SELECT'::text),
-  ('issues_select', 'public.project_task_issues'::text, 'SELECT'::text),
-  ('issues_insert', 'public.project_task_issues'::text, 'INSERT'::text)
-) as required(privilege_key, table_name, privilege_name);
+  ('memberships_select', 'public', 'memberships', 'SELECT'),
+  ('projects_select', 'public', 'projects', 'SELECT'),
+  ('project_tasks_select', 'public', 'project_tasks', 'SELECT'),
+  ('issues_select', 'public', 'project_task_issues', 'SELECT'),
+  ('issues_insert', 'public', 'project_task_issues', 'INSERT')
+) as required(privilege_key, schema_name, table_name, privilege_name);
 
 do $$
 begin
