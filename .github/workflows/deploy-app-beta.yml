@@ -20,6 +20,39 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      - name: Validate deployment configuration
+        shell: bash
+        env:
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_USER: ${{ secrets.APP_BETA_SSH_USER }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+          APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
+          APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
+          APP_BETA_HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          APP_BETA_HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          missing=0
+          for variable in \
+            APP_BETA_SSH_HOST \
+            APP_BETA_SSH_USER \
+            APP_BETA_SSH_PORT \
+            APP_BETA_SSH_PRIVATE_KEY \
+            APP_BETA_SSH_KNOWN_HOSTS \
+            APP_BETA_HEALTH_USERNAME \
+            APP_BETA_HEALTH_PASSWORD
+          do
+            if [ -z "${!variable:-}" ]; then
+              echo "::error::Missing required GitHub Actions secret: $variable"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Configure SSH
         shell: bash
         run: |
@@ -98,11 +131,25 @@ jobs:
 
           docker compose ps "$SERVICE"
           docker compose logs --tail=120 "$SERVICE"
+          REMOTE
+
+      - name: Verify app-beta health
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        run: |
+          set -euo pipefail
 
           HEALTH_URL="https://app-beta.reformando.pro/api/health"
           HEALTH_STARTED_AT="$(date +%s)"
           HEALTH_DEADLINE="$((HEALTH_STARTED_AT + 60))"
           ATTEMPT=0
+          LAST_HTTP_STATUS="not_requested"
+          RESPONSE_FILE="$(mktemp)"
+          trap 'rm -f "$RESPONSE_FILE"' EXIT
+
           while :; do
             NOW="$(date +%s)"
             REMAINING="$((HEALTH_DEADLINE - NOW))"
@@ -116,8 +163,24 @@ jobs:
               REQUEST_TIMEOUT=5
             fi
 
-            RESPONSE="$(curl --fail --silent --show-error --max-time "$REQUEST_TIMEOUT" "$HEALTH_URL" 2>/dev/null || true)"
-            if EXPECTED_SHA="$EXPECTED_SHA" RESPONSE="$RESPONSE" node - <<'NODE'
+            set +e
+            LAST_HTTP_STATUS="$(curl \
+              --silent \
+              --show-error \
+              --max-time "$REQUEST_TIMEOUT" \
+              --user "${HEALTH_USERNAME}:${HEALTH_PASSWORD}" \
+              --output "$RESPONSE_FILE" \
+              --write-out '%{http_code}' \
+              "$HEALTH_URL")"
+            CURL_STATUS=$?
+            set -e
+
+            if [ "$CURL_STATUS" -ne 0 ]; then
+              LAST_HTTP_STATUS="curl_exit_${CURL_STATUS}"
+            fi
+
+            RESPONSE="$(cat "$RESPONSE_FILE")"
+            if [ "$LAST_HTTP_STATUS" = "200" ] && EXPECTED_SHA="$EXPECTED_SHA" RESPONSE="$RESPONSE" node - <<'NODE'
           const expected = process.env.EXPECTED_SHA;
           try {
             const body = JSON.parse(process.env.RESPONSE || "");
@@ -141,10 +204,9 @@ jobs:
             if [ "$SLEEP_SECONDS" -gt "$REMAINING" ]; then
               SLEEP_SECONDS="$REMAINING"
             fi
-            echo "Health check pending (attempt $ATTEMPT; ${REMAINING}s remaining)" >&2
+            echo "Health check pending (attempt $ATTEMPT; http=$LAST_HTTP_STATUS; ${REMAINING}s remaining)" >&2
             sleep "$SLEEP_SECONDS"
           done
 
-          echo "Health check failed for expected SHA $EXPECTED_SHA after 60 seconds" >&2
+          echo "Health check failed for expected SHA $EXPECTED_SHA after 60 seconds (last_http_status=$LAST_HTTP_STATUS)" >&2
           exit 1
-          REMOTE
