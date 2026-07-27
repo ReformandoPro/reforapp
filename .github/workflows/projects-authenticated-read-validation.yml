@@ -170,7 +170,23 @@ jobs:
           fi
 
       - name: Run authenticated integration cases
-        run: node scripts/ci/projects-authenticated-read.mjs --authenticated
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set +e
+          node scripts/ci/projects-authenticated-read.mjs --authenticated 2>&1 | tee -a "$RUNNER_TEMP/projects-authenticated-read.log"
+          authenticated_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$authenticated_status" -ne 0 ]; then
+            echo "::error title=Authenticated integration failed::authenticated integration exited with code $authenticated_status"
+            {
+              echo '## Authenticated integration failure'
+              echo
+              echo "- Exit code: \`$authenticated_status\`"
+              echo '- Artifact: `projects-authenticated-read-diagnostics`'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$authenticated_status"
+          fi
 
       - name: Run anonymous and isolation cases
         run: node scripts/ci/projects-authenticated-read.mjs --anonymous --isolation

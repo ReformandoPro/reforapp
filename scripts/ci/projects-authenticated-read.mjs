@@ -62,6 +62,18 @@ async function projects(client, expectedOrg, forbiddenOrg) {
   if (data.some((row) => row.organization_id !== expectedOrg || row.organization_id === forbiddenOrg)) throw new Error("Organization isolation failed");
   return data;
 }
+async function testCase(name, user, organization, action) {
+  log(`case:start name=${name} user=${user} organization=${organization}`);
+  try {
+    const result = await action();
+    log(`case:complete name=${name} user=${user} organization=${organization}`);
+    return result;
+  } catch (error) {
+    const detail = safeError(error);
+    log(`case:failure name=${name} user=${user} organization=${organization} code=${detail.code} message=${JSON.stringify(detail.message)} stack=${JSON.stringify(detail.stack)}`);
+    throw error;
+  }
+}
 
 const mode = new Set(process.argv.slice(2));
 if (mode.has("--fixtures")) {
@@ -84,9 +96,15 @@ if (mode.has("--authenticated")) {
   const a = await signedIn(USER_A, "projects-a@example.invalid");
   const b = await signedIn(USER_B, "projects-b@example.invalid");
   const none = await signedIn(USER_NONE, "projects-none@example.invalid");
-  const aRows = await projects(a, A, B); if (aRows.length !== 1) throw new Error("User A expected one project");
-  const bRows = await projects(b, B, A); if (bRows.length !== 1) throw new Error("User B expected one project");
-  const noneRows = await none.from("projects").select("id"); if (!noneRows.error) throw new Error("No-membership user was not denied");
+  const aRows = await testCase("user A reads only organization A projects", USER_A, A, () => projects(a, A, B));
+  if (aRows.length !== 1) throw new Error("User A expected one project");
+  const bRows = await testCase("user B reads only organization B projects", USER_B, B, () => projects(b, B, A));
+  if (bRows.length !== 1) throw new Error("User B expected one project");
+  await testCase("user without membership is denied", USER_NONE, "none", async () => {
+    const result = await none.from("projects").select("id");
+    if (!result.error) throw new Error("No-membership user was not denied");
+    log(`case:expected name=user without membership is denied actual=denied code=${result.error.code ?? "unknown"}`);
+  });
   log("authenticated: A/B isolation and no-membership denial passed");
 }
 if (mode.has("--anonymous")) {
