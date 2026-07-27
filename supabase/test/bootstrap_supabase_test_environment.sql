@@ -40,6 +40,57 @@ grant anon, authenticated, service_role to postgres;
 grant usage on schema auth to authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 
+-- Minimal auth.jwt() compatibility for PostgreSQL CI. This is not the full
+-- Supabase Auth implementation and must never be run on staging or production.
+create or replace function auth.jwt()
+returns jsonb
+language sql
+stable
+set search_path = pg_catalog, public, auth
+as $$
+  select coalesce(
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb,
+    jsonb_build_object(
+      'sub', nullif(current_setting('request.jwt.claim.sub', true), ''),
+      'email', nullif(current_setting('request.jwt.claim.email', true), '')
+    )
+  )
+$$;
+
+revoke all on function auth.jwt() from public;
+grant execute on function auth.jwt() to anon, authenticated, service_role;
+
+-- Verify both claim sources and restore the session settings before any
+-- historical migration runs. These checks are CI-only compatibility checks.
+do $$
+declare
+  previous_claims text := current_setting('request.jwt.claims', true);
+  previous_email text := current_setting('request.jwt.claim.email', true);
+begin
+  perform set_config(
+    'request.jwt.claims',
+    '{"sub":"00000000-0000-0000-0000-000000000001","email":"invitee@example.com"}',
+    false
+  );
+  if auth.jwt() ->> 'email' <> 'invitee@example.com' then
+    raise exception 'auth.jwt() claims check failed';
+  end if;
+
+  perform set_config('request.jwt.claims', '', false);
+  perform set_config('request.jwt.claim.email', 'fallback@example.com', false);
+  if auth.jwt() ->> 'email' <> 'fallback@example.com' then
+    raise exception 'auth.jwt() fallback check failed';
+  end if;
+
+  perform set_config('request.jwt.claims', coalesce(previous_claims, ''), false);
+  perform set_config('request.jwt.claim.email', coalesce(previous_email, ''), false);
+exception when others then
+  perform set_config('request.jwt.claims', coalesce(previous_claims, ''), false);
+  perform set_config('request.jwt.claim.email', coalesce(previous_email, ''), false);
+  raise;
+end;
+$$;
+
 -- Minimal Supabase Storage compatibility for historical migrations that create
 -- storage buckets and storage.objects RLS policies. This deliberately omits
 -- the rest of Supabase Storage and must never be used in staging or production.
