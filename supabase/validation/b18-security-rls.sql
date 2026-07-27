@@ -5,9 +5,31 @@
 
 select current_database(), current_user, version();
 
-select tablename, rowsecurity, forcerowsecurity
-from pg_tables
-where schemaname = 'public' and tablename = 'project_task_issues';
+select c.relname as tablename,
+       c.relrowsecurity as rowsecurity,
+       c.relforcerowsecurity as forcerowsecurity
+from pg_class as c
+join pg_namespace as n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relname = 'project_task_issues'
+  and c.relkind in ('r', 'p');
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_class as c
+    join pg_namespace as n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname = 'project_task_issues'
+      and c.relkind in ('r', 'p')
+      and c.relrowsecurity
+      and c.relforcerowsecurity
+  ) then
+    raise exception 'B18 validation failed: project_task_issues must have RLS and FORCE RLS enabled';
+  end if;
+end;
+$$;
 
 select policyname, roles, cmd, qual, with_check
 from pg_policies
