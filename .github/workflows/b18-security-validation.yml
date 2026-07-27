@@ -42,38 +42,134 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate SQL and repository diff
+      - name: Validate repository diff
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
+          phase='Validate repository diff'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            git diff --check "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+            base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
           else
-            git diff --check HEAD^ HEAD
+            base='HEAD^'; head='HEAD'
           fi
-          psql -v ON_ERROR_STOP=1 -f supabase/test/bootstrap_supabase_test_environment.sql
+          echo "base=$base"; echo "head=$head"
+          echo 'Files detected:'; git diff --name-only "$base...$head"
+          echo 'Checking whitespace errors:'; git diff --check "$base...$head"
+
+      - name: Bootstrap PostgreSQL roles and schemas
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Bootstrap PostgreSQL roles and schemas'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          echo 'Executing supabase/test/bootstrap_supabase_test_environment.sql'
+          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f supabase/test/bootstrap_supabase_test_environment.sql
+
+      - name: Apply historical migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Apply historical migrations'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
           mapfile -t migrations < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort)
           for migration in "${migrations[@]}"; do
             case "$migration" in
-              20260728090000_b18_rls_helpers_and_issue_security.sql|20260728090100_b18_table_grants.sql)
-                continue
-                ;;
+              20260728090000_b18_rls_helpers_and_issue_security.sql|20260728090100_b18_table_grants.sql) continue ;;
             esac
-            psql -v ON_ERROR_STOP=1 -f "supabase/migrations/$migration"
+            echo "Executing supabase/migrations/$migration"
+            psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f "supabase/migrations/$migration"
           done
-          psql -v ON_ERROR_STOP=1 -f supabase/validation/b18-security-baseline.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090000_b18_rls_helpers_and_issue_security.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090100_b18_table_grants.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/validation/b18-security-rls.sql
-          if psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090100_b18_table_grants.sql; then
-            echo 'B18 snapshot reapply unexpectedly succeeded' >&2
-            exit 1
+
+      - name: Capture B18 baseline
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Capture B18 baseline'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          echo 'Executing supabase/validation/b18-security-baseline.sql'
+          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f supabase/validation/b18-security-baseline.sql
+
+      - name: Apply B18 migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Apply B18 migrations'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2'
+          echo "=== $phase ==="
+          for file in supabase/migrations/20260728090000_b18_rls_helpers_and_issue_security.sql supabase/migrations/20260728090100_b18_table_grants.sql; do
+            echo "Executing $file"
+            psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f "$file"
+          done
+
+      - name: Validate B18 apply
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Validate B18 apply'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          echo 'Executing supabase/validation/b18-security-rls.sql'
+          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f supabase/validation/b18-security-rls.sql
+
+      - name: Verify B18 reapply rejection
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Verify B18 reapply rejection'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          echo 'Executing expected-rejection reapply of supabase/migrations/20260728090100_b18_table_grants.sql'
+          if psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f supabase/migrations/20260728090100_b18_table_grants.sql; then
+            echo 'B18 snapshot reapply unexpectedly succeeded' >&2; exit 1
           else
-            echo 'B18 snapshot reapply rejected as expected; original snapshot preserved'
+            status=$?; echo "B18 snapshot reapply rejected as expected with psql status=$status; original snapshot preserved"
           fi
-          psql -v ON_ERROR_STOP=1 -f supabase/rollbacks/20260728090000_b18_rls_helpers_and_issue_security.rollback.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/rollbacks/20260728090100_b18_table_grants.rollback.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/validation/b18-security-rls-rollback.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090000_b18_rls_helpers_and_issue_security.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260728090100_b18_table_grants.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/validation/b18-security-rls.sql
+
+      - name: Apply B18 rollback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Apply B18 rollback'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          for file in supabase/rollbacks/20260728090000_b18_rls_helpers_and_issue_security.rollback.sql supabase/rollbacks/20260728090100_b18_table_grants.rollback.sql; do
+            echo "Executing $file"
+            psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f "$file"
+          done
+
+      - name: Validate B18 rollback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Validate B18 rollback'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          echo 'Executing supabase/validation/b18-security-rls-rollback.sql'
+          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f supabase/validation/b18-security-rls-rollback.sql
+
+      - name: Reapply B18 migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Reapply B18 migrations'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          for file in supabase/migrations/20260728090000_b18_rls_helpers_and_issue_security.sql supabase/migrations/20260728090100_b18_table_grants.sql; do
+            echo "Executing $file"
+            psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f "$file"
+          done
+
+      - name: Validate B18 final state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          phase='Validate B18 final state'
+          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          echo "=== $phase ==="
+          echo 'Executing supabase/validation/b18-security-rls.sql'
+          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors=all -f supabase/validation/b18-security-rls.sql
