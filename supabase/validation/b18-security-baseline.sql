@@ -18,7 +18,7 @@ from pg_proc as p
 join pg_namespace as n on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname in ('is_org_member', 'is_org_admin', 'org_has_any_membership', 'is_client_in_org')
-order by signature::text;
+order by (p.oid::regprocedure)::text;
 
 select schemaname, tablename, policyname, roles, cmd, qual, with_check
 from pg_policies
