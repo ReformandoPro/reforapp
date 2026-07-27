@@ -60,12 +60,44 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          log_file="$RUNNER_TEMP/projects-authenticated-read.log"
+          : > "$log_file"
+          echo '=== Supabase CLI version ===' | tee -a "$log_file"
+          supabase --version 2>&1 | tee -a "$log_file"
+          echo '=== Docker version ===' | tee -a "$log_file"
+          docker version 2>&1 | tee -a "$log_file"
+          echo '=== Docker info ===' | tee -a "$log_file"
+          docker info 2>&1 | tee -a "$log_file"
           if grep -RInE 'supabase (link|db push)' .github scripts package.json 2>/dev/null; then
             echo 'Remote Supabase commands are forbidden in this validation' >&2
             exit 1
           fi
-          supabase start
-          supabase status
+          echo '=== supabase start --debug ===' | tee -a "$log_file"
+          set +e
+          supabase start --debug 2>&1 | tee -a "$log_file"
+          supabase_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$supabase_status" -ne 0 ]; then
+            echo '=== docker ps -a ===' | tee -a "$log_file"
+            docker ps -a 2>&1 | tee -a "$log_file" || true
+            echo '=== docker images ===' | tee -a "$log_file"
+            docker images 2>&1 | tee -a "$log_file" || true
+            echo '=== supabase status --debug ===' | tee -a "$log_file"
+            supabase status --debug 2>&1 | tee -a "$log_file" || true
+            echo "::error title=Ephemeral Supabase failed::supabase start --debug failed with exit code $supabase_status"
+            {
+              echo '## Ephemeral Supabase startup failure'
+              echo
+              echo "- Exit code: \`$supabase_status\`"
+              echo
+              echo '```text'
+              tail -n 200 "$log_file"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$supabase_status"
+          fi
+          echo '=== supabase status ===' | tee -a "$log_file"
+          supabase status 2>&1 | tee -a "$log_file"
 
       - name: Apply local migrations
         shell: bash
@@ -105,9 +137,9 @@ jobs:
         with:
           name: projects-authenticated-read-diagnostics
           path: ${{ runner.temp }}/projects-authenticated-read.log
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
       - name: Stop Supabase
         if: always()
-        run: supabase stop --no-backup
+        run: supabase stop --no-backup || true
