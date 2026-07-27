@@ -8,6 +8,8 @@ on:
       - 'src/lib/services/org-context.ts'
       - 'src/lib/supabase/ssr.ts'
       - 'tests/data/projects-first-read.test.ts'
+      - 'tests/data/project-tasks.test.ts'
+      - 'tests/app/project-tasks-page.test.ts'
       - 'scripts/ci/projects-authenticated-read.mjs'
       - '.github/workflows/projects-authenticated-read-validation.yml'
       - 'supabase/**'
@@ -42,11 +44,13 @@ jobs:
           src/lib/data/projects.ts
           tests/data/projects-first-read.test.ts
           tests/data/project-detail.test.ts
-          tests/data/project-phases.test.ts'
+          tests/data/project-phases.test.ts
+          tests/data/project-tasks.test.ts
+          tests/app/project-tasks-page.test.ts'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed" && [[ "$file" != .github/workflows/* ]] && [[ "$file" != scripts/ci/* ]] && [[ "$file" != supabase/* ]]; then
-              echo "Unexpected functional file outside Project Detail/Project Phases PR scope: $file" >&2
+              echo "Unexpected functional file outside authenticated projects read scope: $file" >&2
               exit 1
             fi
           done < <(git diff --name-only "$base...$head")

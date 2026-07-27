@@ -41,6 +41,12 @@ const EMPTY = "00000000-0000-0000-0000-0000000000e1";
 const USER_A = "00000000-0000-0000-0000-0000000000a2";
 const USER_B = "00000000-0000-0000-0000-0000000000b2";
 const USER_NONE = "00000000-0000-0000-0000-0000000000c2";
+const PROJECT_A = "00000000-0000-0000-0000-0000000000a3";
+const PROJECT_B = "00000000-0000-0000-0000-0000000000b3";
+const PHASE_A = "00000000-0000-0000-0000-0000000000a4";
+const PHASE_B = "00000000-0000-0000-0000-0000000000b4";
+const TASK_A = "00000000-0000-0000-0000-0000000000a5";
+const TASK_B = "00000000-0000-0000-0000-0000000000b5";
 
 async function ensureUser(id, email) {
   const { error } = await admin.auth.admin.createUser({ id, email, password, email_confirm: true });
@@ -60,6 +66,16 @@ async function projects(client, expectedOrg, forbiddenOrg) {
   const { data, error } = await client.from("projects").select("id, organization_id, name").order("updated_at", { ascending: false });
   if (error) throw error;
   if (data.some((row) => row.organization_id !== expectedOrg || row.organization_id === forbiddenOrg)) throw new Error("Organization isolation failed");
+  return data;
+}
+async function tasks(client, expectedOrg, expectedProject, forbiddenOrg) {
+  const { data, error } = await client
+    .from("project_tasks")
+    .select("id, organization_id, project_id, title")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  if (data.some((row) => row.organization_id !== expectedOrg || row.organization_id === forbiddenOrg)) throw new Error("Task organization isolation failed");
+  if (data.some((row) => row.project_id !== expectedProject)) throw new Error("Task project isolation failed");
   return data;
 }
 async function testCase(name, user, organization, action) {
@@ -87,10 +103,18 @@ if (mode.has("--fixtures")) {
   const { data: clientB, error: clientErrorB } = await operation("create client B", B, () => admin.from("clients").insert({ organization_id: B, display_name: "CI Client B" }).select("id").single());
   if (clientErrorB) throw clientErrorB;
   await operation("create projects A B", "projects", () => insert("projects", [
-    { organization_id: A, client_id: clientA.id, name: "CI Project A", title: "CI Project A", client_name: "CI Client A", start_date: new Date().toISOString(), status: "in_progress", address: "CI", type: "reform" },
-    { organization_id: B, client_id: clientB.id, name: "CI Project B", title: "CI Project B", client_name: "CI Client B", start_date: new Date().toISOString(), status: "in_progress", address: "CI", type: "reform" },
+    { id: PROJECT_A, organization_id: A, client_id: clientA.id, name: "CI Project A", title: "CI Project A", client_name: "CI Client A", start_date: new Date().toISOString(), status: "in_progress", address: "CI", type: "reform" },
+    { id: PROJECT_B, organization_id: B, client_id: clientB.id, name: "CI Project B", title: "CI Project B", client_name: "CI Client B", start_date: new Date().toISOString(), status: "in_progress", address: "CI", type: "reform" },
   ]));
-  log("fixtures: organizations A/B/empty; users A/B/no-membership; projects A/B");
+  await operation("create project phases A B", "project_phases", () => insert("project_phases", [
+    { id: PHASE_A, organization_id: A, project_id: PROJECT_A, title: "CI Phase A", status: "planned", sort_order: 1 },
+    { id: PHASE_B, organization_id: B, project_id: PROJECT_B, title: "CI Phase B", status: "planned", sort_order: 1 },
+  ]));
+  await operation("create project tasks A B", "project_tasks", () => insert("project_tasks", [
+    { id: TASK_A, organization_id: A, project_id: PROJECT_A, phase_id: PHASE_A, title: "CI Task A", status: "pending", priority: "medium", due_date: "2026-08-01" },
+    { id: TASK_B, organization_id: B, project_id: PROJECT_B, phase_id: PHASE_B, title: "CI Task B", status: "pending", priority: "medium", due_date: "2026-08-02" },
+  ]));
+  log("fixtures: organizations A/B/empty; users A/B/no-membership; projects, phases and tasks A/B");
 }
 if (mode.has("--authenticated")) {
   const a = await signedIn(USER_A, "projects-a@example.invalid");
@@ -100,12 +124,23 @@ if (mode.has("--authenticated")) {
   if (aRows.length !== 1) throw new Error("User A expected one project");
   const bRows = await testCase("user B reads only organization B projects", USER_B, B, () => projects(b, B, A));
   if (bRows.length !== 1) throw new Error("User B expected one project");
+  const aTasks = await testCase("user A reads only organization A project tasks", USER_A, A, () => tasks(a, A, PROJECT_A, B));
+  if (aTasks.length !== 1 || aTasks[0].id !== TASK_A) throw new Error("User A expected one organization A task");
+  const bTasks = await testCase("user B reads only organization B project tasks", USER_B, B, () => tasks(b, B, PROJECT_B, A));
+  if (bTasks.length !== 1 || bTasks[0].id !== TASK_B) throw new Error("User B expected one organization B task");
   await testCase("user without membership receives no projects", USER_NONE, "none", async () => {
     const { data, error } = await none.from("projects").select("id");
     if (error) throw new Error(`No-membership read returned unexpected error: ${error.code ?? "unknown"}`);
     if (!Array.isArray(data)) throw new Error("No-membership read did not return an array");
     if (data.length !== 0) throw new Error(`No-membership user received ${data.length} project row(s)`);
     log("case:expected name=user without membership receives no projects actual=zero_rows");
+  });
+  await testCase("user without membership receives no project tasks", USER_NONE, "none", async () => {
+    const { data, error } = await none.from("project_tasks").select("id");
+    if (error) throw new Error(`No-membership task read returned unexpected error: ${error.code ?? "unknown"}`);
+    if (!Array.isArray(data)) throw new Error("No-membership task read did not return an array");
+    if (data.length !== 0) throw new Error(`No-membership user received ${data.length} project task row(s)`);
+    log("case:expected name=user without membership receives no project tasks actual=zero_rows");
   });
   log("authenticated: A/B isolation and no-membership zero-row access passed");
 }
@@ -116,5 +151,10 @@ if (mode.has("--anonymous")) {
   if (!Array.isArray(data)) throw new Error("Anonymous read did not return an array");
   if (data.length !== 0) throw new Error(`Anonymous user received ${data.length} project row(s)`);
   log("anonymous: no project access passed");
+  const { data: taskData, error: taskError } = await anonymous.from("project_tasks").select("id");
+  if (taskError) throw new Error(`Anonymous task read returned unexpected error: ${taskError.code ?? "unknown"}`);
+  if (!Array.isArray(taskData)) throw new Error("Anonymous task read did not return an array");
+  if (taskData.length !== 0) throw new Error(`Anonymous user received ${taskData.length} project task row(s)`);
+  log("anonymous: no project task access passed");
 }
 if (mode.has("--isolation")) log("isolation: sequential clients use independent sessions");
