@@ -36,6 +36,16 @@ export type ProjectDetail = {
   type: string;
 };
 
+export type ProjectPhase = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "planned" | "in_progress" | "done" | "blocked" | "cancelled";
+  startDate: string | null;
+  endDate: string | null;
+  sortOrder: number;
+};
+
 function normalizeJoinedClient(
   client: SupabaseProjectCardQueryRow["client"]
 ): { id: string; display_name: string } | null {
@@ -192,5 +202,66 @@ export async function getProjectDetail(projectId: string): Promise<ProjectDetail
     if (error instanceof Error && error.message === "Unable to load project detail from Supabase") throw error;
     logProjectsReadFailure("project detail mapping failed");
     throw new Error("Unable to load project detail from Supabase");
+  }
+}
+
+export async function getProjectPhasesForRequest(projectId: string): Promise<ProjectPhase[]> {
+  if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === "production") {
+      logProjectsReadFailure("Supabase is not configured in production");
+      throw new Error("Unable to load project phases from Supabase");
+    }
+
+    return [];
+  }
+
+  const context = await getOrganizationContextForRequest();
+  if (!context.ok) {
+    logProjectsReadFailure(`organization context unavailable: ${context.reason}`);
+    throw new Error("Unable to load project phases for the active organization");
+  }
+
+  try {
+    const client = await createServerSupabaseClient();
+    const { data, error } = await client
+      .from("project_phases")
+      .select("id, title, description, status, start_date, end_date, sort_order")
+      .eq("project_id", projectId)
+      .eq("organization_id", context.organizationId)
+      .order("sort_order", { ascending: true })
+      .order("id", { ascending: true });
+
+    if (error) {
+      logProjectsReadFailure("project phases query failed");
+      throw new Error("Unable to load project phases from Supabase");
+    }
+
+    return (data ?? []).map((phase) => {
+      if (
+        !phase.id ||
+        !phase.title ||
+        !["planned", "in_progress", "done", "blocked", "cancelled"].includes(phase.status) ||
+        typeof phase.sort_order !== "number"
+      ) {
+        throw new Error("Unable to load project phases from Supabase");
+      }
+
+      return {
+        id: phase.id,
+        title: phase.title,
+        description: phase.description ?? null,
+        status: phase.status,
+        startDate: phase.start_date ?? null,
+        endDate: phase.end_date ?? null,
+        sortOrder: phase.sort_order,
+      };
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unable to load project phases from Supabase") {
+      throw error;
+    }
+
+    logProjectsReadFailure("project phases mapping failed");
+    throw new Error("Unable to load project phases from Supabase");
   }
 }

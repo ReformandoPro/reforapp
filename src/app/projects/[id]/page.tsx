@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout";
 import { ProjectOverviewScreen } from "@/components/screens/ProjectOverviewScreen";
 import { notFound } from "next/navigation";
 
-import { getProjectDetail } from "@/lib/data";
+import { getProjectDetail, getProjectPhasesForRequest } from "@/lib/data";
 
 type ProjectDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -19,6 +19,7 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const project = await getProjectDetail(id);
   if (!project) notFound();
+  const phases = await getProjectPhasesForRequest(id);
 
   return (
     <AppShell>
@@ -55,6 +56,31 @@ export default async function ProjectDetailPage({
             <p>Inicio: {project.startDate}</p>
             <p>Tipo: {project.type}</p>
           </div>
+          <section aria-labelledby="project-phases-heading" className="rounded-xl border border-subtle bg-bg-surface p-5">
+            <h2 id="project-phases-heading" className="text-lg font-semibold text-slate-900">Fases del proyecto</h2>
+            {phases.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-600">Este proyecto todavía no tiene fases.</p>
+            ) : (
+              <ol className="mt-4 space-y-3">
+                {phases.map((phase) => (
+                  <li key={phase.id} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-medium text-slate-900">{phase.title}</h3>
+                        {phase.description ? <p className="mt-1 text-sm text-slate-600">{phase.description}</p> : null}
+                      </div>
+                      <span className="text-sm text-slate-600">{phase.status}</span>
+                    </div>
+                    <dl className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-3">
+                      <div><dt className="font-medium">Inicio</dt><dd>{phase.startDate ?? "—"}</dd></div>
+                      <div><dt className="font-medium">Fin</dt><dd>{phase.endDate ?? "—"}</dd></div>
+                      <div><dt className="font-medium">Orden</dt><dd>{phase.sortOrder}</dd></div>
+                    </dl>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
         </>
       </section>
     </AppShell>
