@@ -73,6 +73,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           phase='Apply historical migrations'
+          current_migration='unknown'
+          log_file="$RUNNER_TEMP/b18-historical-migration.log"
           trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
           echo "=== $phase ==="
           mapfile -t migrations < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort)
@@ -80,9 +82,39 @@ jobs:
             case "$migration" in
               20260728090000_b18_rls_helpers_and_issue_security.sql|20260728090100_b18_table_grants.sql) continue ;;
             esac
-            echo "Executing supabase/migrations/$migration"
-            psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors -f "supabase/migrations/$migration"
+            current_migration="supabase/migrations/$migration"
+            : > "$log_file"
+            echo '=================================================='
+            echo "Executing historical migration: $current_migration"
+            echo '=================================================='
+            set +e
+            psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors -f "$current_migration" 2>&1 | tee "$log_file"
+            psql_status=${PIPESTATUS[0]}
+            set -e
+            if [ "$psql_status" -ne 0 ]; then
+              echo "::error file=$current_migration,title=B18 historical migration failed::Migration $current_migration failed with psql status $psql_status"
+              {
+                echo '## B18 historical migration failure'
+                echo
+                echo "- Migration: \`$current_migration\`"
+                echo "- psql status: \`$psql_status\`"
+                echo
+                echo '```text'
+                tail -n 200 "$log_file"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit "$psql_status"
+            fi
           done
+
+      - name: Upload historical migration failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b18-historical-migration-failure
+          path: ${{ runner.temp }}/b18-historical-migration.log
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Capture B18 baseline
         shell: bash
