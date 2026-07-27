@@ -56,6 +56,7 @@ type SupabaseProjectTaskPhaseQueryRow = {
   id: string;
   organization_id: string;
   project_id: string;
+  title: string;
 };
 
 type SupabaseProjectTaskQueryRow = {
@@ -78,6 +79,7 @@ type SupabaseProjectTaskQueryRow = {
 export type ProjectTask = {
   id: string;
   phaseId: string | null;
+  phaseTitle: string | null;
   title: string;
   description: string | null;
   status: ProjectTaskStatus;
@@ -86,6 +88,18 @@ export type ProjectTask = {
 };
 
 export type ProjectTaskGroups = Map<string | null, ProjectTask[]>;
+
+export type ProjectTaskBoardColumn = {
+  status: ProjectTaskStatus;
+  tasks: ProjectTask[];
+};
+
+const PROJECT_TASK_BOARD_STATUS_ORDER: readonly ProjectTaskStatus[] = [
+  "pending",
+  "in_progress",
+  "blocked",
+  "done",
+];
 
 function normalizeJoinedClient(
   client: SupabaseProjectCardQueryRow["client"]
@@ -157,7 +171,8 @@ function mapSupabaseProjectTaskRow(
     (!phase ||
       phase.id !== row.phase_id ||
       phase.project_id !== projectId ||
-      phase.organization_id !== organizationId)
+      phase.organization_id !== organizationId ||
+      !isNonEmptyString(phase.title))
   ) {
     throw new Error("Invalid project task phase relationship");
   }
@@ -169,6 +184,7 @@ function mapSupabaseProjectTaskRow(
   return {
     id: row.id,
     phaseId: row.phase_id,
+    phaseTitle: phase?.title.trim() ?? null,
     title,
     description: row.description,
     status: row.status,
@@ -189,6 +205,23 @@ export function groupProjectTasksByPhase(
   }
 
   return groups;
+}
+
+export function groupProjectTasksByStatus(
+  tasks: ProjectTask[]
+): ProjectTaskBoardColumn[] {
+  const tasksByStatus = new Map<ProjectTaskStatus, ProjectTask[]>(
+    PROJECT_TASK_BOARD_STATUS_ORDER.map((status) => [status, []])
+  );
+
+  for (const task of tasks) {
+    tasksByStatus.get(task.status)?.push(task);
+  }
+
+  return PROJECT_TASK_BOARD_STATUS_ORDER.map((status) => ({
+    status,
+    tasks: tasksByStatus.get(status) ?? [],
+  }));
 }
 
 export function mapSupabaseProjectRowToProjectCard(
@@ -414,7 +447,7 @@ export async function getProjectTasksForRequest(projectId: string): Promise<Proj
     const { data, error } = await client
       .from("project_tasks")
       .select(
-        "id, organization_id, project_id, phase_id, title, description, status, priority, due_date, created_at, phase:project_phases(id, organization_id, project_id)"
+        "id, organization_id, project_id, phase_id, title, description, status, priority, due_date, created_at, phase:project_phases(id, organization_id, project_id, title)"
       )
       .eq("project_id", projectId)
       .eq("organization_id", context.organizationId)

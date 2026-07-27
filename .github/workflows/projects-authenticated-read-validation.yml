@@ -10,6 +10,11 @@ on:
       - 'tests/data/projects-first-read.test.ts'
       - 'tests/data/project-tasks.test.ts'
       - 'tests/app/project-tasks-page.test.ts'
+      - 'tests/components/task-board.test.ts'
+      - 'src/components/tasks/TaskBoard.tsx'
+      - 'src/components/tasks/TaskColumn.tsx'
+      - 'src/components/tasks/TaskCard.tsx'
+      - 'src/components/tasks/index.ts'
       - 'scripts/ci/projects-authenticated-read.mjs'
       - '.github/workflows/projects-authenticated-read-validation.yml'
       - 'supabase/**'
@@ -46,7 +51,12 @@ jobs:
           tests/data/project-detail.test.ts
           tests/data/project-phases.test.ts
           tests/data/project-tasks.test.ts
-          tests/app/project-tasks-page.test.ts'
+          tests/app/project-tasks-page.test.ts
+          tests/components/task-board.test.ts
+          src/components/tasks/TaskBoard.tsx
+          src/components/tasks/TaskColumn.tsx
+          src/components/tasks/TaskCard.tsx
+          src/components/tasks/index.ts'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed" && [[ "$file" != .github/workflows/* ]] && [[ "$file" != scripts/ci/* ]] && [[ "$file" != supabase/* ]]; then

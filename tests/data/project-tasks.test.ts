@@ -15,6 +15,7 @@ vi.mock("../../src/lib/services/org-context", () => ({
 import {
   getProjectTasksForRequest,
   groupProjectTasksByPhase,
+  groupProjectTasksByStatus,
 } from "../../src/lib/data/projects";
 
 function taskRow(overrides: Record<string, unknown> = {}) {
@@ -33,6 +34,7 @@ function taskRow(overrides: Record<string, unknown> = {}) {
       id: "phase-a",
       organization_id: "org-a",
       project_id: "project-a",
+      title: "Preparación",
     },
     ...overrides,
   };
@@ -81,7 +83,7 @@ describe("project tasks real read", () => {
     const query = mockQuery({ data: [taskRow()], error: null });
 
     await expect(getProjectTasksForRequest("project-a")).resolves.toMatchObject([
-      { id: "task-a", phaseId: "phase-a" },
+      { id: "task-a", phaseId: "phase-a", phaseTitle: "Preparación" },
     ]);
     expect(query.from).toHaveBeenCalledWith("project_tasks");
     expect(query.eqProject).toHaveBeenCalledWith("project_id", "project-a");
@@ -133,17 +135,57 @@ describe("project tasks real read", () => {
     const phased = {
       id: "task-a",
       phaseId: "phase-a",
+      phaseTitle: "Preparación",
       title: "A",
       description: null,
       status: "pending" as const,
       priority: "low" as const,
       dueDate: null,
     };
-    const unphased = { ...phased, id: "task-b", phaseId: null };
+    const unphased = {
+      ...phased,
+      id: "task-b",
+      phaseId: null,
+      phaseTitle: null,
+    };
 
     const groups = groupProjectTasksByPhase([phased, unphased]);
     expect(groups.get("phase-a")).toEqual([phased]);
     expect(groups.get(null)).toEqual([unphased]);
+  });
+
+  it("groups tasks into stable Kanban columns without reordering cards", () => {
+    const baseTask = {
+      id: "task-a",
+      phaseId: null,
+      phaseTitle: null,
+      title: "A",
+      description: null,
+      status: "pending" as const,
+      priority: "low" as const,
+      dueDate: null,
+    };
+    const tasks = [
+      { ...baseTask, id: "pending-2" },
+      { ...baseTask, id: "done-1", status: "done" as const },
+      { ...baseTask, id: "pending-1" },
+    ];
+
+    const columns = groupProjectTasksByStatus(tasks);
+
+    expect(columns.map((column) => column.status)).toEqual([
+      "pending",
+      "in_progress",
+      "blocked",
+      "done",
+    ]);
+    expect(columns[0].tasks.map((task) => task.id)).toEqual([
+      "pending-2",
+      "pending-1",
+    ]);
+    expect(columns[1].tasks).toEqual([]);
+    expect(columns[2].tasks).toEqual([]);
+    expect(columns[3].tasks.map((task) => task.id)).toEqual(["done-1"]);
   });
 
   it("sanitizes Supabase errors", async () => {
@@ -192,6 +234,7 @@ describe("project tasks real read", () => {
             id: "phase-a",
             organization_id: "org-a",
             project_id: "project-b",
+            title: "Preparación",
           },
         }),
       ],

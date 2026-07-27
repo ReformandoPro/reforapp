@@ -20,6 +20,7 @@ export { getProjectPhasesForRequest } from "./projects";
 export {
   getProjectTasksForRequest,
   groupProjectTasksByPhase,
+  groupProjectTasksByStatus,
 } from "./projects";
 
 export type DataAdapterMode =

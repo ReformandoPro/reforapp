@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   getProjectDetail: vi.fn(),
   getProjectPhasesForRequest: vi.fn(),
   getProjectTasksForRequest: vi.fn(),
-  groupProjectTasksByPhase: vi.fn(),
+  groupProjectTasksByStatus: vi.fn(),
   notFound: vi.fn(),
 }));
 
@@ -28,7 +28,7 @@ vi.mock("../../src/lib/data", () => ({
   getProjectDetail: mocks.getProjectDetail,
   getProjectPhasesForRequest: mocks.getProjectPhasesForRequest,
   getProjectTasksForRequest: mocks.getProjectTasksForRequest,
-  groupProjectTasksByPhase: mocks.groupProjectTasksByPhase,
+  groupProjectTasksByStatus: mocks.groupProjectTasksByStatus,
 }));
 
 import ProjectDetailPage from "../../src/app/projects/[id]/page";
@@ -65,21 +65,26 @@ describe("project tasks detail page", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the empty state for a phase without tasks", async () => {
+  it("renders the authenticated task board", async () => {
     mocks.getProjectDetail.mockResolvedValue(project);
     mocks.getProjectPhasesForRequest.mockResolvedValue([phase]);
     mocks.getProjectTasksForRequest.mockResolvedValue([]);
-    mocks.groupProjectTasksByPhase.mockReturnValue(new Map());
+    mocks.groupProjectTasksByStatus.mockReturnValue([]);
 
     const html = await renderPage();
-    expect(html).toContain("Esta fase todavía no tiene tareas.");
+    expect(html).toContain("Tablero de tareas");
   });
 
   it("shows the general empty state when the project has no tasks", async () => {
     mocks.getProjectDetail.mockResolvedValue(project);
     mocks.getProjectPhasesForRequest.mockResolvedValue([]);
     mocks.getProjectTasksForRequest.mockResolvedValue([]);
-    mocks.groupProjectTasksByPhase.mockReturnValue(new Map());
+    mocks.groupProjectTasksByStatus.mockReturnValue([
+      { status: "pending", tasks: [] },
+      { status: "in_progress", tasks: [] },
+      { status: "blocked", tasks: [] },
+      { status: "done", tasks: [] },
+    ]);
 
     const html = await renderPage();
     expect(html).toContain("Este proyecto todavía no tiene tareas.");
