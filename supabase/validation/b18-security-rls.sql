@@ -310,22 +310,21 @@ begin
 end;
 $$;
 rollback;
-rollback;
 
 -- Beta, outsider, anon, UPDATE and DELETE denial cases.
-begin
+begin;
   set local role authenticated;
   set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000004';
   do $$ declare n integer; begin select count(*) into n from public.project_task_issues; if n <> 1 then raise exception 'Beta SELECT expected 1, got %', n; end if; end $$;
   rollback;
 
-begin
+begin;
   set local role authenticated;
   set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000005';
   do $$ declare n integer; begin select count(*) into n from public.project_task_issues; if n <> 0 then raise exception 'outsider saw rows'; end if; end $$;
   rollback;
 
-begin
+begin;
   set local role anon;
   do $$
   begin
@@ -341,7 +340,7 @@ begin
   $$;
   rollback;
 
-begin
+begin;
   set local role authenticated;
   set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000002';
   do $$
