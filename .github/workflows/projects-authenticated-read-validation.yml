@@ -61,7 +61,19 @@ jobs:
         run: |
           set -Eeuo pipefail
           log_file="$RUNNER_TEMP/projects-authenticated-read.log"
+          raw_log="$RUNNER_TEMP/supabase-start.raw.log"
           : > "$log_file"
+          sanitize_supabase_output() {
+            sed -E \
+              -e 's#(^[[:space:]]*JWT secret:).*#\1 [REDACTED]#I' \
+              -e 's#(^[[:space:]]*anon key:).*#\1 [REDACTED]#I' \
+              -e 's#(^[[:space:]]*service_role key:).*#\1 [REDACTED]#I' \
+              -e 's#(^[[:space:]]*S3 Access Key:).*#\1 [REDACTED]#I' \
+              -e 's#(^[[:space:]]*S3 Secret Key:).*#\1 [REDACTED]#I' \
+              -e 's#(ANON_KEY=).*#\1[REDACTED]#I' \
+              -e 's#(SERVICE_ROLE_KEY=).*#\1[REDACTED]#I' \
+              -e 's#(JWT_SECRET=).*#\1[REDACTED]#I'
+          }
           echo '=== Supabase CLI version ===' | tee -a "$log_file"
           supabase --version 2>&1 | tee -a "$log_file"
           echo '=== Docker version ===' | tee -a "$log_file"
@@ -80,16 +92,18 @@ jobs:
           done
           echo '=== supabase start --debug ===' | tee -a "$log_file"
           set +e
-          supabase start --debug 2>&1 | tee -a "$log_file"
+          supabase start --debug 2>&1 | tee "$raw_log" >/dev/null
           supabase_status=${PIPESTATUS[0]}
           set -e
+          sanitize_supabase_output < "$raw_log" | tee -a "$log_file"
+          rm -f "$raw_log"
           if [ "$supabase_status" -ne 0 ]; then
             echo '=== docker ps -a ===' | tee -a "$log_file"
             docker ps -a 2>&1 | tee -a "$log_file" || true
             echo '=== docker images ===' | tee -a "$log_file"
             docker images 2>&1 | tee -a "$log_file" || true
             echo '=== supabase status --debug ===' | tee -a "$log_file"
-            supabase status --debug 2>&1 | tee -a "$log_file" || true
+            supabase status --debug 2>&1 | sanitize_supabase_output | tee -a "$log_file" || true
             echo "::error title=Ephemeral Supabase failed::supabase start --debug failed with exit code $supabase_status"
             {
               echo '## Ephemeral Supabase startup failure'
@@ -103,7 +117,7 @@ jobs:
             exit "$supabase_status"
           fi
           echo '=== supabase status ===' | tee -a "$log_file"
-          supabase status 2>&1 | tee -a "$log_file"
+          supabase status 2>&1 | sanitize_supabase_output | tee -a "$log_file"
 
       - name: Apply local migrations
         shell: bash
@@ -116,11 +130,25 @@ jobs:
         run: |
           set -Eeuo pipefail
           supabase status -o env > "$RUNNER_TEMP/supabase.env"
-          for key in API_URL ANON_KEY SERVICE_ROLE_KEY; do
-            value=$(awk -F= -v key="$key" '$1 == key {sub(/^API_URL=/,"SUPABASE_URL="); sub(/^ANON_KEY=/,"SUPABASE_ANON_KEY="); sub(/^SERVICE_ROLE_KEY=/,"SUPABASE_SERVICE_ROLE_KEY="); print}' "$RUNNER_TEMP/supabase.env")
-            echo "$value" >> "$GITHUB_ENV"
-          done
-          echo 'Local Supabase endpoint exported without printing credentials.'
+          read_env_value() {
+            local key="$1" value
+            value=$(awk -F= -v key="$key" '$1 == key {sub(/^[^=]*=/, ""); gsub(/^"|"$/, ""); print}' "$RUNNER_TEMP/supabase.env")
+            [ -n "$value" ] || { echo "Missing Supabase environment value: $key" >&2; return 1; }
+            printf '%s' "$value"
+          }
+          supabase_url=$(read_env_value API_URL)
+          supabase_anon_key=$(read_env_value ANON_KEY)
+          supabase_service_role_key=$(read_env_value SERVICE_ROLE_KEY)
+          case "$supabase_url" in http://*|https://*) ;; *) echo 'Invalid local Supabase URL format' >&2; exit 1 ;; esac
+          echo "::add-mask::$supabase_anon_key"
+          echo "::add-mask::$supabase_service_role_key"
+          {
+            echo "SUPABASE_URL=$supabase_url"
+            echo "SUPABASE_ANON_KEY=$supabase_anon_key"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$supabase_service_role_key"
+          } >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/supabase.env"
+          echo 'Local Supabase environment exported without printing credentials.'
 
       - name: Create Auth and database fixtures
         shell: bash
@@ -154,7 +182,19 @@ jobs:
           npm run test -- tests/data/projects-first-read.test.ts
 
       - name: Upload diagnostic artifact on failure
+        id: sanitize_diagnostic
         if: failure()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if grep -Eq 'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|JWT secret:[[:space:]]+[^[]|service_role key:[[:space:]]+eyJ|S3 Secret Key:[[:space:]]+[a-f0-9]{32,}|(ANON_KEY|SERVICE_ROLE_KEY|JWT_SECRET)=[^[]' "$RUNNER_TEMP/projects-authenticated-read.log"; then
+            echo 'Diagnostic log contains an unredacted credential' >&2
+            exit 1
+          fi
+          echo 'Diagnostic log secret scan passed.'
+
+      - name: Upload diagnostic artifact
+        if: failure() && steps.sanitize_diagnostic.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: projects-authenticated-read-diagnostics

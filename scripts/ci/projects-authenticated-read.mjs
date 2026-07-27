@@ -1,13 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
 import { appendFileSync } from "node:fs";
 
-const url = process.env.SUPABASE_URL;
-const anonKey = process.env.SUPABASE_ANON_KEY;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function requireEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
+const url = requireEnv("SUPABASE_URL");
+const anonKey = requireEnv("SUPABASE_ANON_KEY");
+const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 const password = process.env.CI_FIXTURE_PASSWORD;
 const logFile = `${process.env.RUNNER_TEMP ?? "."}/projects-authenticated-read.log`;
 
-if (!url || !anonKey || !serviceRoleKey || !password) throw new Error("Missing CI-only Supabase configuration");
+let parsedUrl;
+try { parsedUrl = new URL(url); } catch { throw new Error("SUPABASE_URL is not a valid URL"); }
+if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error("SUPABASE_URL must use HTTP or HTTPS");
+if (!password) throw new Error("Missing CI-only fixture password");
 const log = (message) => { appendFileSync(logFile, `${message}\n`); console.log(message); };
 const safeError = (error) => ({
   code: typeof error?.code === "string" ? error.code : "unknown",
