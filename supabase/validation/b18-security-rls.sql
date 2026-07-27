@@ -105,6 +105,56 @@ on conflict (id) do nothing;
 
 commit;
 
+-- Controlled exception path. The temporary auth.uid() replacement is
+-- transactional and is rolled back, so it cannot alter the test database.
+begin;
+create or replace function auth.uid()
+returns uuid
+language plpgsql
+as $$
+begin
+  raise exception using errcode = 'P0001', message = 'B18 controlled helper fault';
+end;
+$$;
+set local role authenticated;
+do $$
+declare
+  helper_name text;
+  before_value text := current_setting('row_security');
+  actual_state text;
+  actual_message text;
+begin
+  foreach helper_name in array array[
+    'member', 'admin', 'any_membership', 'client'
+  ] loop
+    begin
+      if helper_name = 'member' then
+        perform public.is_org_member('10000000-0000-0000-0000-000000000001');
+      elsif helper_name = 'admin' then
+        perform public.is_org_admin('10000000-0000-0000-0000-000000000001');
+      elsif helper_name = 'any_membership' then
+        perform public.org_has_any_membership('10000000-0000-0000-0000-000000000001');
+      else
+        perform public.is_client_in_org('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001');
+      end if;
+      raise exception 'B18 expected helper exception was not raised';
+    exception when others then
+      get stacked diagnostics actual_state = returned_sqlstate, actual_message = message_text;
+      if actual_message = 'B18 expected helper exception was not raised' then
+        raise;
+      end if;
+      if actual_state <> 'P0001' or actual_message <> 'B18 controlled helper fault' then
+        raise exception 'unexpected helper exception: % %', actual_state, actual_message;
+      end if;
+    end;
+    if current_setting('row_security') <> before_value then
+      raise exception 'row_security changed after exception in % helper', helper_name;
+    end if;
+  end loop;
+end;
+$$;
+rollback;
+
 -- Helpers: normal result, false result, early return and repeated calls must
 -- preserve the caller's GUC value.
 begin;

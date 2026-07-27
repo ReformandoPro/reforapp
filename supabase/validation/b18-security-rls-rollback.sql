@@ -32,5 +32,9 @@ begin
      or has_table_privilege('authenticated', 'public.memberships', 'SELECT') then
     raise exception 'B18 rollback left issue table privileges';
   end if;
+
+  if to_regclass('public.b18_grant_baseline') is not null then
+    raise exception 'B18 rollback left its ACL baseline table';
+  end if;
 end;
 $$;

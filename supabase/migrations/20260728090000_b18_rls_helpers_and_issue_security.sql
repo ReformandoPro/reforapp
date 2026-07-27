@@ -109,6 +109,22 @@ declare
 begin
   perform set_config('row_security', 'off', true);
   begin
+    -- A non-member must not be able to use this RPC as an organization
+    -- existence oracle. Returning true conservatively also prevents the
+    -- historical first-owner bootstrap policy from being abused.
+    if auth.uid() is null then
+      perform set_config('row_security', previous_row_security, true);
+      return false;
+    end if;
+    if not exists (
+      select 1 from public.memberships as caller_membership
+      where caller_membership.user_id = auth.uid()
+        and caller_membership.organization_id = org_has_any_membership.org_id
+    ) then
+      perform set_config('row_security', previous_row_security, true);
+      return true;
+    end if;
+
     result := exists (
       select 1
       from public.memberships as m
@@ -135,6 +151,15 @@ declare
 begin
   perform set_config('row_security', 'off', true);
   begin
+    if auth.uid() is null or not exists (
+      select 1 from public.memberships as caller_membership
+      where caller_membership.user_id = auth.uid()
+        and caller_membership.organization_id = is_client_in_org.org_id
+    ) then
+      perform set_config('row_security', previous_row_security, true);
+      return false;
+    end if;
+
     result := exists (
       select 1
       from public.clients as c

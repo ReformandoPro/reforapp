@@ -40,6 +40,16 @@ usan `search_path = pg_catalog, public`, cualifican las tablas y restauran
 es el rol que ejecuta las políticas. No se concede a `anon` ni a
 `service_role`.
 
+Los helpers `org_has_any_membership` e `is_client_in_org` mantienen el
+`EXECUTE` para `authenticated` porque las políticas históricas de bootstrap y
+de proyectos los utilizan. Para evitar enumeración directa:
+
+- un usuario sin pertenencia a la organización no puede consultar clientes;
+- un usuario que no pertenece a una organización recibe un resultado
+  conservador que impide el bootstrap, sin revelar si existen membresías;
+- `auth.uid()` nulo devuelve siempre falso;
+- las pruebas comprueban Alpha/Beta y usuario externo.
+
 El propietario efectivo debe ser el rol controlado que aplica las migraciones y
 debe verificarse en PostgreSQL/Supabase local. B18 no cambia propietarios con
 un nombre de rol asumido. En el entorno CI efímero el propietario esperado es
@@ -49,10 +59,15 @@ helpers no coincide con el usuario aplicador.
 
 ## Grants
 
-B18 concede únicamente los SELECT necesarios sobre `memberships`, `projects`
-y `project_tasks` para que las subconsultas de las políticas de incidencias
-puedan evaluarse, y SELECT/INSERT sobre `project_task_issues`. `anon` no recibe
-acceso de negocio y `service_role` no recibe DML global.
+B18 captura primero un snapshot ejecutable del ACL de esos cinco privilegios.
+Solo concede los que estaban ausentes en el baseline. El snapshot se conserva
+en `public.b18_grant_baseline` hasta la compensación y se elimina al finalizar.
+La compensación revoca únicamente los privilegios marcados como añadidos por
+B18; los privilegios preexistentes se conservan.
+
+Los privilegios son SELECT sobre `memberships`, `projects` y `project_tasks`,
+y SELECT/INSERT sobre `project_task_issues`. `anon` no recibe acceso de negocio
+y `service_role` no recibe DML global.
 
 ## Rollback
 
