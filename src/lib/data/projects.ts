@@ -1,6 +1,12 @@
 import { createProjectsRepository } from "@/lib/application";
 import { isProjectStatus, type ProjectStatus } from "@/lib/domain/projects/status";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import {
+  isProjectTaskPriority,
+  isProjectTaskStatus,
+  type ProjectTaskPriority,
+  type ProjectTaskStatus,
+} from "@/lib/services/project-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 import { isSupabaseConfigured } from "@/lib/env";
 import type { ProjectCard } from "@/lib/types";
@@ -46,6 +52,41 @@ export type ProjectPhase = {
   sortOrder: number;
 };
 
+type SupabaseProjectTaskPhaseQueryRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+};
+
+type SupabaseProjectTaskQueryRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  phase_id: string | null;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  created_at: string;
+  phase:
+    | SupabaseProjectTaskPhaseQueryRow
+    | SupabaseProjectTaskPhaseQueryRow[]
+    | null;
+};
+
+export type ProjectTask = {
+  id: string;
+  phaseId: string | null;
+  title: string;
+  description: string | null;
+  status: ProjectTaskStatus;
+  priority: ProjectTaskPriority;
+  dueDate: string | null;
+};
+
+export type ProjectTaskGroups = Map<string | null, ProjectTask[]>;
+
 function normalizeJoinedClient(
   client: SupabaseProjectCardQueryRow["client"]
 ): { id: string; display_name: string } | null {
@@ -62,6 +103,92 @@ function getMockProjectCardsFallback(): ProjectCard[] {
 
 function logProjectsReadFailure(reason: string): void {
   console.error(SUPABASE_PROJECTS_LOG_PREFIX, { reason });
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function isIsoDateTime(value: string): boolean {
+  return !Number.isNaN(Date.parse(value));
+}
+
+function normalizeJoinedTaskPhase(
+  phase: SupabaseProjectTaskQueryRow["phase"]
+): SupabaseProjectTaskPhaseQueryRow | null {
+  if (Array.isArray(phase)) return phase[0] ?? null;
+  return phase;
+}
+
+function mapSupabaseProjectTaskRow(
+  row: SupabaseProjectTaskQueryRow,
+  projectId: string,
+  organizationId: string
+): ProjectTask {
+  const title = typeof row.title === "string" ? row.title.trim() : "";
+
+  if (
+    !isNonEmptyString(row.id) ||
+    !title ||
+    row.project_id !== projectId ||
+    row.organization_id !== organizationId ||
+    (row.description !== null && typeof row.description !== "string") ||
+    (row.phase_id !== null && !isNonEmptyString(row.phase_id)) ||
+    (row.due_date !== null &&
+      (typeof row.due_date !== "string" || !isIsoDate(row.due_date))) ||
+    !isNonEmptyString(row.created_at) ||
+    !isIsoDateTime(row.created_at) ||
+    !isProjectTaskStatus(row.status) ||
+    !isProjectTaskPriority(row.priority)
+  ) {
+    throw new Error("Invalid project task row");
+  }
+
+  const phase = normalizeJoinedTaskPhase(row.phase);
+  if (
+    row.phase_id !== null &&
+    (!phase ||
+      phase.id !== row.phase_id ||
+      phase.project_id !== projectId ||
+      phase.organization_id !== organizationId)
+  ) {
+    throw new Error("Invalid project task phase relationship");
+  }
+
+  if (row.phase_id === null && phase !== null) {
+    throw new Error("Invalid unphased project task row");
+  }
+
+  return {
+    id: row.id,
+    phaseId: row.phase_id,
+    title,
+    description: row.description,
+    status: row.status,
+    priority: row.priority,
+    dueDate: row.due_date,
+  };
+}
+
+export function groupProjectTasksByPhase(
+  tasks: ProjectTask[]
+): ProjectTaskGroups {
+  const groups: ProjectTaskGroups = new Map();
+
+  for (const task of tasks) {
+    const group = groups.get(task.phaseId);
+    if (group) group.push(task);
+    else groups.set(task.phaseId, [task]);
+  }
+
+  return groups;
 }
 
 export function mapSupabaseProjectRowToProjectCard(
@@ -263,5 +390,59 @@ export async function getProjectPhasesForRequest(projectId: string): Promise<Pro
 
     logProjectsReadFailure("project phases mapping failed");
     throw new Error("Unable to load project phases from Supabase");
+  }
+}
+
+export async function getProjectTasksForRequest(projectId: string): Promise<ProjectTask[]> {
+  if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === "production") {
+      logProjectsReadFailure("Supabase is not configured in production");
+      throw new Error("Unable to load project tasks from Supabase");
+    }
+
+    return [];
+  }
+
+  const context = await getOrganizationContextForRequest();
+  if (!context.ok) {
+    logProjectsReadFailure(`organization context unavailable: ${context.reason}`);
+    throw new Error("Unable to load project tasks for the active organization");
+  }
+
+  try {
+    const client = await createServerSupabaseClient();
+    const { data, error } = await client
+      .from("project_tasks")
+      .select(
+        "id, organization_id, project_id, phase_id, title, description, status, priority, due_date, created_at, phase:project_phases(id, organization_id, project_id)"
+      )
+      .eq("project_id", projectId)
+      .eq("organization_id", context.organizationId)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true });
+
+    if (error) {
+      logProjectsReadFailure("project tasks query failed");
+      throw new Error("Unable to load project tasks from Supabase");
+    }
+
+    return (data ?? []).map((task) =>
+      mapSupabaseProjectTaskRow(
+        task as unknown as SupabaseProjectTaskQueryRow,
+        projectId,
+        context.organizationId
+      )
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Unable to load project tasks from Supabase"
+    ) {
+      throw error;
+    }
+
+    logProjectsReadFailure("project tasks mapping failed");
+    throw new Error("Unable to load project tasks from Supabase");
   }
 }
