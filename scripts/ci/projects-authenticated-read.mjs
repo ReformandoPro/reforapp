@@ -100,17 +100,21 @@ if (mode.has("--authenticated")) {
   if (aRows.length !== 1) throw new Error("User A expected one project");
   const bRows = await testCase("user B reads only organization B projects", USER_B, B, () => projects(b, B, A));
   if (bRows.length !== 1) throw new Error("User B expected one project");
-  await testCase("user without membership is denied", USER_NONE, "none", async () => {
-    const result = await none.from("projects").select("id");
-    if (!result.error) throw new Error("No-membership user was not denied");
-    log(`case:expected name=user without membership is denied actual=denied code=${result.error.code ?? "unknown"}`);
+  await testCase("user without membership receives no projects", USER_NONE, "none", async () => {
+    const { data, error } = await none.from("projects").select("id");
+    if (error) throw new Error(`No-membership read returned unexpected error: ${error.code ?? "unknown"}`);
+    if (!Array.isArray(data)) throw new Error("No-membership read did not return an array");
+    if (data.length !== 0) throw new Error(`No-membership user received ${data.length} project row(s)`);
+    log("case:expected name=user without membership receives no projects actual=zero_rows");
   });
-  log("authenticated: A/B isolation and no-membership denial passed");
+  log("authenticated: A/B isolation and no-membership zero-row access passed");
 }
 if (mode.has("--anonymous")) {
   const anonymous = createClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data, error } = await anonymous.from("projects").select("id");
-  if (!error && data?.length) throw new Error("Anonymous user received projects");
+  if (error) throw new Error(`Anonymous read returned unexpected error: ${error.code ?? "unknown"}`);
+  if (!Array.isArray(data)) throw new Error("Anonymous read did not return an array");
+  if (data.length !== 0) throw new Error(`Anonymous user received ${data.length} project row(s)`);
   log("anonymous: no project access passed");
 }
 if (mode.has("--isolation")) log("isolation: sequential clients use independent sessions");
