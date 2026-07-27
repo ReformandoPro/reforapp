@@ -69,6 +69,7 @@ jobs:
           psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors -f supabase/test/bootstrap_supabase_test_environment.sql
 
       - name: Apply historical migrations
+        id: apply_historical_migrations
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -108,7 +109,7 @@ jobs:
           done
 
       - name: Upload historical migration failure log
-        if: failure()
+        if: steps.apply_historical_migrations.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: b18-historical-migration-failure
@@ -117,6 +118,7 @@ jobs:
           retention-days: 7
 
       - name: Capture B18 baseline
+        id: capture_b18_baseline
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -148,7 +150,7 @@ jobs:
           fi
 
       - name: Upload B18 baseline failure log
-        if: failure()
+        if: steps.capture_b18_baseline.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: b18-baseline-failure
@@ -169,14 +171,45 @@ jobs:
           done
 
       - name: Validate B18 apply
+        id: validate_b18_apply
         shell: bash
         run: |
           set -Eeuo pipefail
           phase='Validate B18 apply'
-          trap 'status=$?; echo "ERROR phase=$phase command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
-          echo "=== $phase ==="
-          echo 'Executing supabase/validation/b18-security-rls.sql'
-          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors -f supabase/validation/b18-security-rls.sql
+          validation_file='supabase/validation/b18-security-rls.sql'
+          log_file="$RUNNER_TEMP/b18-apply-validation-failure.log"
+          trap 'status=$?; echo "ERROR phase=$phase file=$validation_file command=$BASH_COMMAND status=$status line=$LINENO" >&2' ERR
+          : > "$log_file"
+          echo '=================================================='
+          echo "Executing B18 apply validation: $validation_file"
+          echo '=================================================='
+          set +e
+          psql -X -a -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --echo-errors -f "$validation_file" 2>&1 | tee "$log_file"
+          psql_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$psql_status" -ne 0 ]; then
+            echo "::error file=$validation_file,title=B18 apply validation failed::Apply validation failed with psql status $psql_status"
+            {
+              echo '## B18 apply validation failure'
+              echo
+              echo "- File: \`$validation_file\`"
+              echo "- psql status: \`$psql_status\`"
+              echo
+              echo '```text'
+              tail -n 200 "$log_file"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$psql_status"
+          fi
+
+      - name: Upload B18 apply validation failure log
+        if: steps.validate_b18_apply.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: b18-apply-validation-failure
+          path: ${{ runner.temp }}/b18-apply-validation-failure.log
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Verify B18 reapply rejection
         shell: bash
