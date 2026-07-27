@@ -109,7 +109,7 @@ jobs:
           done
 
       - name: Upload historical migration failure log
-        if: steps.apply_historical_migrations.outcome == 'failure'
+        if: failure() && steps.apply_historical_migrations.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: b18-historical-migration-failure
@@ -150,7 +150,7 @@ jobs:
           fi
 
       - name: Upload B18 baseline failure log
-        if: steps.capture_b18_baseline.outcome == 'failure'
+        if: failure() && steps.capture_b18_baseline.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: b18-baseline-failure
@@ -203,7 +203,7 @@ jobs:
           fi
 
       - name: Upload B18 apply validation failure log
-        if: steps.validate_b18_apply.outcome == 'failure'
+        if: failure() && steps.validate_b18_apply.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: b18-apply-validation-failure
