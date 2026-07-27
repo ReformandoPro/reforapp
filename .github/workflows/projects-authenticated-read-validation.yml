@@ -37,12 +37,15 @@ jobs:
           head='${{ github.event.pull_request.head.sha || github.sha }}'
           allowed='src/app/projects/error.tsx
           src/app/projects/page.tsx
+          src/app/projects/[id]/page.tsx
+          src/lib/data/index.ts
           src/lib/data/projects.ts
-          tests/data/projects-first-read.test.ts'
+          tests/data/projects-first-read.test.ts
+          tests/data/project-detail.test.ts'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed" && [[ "$file" != .github/workflows/* ]] && [[ "$file" != scripts/ci/* ]] && [[ "$file" != supabase/* ]]; then
-              echo "Unexpected functional file outside PR #119 scope: $file" >&2
+              echo "Unexpected functional file outside Project Detail PR scope: $file" >&2
               exit 1
             fi
           done < <(git diff --name-only "$base...$head")

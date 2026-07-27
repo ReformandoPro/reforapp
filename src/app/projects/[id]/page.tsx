@@ -3,18 +3,22 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout";
 
 import { ProjectOverviewScreen } from "@/components/screens/ProjectOverviewScreen";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { getProjectOverview } from "@/lib/services/projects";
+import { notFound } from "next/navigation";
+
+import { getProjectDetail } from "@/lib/data";
 
 type ProjectDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ProjectDetailPage({
   params,
 }: ProjectDetailPageProps) {
   const { id } = await params;
-  const project = getProjectOverview(id);
+  const project = await getProjectDetail(id);
+  if (!project) notFound();
 
   return (
     <AppShell>
@@ -26,8 +30,7 @@ export default async function ProjectDetailPage({
         ← Volver a obras
       </Link>
 
-      {project ? (
-        <>
+      <>
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/projects/${id}/tasks`}
@@ -37,14 +40,22 @@ export default async function ProjectDetailPage({
             </Link>
           </div>
 
-          <ProjectOverviewScreen project={project} />
+          <ProjectOverviewScreen project={{
+            ...project,
+            nextActions: [],
+            availableSections: [],
+            delayedTasksCount: 0,
+            blockedTasksCount: 0,
+            pendingApprovalsCount: 0,
+            openIncidentsCount: 0,
+            pendingMaterialRequestsCount: 0,
+          }} />
+          <div className="grid gap-3 rounded-xl border border-subtle bg-bg-surface p-5 text-sm">
+            <p>Dirección: {project.address}</p>
+            <p>Inicio: {project.startDate}</p>
+            <p>Tipo: {project.type}</p>
+          </div>
         </>
-      ) : (
-        <EmptyState
-          title="Obra no encontrada"
-          description="No hemos encontrado una obra con este identificador."
-        />
-      )}
       </section>
     </AppShell>
   );

@@ -1,5 +1,5 @@
 import { createProjectsRepository } from "@/lib/application";
-import { isProjectStatus } from "@/lib/domain/projects/status";
+import { isProjectStatus, type ProjectStatus } from "@/lib/domain/projects/status";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -24,6 +24,16 @@ type SupabaseProjectCardQueryRow = {
         display_name: string;
       }[]
     | null;
+};
+
+export type ProjectDetail = {
+  id: string;
+  name: string;
+  clientName: string;
+  status: ProjectStatus;
+  address: string;
+  startDate: string;
+  type: string;
 };
 
 function normalizeJoinedClient(
@@ -119,5 +129,68 @@ export async function getProjectsPageCards(): Promise<ProjectCard[]> {
 
     logProjectsReadFailure("query or mapping failed");
     throw new Error("Unable to load projects from Supabase");
+  }
+}
+
+export async function getProjectDetail(projectId: string): Promise<ProjectDetail | null> {
+  if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === "production") {
+      logProjectsReadFailure("Supabase is not configured in production");
+      throw new Error("Unable to load project detail from Supabase");
+    }
+
+    const project = projectsRepository.getProjectOverview(projectId);
+    return project
+      ? {
+          id: project.id,
+          name: project.name,
+          clientName: project.clientName,
+          status: project.status,
+          address: "",
+          startDate: "",
+          type: "",
+        }
+      : null;
+  }
+
+  const context = await getOrganizationContextForRequest();
+  if (!context.ok) {
+    logProjectsReadFailure(`organization context unavailable: ${context.reason}`);
+    throw new Error("Unable to load project detail for the active organization");
+  }
+
+  try {
+    const client = await createServerSupabaseClient();
+    const { data, error } = await client
+      .from("projects")
+      .select("id, name, status, address, start_date, type, client:clients (display_name)")
+      .eq("id", projectId)
+      .eq("organization_id", context.organizationId)
+      .maybeSingle();
+
+    if (error) {
+      logProjectsReadFailure("project detail query failed");
+      throw new Error("Unable to load project detail from Supabase");
+    }
+    if (!data) return null;
+
+    const clientRow = Array.isArray(data.client) ? data.client[0] : data.client;
+    if (!clientRow?.display_name || !isProjectStatus(data.status)) {
+      throw new Error("Unable to load project detail from Supabase");
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      clientName: clientRow.display_name,
+      status: data.status,
+      address: data.address,
+      startDate: data.start_date,
+      type: data.type,
+    };
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unable to load project detail from Supabase") throw error;
+    logProjectsReadFailure("project detail mapping failed");
+    throw new Error("Unable to load project detail from Supabase");
   }
 }
