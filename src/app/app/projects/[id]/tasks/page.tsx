@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { getOrgMembersWithProfiles } from "@/lib/services/org-members-with-profiles";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
+import { filterProjectTasks, parseProjectTaskFilters } from "@/lib/services/project-task-filters";
 import type { ProjectTaskPriority, ProjectTaskStatus } from "@/lib/services/project-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -68,10 +69,14 @@ function formatDate(value: string | null): string {
 
 export default async function AppProjectTasksPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ status?: string; priority?: string }>;
 }) {
   const { id: projectId } = await params;
+  const rawFilters = await searchParams;
+  const filters = parseProjectTaskFilters(rawFilters);
   const ctx = await getOrganizationContextForRequest();
 
   if (!ctx.ok) {
@@ -165,6 +170,8 @@ export default async function AppProjectTasksPage({
   }
 
   const rows = ((tasks ?? []) as TaskRow[]) ?? [];
+  const filteredRows = filterProjectTasks(rows, filters);
+  const hasFilters = Boolean(filters.status || filters.priority);
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -179,23 +186,74 @@ export default async function AppProjectTasksPage({
         }
       />
 
-      {rows.length === 0 ? (
+      <form method="get" className="grid gap-3 rounded-xl border border-subtle bg-bg-raised p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="space-y-1">
+          <label className="text-xs font-medium uppercase tracking-[0.14em] text-content-tertiary" htmlFor="task-status-filter">
+            Estado
+          </label>
+          <select
+            id="task-status-filter"
+            name="status"
+            defaultValue={filters.status ?? ""}
+            className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            <option value="">Todos los estados</option>
+            <option value="pending">Pendiente</option>
+            <option value="in_progress">En curso</option>
+            <option value="blocked">Bloqueada</option>
+            <option value="done">Hecha</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium uppercase tracking-[0.14em] text-content-tertiary" htmlFor="task-priority-filter">
+            Prioridad
+          </label>
+          <select
+            id="task-priority-filter"
+            name="priority"
+            defaultValue={filters.priority ?? ""}
+            className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            <option value="">Todas las prioridades</option>
+            <option value="low">Baja</option>
+            <option value="medium">Media</option>
+            <option value="high">Alta</option>
+            <option value="urgent">Urgente</option>
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <button type="submit" className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+            Filtrar
+          </button>
+          {hasFilters ? (
+            <Link href={`/app/projects/${projectId}/tasks`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-content-primary hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">
+              Limpiar
+            </Link>
+          ) : null}
+        </div>
+      </form>
+
+      {filteredRows.length === 0 ? (
         <EmptyState
-          title="Sin tareas"
+          title={hasFilters && rows.length > 0 ? "No hay tareas con estos filtros" : "Sin tareas"}
           description={
-            canWrite
+            hasFilters && rows.length > 0
+              ? "Prueba otra combinación de estado y prioridad."
+              : canWrite
               ? "Crea la primera tarea para empezar a gestionar la obra."
               : "Aún no hay tareas para esta obra."
           }
           actions={
-            canWrite ? (
+            hasFilters && rows.length > 0 ? (
+              <LinkButton href={`/app/projects/${projectId}/tasks`}>Ver todas</LinkButton>
+            ) : canWrite ? (
               <LinkButton href={`/app/projects/${projectId}/tasks/new`}>Nueva tarea</LinkButton>
             ) : null
           }
         />
       ) : (
         <div className="grid gap-3">
-          {rows.map((task) => (
+          {filteredRows.map((task) => (
             <Card
               key={task.id}
               className="p-0 shadow-none"
