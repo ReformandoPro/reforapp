@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   getProjectPhasesForRequest: vi.fn(),
   getProjectTasksForRequest: vi.fn(),
   groupProjectTasksByStatus: vi.fn(),
+  getOrganizationContextForRequest: vi.fn(),
   notFound: vi.fn(),
 }));
 
@@ -23,6 +24,16 @@ vi.mock("../../src/components/layout", () => ({
 }));
 vi.mock("../../src/components/screens/ProjectOverviewScreen", () => ({
   ProjectOverviewScreen: () => React.createElement("div", null, "Resumen"),
+}));
+vi.mock("../../src/components/tasks", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/components/tasks")>();
+  return {
+    ...actual,
+    CreateProjectTaskForm: () => React.createElement("div", null, "Nueva tarea"),
+  };
+});
+vi.mock("../../src/lib/services/org-context", () => ({
+  getOrganizationContextForRequest: mocks.getOrganizationContextForRequest,
 }));
 vi.mock("../../src/lib/data", () => ({
   getProjectDetail: mocks.getProjectDetail,
@@ -65,7 +76,13 @@ describe("project tasks detail page", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the authenticated task board", async () => {
+  it("renders the authenticated task board and creation action for an owner", async () => {
+    mocks.getOrganizationContextForRequest.mockResolvedValue({
+      ok: true,
+      organizationId: "org-a",
+      role: "owner",
+      user: { id: "user-a" },
+    });
     mocks.getProjectDetail.mockResolvedValue(project);
     mocks.getProjectPhasesForRequest.mockResolvedValue([phase]);
     mocks.getProjectTasksForRequest.mockResolvedValue([]);
@@ -73,9 +90,16 @@ describe("project tasks detail page", () => {
 
     const html = await renderPage();
     expect(html).toContain("Tablero de tareas");
+    expect(html).toContain("Nueva tarea");
   });
 
   it("shows the general empty state when the project has no tasks", async () => {
+    mocks.getOrganizationContextForRequest.mockResolvedValue({
+      ok: true,
+      organizationId: "org-a",
+      role: "member",
+      user: { id: "user-member" },
+    });
     mocks.getProjectDetail.mockResolvedValue(project);
     mocks.getProjectPhasesForRequest.mockResolvedValue([]);
     mocks.getProjectTasksForRequest.mockResolvedValue([]);

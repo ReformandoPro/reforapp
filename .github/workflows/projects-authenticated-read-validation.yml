@@ -45,6 +45,7 @@ jobs:
           allowed='src/app/projects/error.tsx
           src/app/projects/page.tsx
           src/app/projects/[id]/page.tsx
+          src/app/projects/[id]/actions.ts
           src/lib/data/index.ts
           src/lib/data/projects.ts
           tests/data/projects-first-read.test.ts
@@ -52,11 +53,18 @@ jobs:
           tests/data/project-phases.test.ts
           tests/data/project-tasks.test.ts
           tests/app/project-tasks-page.test.ts
+          tests/services/project-operational-permissions.test.ts
           tests/components/task-board.test.ts
+          src/components/tasks/CreateProjectTaskForm.tsx
           src/components/tasks/TaskBoard.tsx
           src/components/tasks/TaskColumn.tsx
           src/components/tasks/TaskCard.tsx
-          src/components/tasks/index.ts'
+          src/components/tasks/index.ts
+          src/lib/services/project-operational-permissions.ts
+          src/lib/services/project-task-create.ts
+          tests/app/project-task-create-action.test.ts
+          tests/components/create-project-task-form.test.ts
+          tests/services/project-task-create.test.ts'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed" && [[ "$file" != .github/workflows/* ]] && [[ "$file" != scripts/ci/* ]] && [[ "$file" != supabase/* ]]; then

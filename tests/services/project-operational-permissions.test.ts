@@ -9,10 +9,10 @@ describe("project-operational-permissions", () => {
     expect(canWriteProjectPhases("member")).toBe(false);
   });
 
-  it("allows task writes for owner/admin/member (MVP)", () => {
+  it("restricts task writes to owner/admin as enforced by RLS", () => {
     expect(canWriteProjectTasks("owner")).toBe(true);
     expect(canWriteProjectTasks("admin")).toBe(true);
-    expect(canWriteProjectTasks("member")).toBe(true);
+    expect(canWriteProjectTasks("member")).toBe(false);
   });
 });
 

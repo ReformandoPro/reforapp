@@ -1,17 +1,17 @@
 import Link from "next/link";
-
-import { AppShell } from "@/components/layout";
-import { TaskBoard } from "@/components/tasks";
-
-import { ProjectOverviewScreen } from "@/components/screens/ProjectOverviewScreen";
 import { notFound } from "next/navigation";
 
+import { AppShell } from "@/components/layout";
+import { ProjectOverviewScreen } from "@/components/screens/ProjectOverviewScreen";
+import { CreateProjectTaskForm, TaskBoard } from "@/components/tasks";
 import {
   getProjectDetail,
   getProjectPhasesForRequest,
   getProjectTasksForRequest,
   groupProjectTasksByStatus,
 } from "@/lib/data";
+import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 
 type ProjectDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -25,23 +25,27 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const project = await getProjectDetail(id);
   if (!project) notFound();
-  const [phases, tasks] = await Promise.all([
+
+  const [phases, tasks, organizationContext] = await Promise.all([
     getProjectPhasesForRequest(id),
     getProjectTasksForRequest(id),
+    getOrganizationContextForRequest(),
   ]);
+  const canCreateTasks =
+    organizationContext.ok && canWriteProjectTasks(organizationContext.role);
   const taskColumns = groupProjectTasksByStatus(tasks);
 
   return (
     <AppShell>
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Link
-        href="/projects"
-        className="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"
-      >
-        ← Volver a obras
-      </Link>
+        <Link
+          href="/projects"
+          className="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"
+        >
+          ← Volver a obras
+        </Link>
 
-      <>
+        <>
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/projects/${id}/tasks`}
@@ -51,25 +55,34 @@ export default async function ProjectDetailPage({
             </Link>
           </div>
 
-          <ProjectOverviewScreen project={{
-            ...project,
-            nextActions: [],
-            availableSections: [],
-            delayedTasksCount: 0,
-            blockedTasksCount: 0,
-            pendingApprovalsCount: 0,
-            openIncidentsCount: 0,
-            pendingMaterialRequestsCount: 0,
-          }} />
+          <ProjectOverviewScreen
+            project={{
+              ...project,
+              nextActions: [],
+              availableSections: [],
+              delayedTasksCount: 0,
+              blockedTasksCount: 0,
+              pendingApprovalsCount: 0,
+              openIncidentsCount: 0,
+              pendingMaterialRequestsCount: 0,
+            }}
+          />
           <div className="grid gap-3 rounded-xl border border-subtle bg-bg-surface p-5 text-sm">
             <p>Dirección: {project.address}</p>
             <p>Inicio: {project.startDate}</p>
             <p>Tipo: {project.type}</p>
           </div>
-          <section aria-labelledby="project-phases-heading" className="rounded-xl border border-subtle bg-bg-surface p-5">
-            <h2 id="project-phases-heading" className="text-lg font-semibold text-slate-900">Fases del proyecto</h2>
+          <section
+            aria-labelledby="project-phases-heading"
+            className="rounded-xl border border-subtle bg-bg-surface p-5"
+          >
+            <h2 id="project-phases-heading" className="text-lg font-semibold text-slate-900">
+              Fases del proyecto
+            </h2>
             {phases.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-600">Este proyecto todavía no tiene fases.</p>
+              <p className="mt-3 text-sm text-slate-600">
+                Este proyecto todavía no tiene fases.
+              </p>
             ) : (
               <ol className="mt-4 space-y-3">
                 {phases.map((phase) => (
@@ -77,7 +90,9 @@ export default async function ProjectDetailPage({
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
                         <h3 className="font-medium text-slate-900">{phase.title}</h3>
-                        {phase.description ? <p className="mt-1 text-sm text-slate-600">{phase.description}</p> : null}
+                        {phase.description ? (
+                          <p className="mt-1 text-sm text-slate-600">{phase.description}</p>
+                        ) : null}
                       </div>
                       <span className="text-sm text-slate-600">{phase.status}</span>
                     </div>
@@ -91,8 +106,18 @@ export default async function ProjectDetailPage({
               </ol>
             )}
           </section>
-          <section aria-labelledby="project-task-board-heading" className="rounded-xl border border-subtle bg-bg-surface p-5">
-            <h2 id="project-task-board-heading" className="text-lg font-semibold text-slate-900">Tablero de tareas</h2>
+          <section
+            aria-labelledby="project-task-board-heading"
+            className="rounded-xl border border-subtle bg-bg-surface p-5"
+          >
+            <h2 id="project-task-board-heading" className="text-lg font-semibold text-slate-900">
+              Tablero de tareas
+            </h2>
+            {canCreateTasks ? (
+              <div className="mt-4">
+                <CreateProjectTaskForm projectId={id} phases={phases} />
+              </div>
+            ) : null}
             <TaskBoard columns={taskColumns} />
           </section>
         </>
