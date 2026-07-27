@@ -1,0 +1,113 @@
+name: Projects authenticated read validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/app/projects/**'
+      - 'src/lib/data/projects.ts'
+      - 'src/lib/services/org-context.ts'
+      - 'src/lib/supabase/ssr.ts'
+      - 'tests/data/projects-first-read.test.ts'
+      - 'scripts/ci/projects-authenticated-read.mjs'
+      - '.github/workflows/projects-authenticated-read-validation.yml'
+      - 'supabase/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authenticated-projects-read:
+    name: Ephemeral Supabase authenticated projects read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI_FIXTURE_PASSWORD: 'CI-only-password-123456789!'
+    steps:
+      - name: Validate repository diff
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR functional scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base='${{ github.event.pull_request.base.sha || github.event.repository.default_branch }}'
+          head='${{ github.event.pull_request.head.sha || github.sha }}'
+          allowed='src/app/projects/error.tsx
+          src/app/projects/page.tsx
+          src/lib/data/projects.ts
+          tests/data/projects-first-read.test.ts'
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if ! grep -qxF "$file" <<< "$allowed" && [[ "$file" != .github/workflows/* ]] && [[ "$file" != scripts/ci/* ]] && [[ "$file" != supabase/* ]]; then
+              echo "Unexpected functional file outside PR #119 scope: $file" >&2
+              exit 1
+            fi
+          done < <(git diff --name-only "$base...$head")
+          git diff --check "$base...$head"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.39.2
+
+      - name: Start ephemeral Supabase
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if grep -RInE 'supabase (link|db push)' .github scripts package.json 2>/dev/null; then
+            echo 'Remote Supabase commands are forbidden in this validation' >&2
+            exit 1
+          fi
+          supabase start
+          supabase status
+
+      - name: Apply local migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          supabase db reset --local --no-seed
+
+      - name: Export local Supabase environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          supabase status -o env > "$RUNNER_TEMP/supabase.env"
+          for key in API_URL ANON_KEY SERVICE_ROLE_KEY; do
+            value=$(awk -F= -v key="$key" '$1 == key {sub(/^API_URL=/,"SUPABASE_URL="); sub(/^ANON_KEY=/,"SUPABASE_ANON_KEY="); sub(/^SERVICE_ROLE_KEY=/,"SUPABASE_SERVICE_ROLE_KEY="); print}' "$RUNNER_TEMP/supabase.env")
+            echo "$value" >> "$GITHUB_ENV"
+          done
+          echo 'Local Supabase endpoint exported without printing credentials.'
+
+      - name: Create Auth and database fixtures
+        run: node scripts/ci/projects-authenticated-read.mjs --fixtures
+
+      - name: Run authenticated integration cases
+        run: node scripts/ci/projects-authenticated-read.mjs --authenticated
+
+      - name: Run anonymous and isolation cases
+        run: node scripts/ci/projects-authenticated-read.mjs --anonymous --isolation
+
+      - name: Run application validation
+        run: |
+          npx tsc --noEmit --incremental false
+          npm run lint
+          npm run test -- tests/data/projects-first-read.test.ts
+
+      - name: Upload diagnostic artifact on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: projects-authenticated-read-diagnostics
+          path: ${{ runner.temp }}/projects-authenticated-read.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup
