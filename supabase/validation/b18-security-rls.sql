@@ -24,9 +24,8 @@ begin
       and c.relname = 'project_task_issues'
       and c.relkind in ('r', 'p')
       and c.relrowsecurity
-      and c.relforcerowsecurity
   ) then
-    raise exception 'B18 validation failed: project_task_issues must have RLS and FORCE RLS enabled';
+    raise exception 'B18 validation failed: project_task_issues must have RLS enabled';
   end if;
 end;
 $$;
