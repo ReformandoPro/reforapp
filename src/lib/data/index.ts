@@ -16,6 +16,7 @@ import type {
 } from "@/lib/types";
 import { getProjectsPageCards } from "./projects";
 export { getProjectDetail } from "./projects";
+export { getProjectPhasesForRequest } from "./projects";
 
 export type DataAdapterMode =
   | "mock"
