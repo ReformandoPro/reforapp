@@ -60,6 +60,7 @@ jobs:
           tests/services/project-create.test.ts
           tests/services/private-projects.test.ts
           tests/services/project-operational-permissions.test.ts
+          tests/data/project-tasks.test.ts
           scripts/ci/projects-authenticated-write.mjs
           supabase/migrations/20260728100000_project_create_mvp.sql
           .github/workflows/projects-authenticated-write-validation.yml

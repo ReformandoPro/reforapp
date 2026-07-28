@@ -4,13 +4,18 @@ on:
   pull_request:
     paths:
       - 'src/app/projects/**'
+      - 'src/app/app/projects/**'
       - 'src/lib/data/projects.ts'
+      - 'src/lib/services/private-projects.ts'
       - 'src/lib/services/org-context.ts'
       - 'src/lib/supabase/ssr.ts'
       - 'tests/data/projects-first-read.test.ts'
       - 'tests/data/project-tasks.test.ts'
       - 'tests/app/project-tasks-page.test.ts'
+      - 'tests/app/projects-page-actions.test.ts'
       - 'tests/components/task-board.test.ts'
+      - 'tests/components/create-project-form.test.ts'
+      - 'tests/services/private-projects.test.ts'
       - 'src/components/tasks/TaskBoard.tsx'
       - 'src/components/tasks/TaskColumn.tsx'
       - 'src/components/tasks/TaskCard.tsx'
@@ -73,7 +78,13 @@ jobs:
           src/app/app/projects/[id]/page.tsx
           src/app/app/projects/new/actions.ts
           src/app/app/projects/new/CreateProjectForm.tsx
-          src/app/app/projects/new/page.tsx'
+          src/app/app/projects/new/page.tsx
+          src/app/app/projects/page.tsx
+          src/lib/services/private-projects.ts
+          tests/app/projects-page-actions.test.ts
+          tests/components/create-project-form.test.ts
+          tests/services/private-projects.test.ts
+          tests/data/project-tasks.test.ts'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed" && [[ "$file" != .github/workflows/* ]] && [[ "$file" != scripts/ci/* ]] && [[ "$file" != supabase/* ]]; then
@@ -230,7 +241,7 @@ jobs:
         run: |
           npx tsc --noEmit --incremental false
           npm run lint
-          npm run test -- tests/data/projects-first-read.test.ts
+          npm run test -- tests/data/projects-first-read.test.ts tests/data/project-tasks.test.ts tests/app/projects-page-actions.test.ts tests/services/private-projects.test.ts
 
       - name: Upload diagnostic artifact on failure
         id: sanitize_diagnostic
