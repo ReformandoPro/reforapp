@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      deploy_sha:
+        description: 'Full 40-character commit SHA to deploy'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -69,14 +74,27 @@ jobs:
 
       - name: Deploy main to reformando-app-beta
         shell: bash
+        env:
+          DEPLOY_SHA_INPUT: ${{ inputs.deploy_sha }}
         run: |
           set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            EXPECTED_SHA="$DEPLOY_SHA_INPUT"
+          else
+            EXPECTED_SHA="${{ github.sha }}"
+          fi
+
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "Refusing to deploy: expected SHA must be exactly 40 hexadecimal characters" >&2
+            exit 1
+          fi
 
           ssh \
             -i ~/.ssh/app_beta_deploy_key \
             -p "${{ secrets.APP_BETA_SSH_PORT }}" \
             "${{ secrets.APP_BETA_SSH_USER }}@${{ secrets.APP_BETA_SSH_HOST }}" \
-            'bash -s' <<'REMOTE'
+            "EXPECTED_SHA=$EXPECTED_SHA bash -s" <<'REMOTE'
           set -euo pipefail
 
           REPO="/docker/openclaw-ejvk/data/apps/reformando-app"
@@ -104,17 +122,21 @@ jobs:
           cd "$REPO"
 
           git status --short
-          git config --unset-all core.sshCommand || true
-          git remote set-url origin https://github.com/ReformandoPro/reforapp.git
-          git remote -v
-          git fetch origin main
-          git checkout main
-          git pull --ff-only origin main
+          REMOTE_URL="$(git remote get-url origin)"
+          case "$REMOTE_URL" in
+            https://github.com/ReformandoPro/reforapp.git|git@github.com:ReformandoPro/reforapp.git|ssh://git@github.com/ReformandoPro/reforapp.git) ;;
+            *) echo "Refusing to deploy: unexpected repository remote" >&2; exit 1 ;;
+          esac
 
-          EXPECTED_SHA="${{ github.sha }}"
+          git fetch --no-tags origin "+refs/heads/*:refs/remotes/origin/*" "+refs/pull/*/head:refs/remotes/origin/pr/*"
+          if ! git cat-file -e "$EXPECTED_SHA^{commit}"; then
+            echo "Refusing to deploy: requested commit does not exist in the repository" >&2
+            exit 1
+          fi
+          git checkout --detach "$EXPECTED_SHA"
           ACTUAL_SHA="$(git rev-parse HEAD)"
           if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
-            echo "Refusing to deploy unexpected SHA: $ACTUAL_SHA" >&2
+            echo "Refusing to deploy unexpected SHA after detached checkout" >&2
             exit 1
           fi
 
@@ -136,11 +158,21 @@ jobs:
       - name: Verify app-beta health
         shell: bash
         env:
-          EXPECTED_SHA: ${{ github.sha }}
+          DEPLOY_SHA_INPUT: ${{ inputs.deploy_sha }}
           HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
           HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
         run: |
           set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            EXPECTED_SHA="$DEPLOY_SHA_INPUT"
+          else
+            EXPECTED_SHA="${{ github.sha }}"
+          fi
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "Health check refused: expected SHA format is invalid" >&2
+            exit 1
+          fi
 
           HEALTH_URL="https://app-beta.reformando.pro/api/health"
           HEALTH_STARTED_AT="$(date +%s)"
