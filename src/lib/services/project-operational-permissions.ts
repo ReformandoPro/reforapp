@@ -7,3 +7,7 @@ export function canWriteProjectPhases(role: MembershipRole): boolean {
 export function canWriteProjectTasks(role: MembershipRole): boolean {
   return role === "owner" || role === "admin";
 }
+
+export function canCreateProjects(role: MembershipRole): boolean {
+  return role === "owner" || role === "admin";
+}

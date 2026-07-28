@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { canWriteProjectPhases, canWriteProjectTasks } from "../../src/lib/services/project-operational-permissions";
+import {
+  canCreateProjects,
+  canWriteProjectPhases,
+  canWriteProjectTasks,
+} from "../../src/lib/services/project-operational-permissions";
 
 describe("project-operational-permissions", () => {
   it("restricts phases writes to owner/admin", () => {
@@ -14,5 +18,10 @@ describe("project-operational-permissions", () => {
     expect(canWriteProjectTasks("admin")).toBe(true);
     expect(canWriteProjectTasks("member")).toBe(false);
   });
-});
 
+  it("restricts project creation to owner/admin as enforced by RLS", () => {
+    expect(canCreateProjects("owner")).toBe(true);
+    expect(canCreateProjects("admin")).toBe(true);
+    expect(canCreateProjects("member")).toBe(false);
+  });
+});
