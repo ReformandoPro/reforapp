@@ -1,6 +1,9 @@
 name: Project create incident deploy
 
 on:
+  push:
+    branches:
+      - fix/project-create-post-merge
   workflow_dispatch:
 
 permissions:
