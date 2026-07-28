@@ -5,6 +5,5 @@ export function canWriteProjectPhases(role: MembershipRole): boolean {
 }
 
 export function canWriteProjectTasks(role: MembershipRole): boolean {
-  return role === "owner" || role === "admin" || role === "member";
+  return role === "owner" || role === "admin";
 }
-

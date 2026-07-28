@@ -1,0 +1,137 @@
+name: Project tasks authenticated write validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/app/projects/[id]/actions.ts'
+      - 'src/app/projects/[id]/page.tsx'
+      - 'src/components/tasks/CreateProjectTaskForm.tsx'
+      - 'src/components/tasks/index.ts'
+      - 'src/lib/services/project-operational-permissions.ts'
+      - 'src/lib/services/project-task-create.ts'
+      - 'tests/app/project-task-create-action.test.ts'
+      - 'tests/app/project-tasks-page.test.ts'
+      - 'tests/components/create-project-task-form.test.ts'
+      - 'tests/services/project-operational-permissions.test.ts'
+      - 'tests/services/project-task-create.test.ts'
+      - 'scripts/ci/project-tasks-authenticated-write.mjs'
+      - '.github/workflows/project-tasks-authenticated-write-validation.yml'
+      - '.github/workflows/projects-authenticated-read-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authenticated-project-task-write:
+    name: Ephemeral Supabase authenticated project task write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI_FIXTURE_PASSWORD: 'CI-only-password-123456789!'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR functional scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base='${{ github.event.pull_request.base.sha || github.event.repository.default_branch }}'
+          head='${{ github.event.pull_request.head.sha || github.sha }}'
+          allowed='src/app/projects/[id]/actions.ts
+          src/app/projects/[id]/page.tsx
+          src/components/tasks/CreateProjectTaskForm.tsx
+          src/components/tasks/index.ts
+          src/lib/services/project-operational-permissions.ts
+          src/lib/services/project-task-create.ts
+          tests/app/project-task-create-action.test.ts
+          tests/app/project-tasks-page.test.ts
+          tests/components/create-project-task-form.test.ts
+          tests/services/project-operational-permissions.test.ts
+          tests/services/project-task-create.test.ts
+          scripts/ci/project-tasks-authenticated-write.mjs
+          .github/workflows/project-tasks-authenticated-write-validation.yml
+          .github/workflows/projects-authenticated-read-validation.yml'
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if ! grep -qxF "$file" <<< "$allowed"; then
+              echo "Unexpected file outside authenticated project task write scope: $file" >&2
+              exit 1
+            fi
+          done < <(git diff --name-only "$base...$head")
+          git diff --check "$base...$head"
+          if git diff --name-only "$base...$head" | grep -q '^supabase/migrations/'; then
+            echo 'Migrations are outside this project task creation PR.' >&2
+            exit 1
+          fi
+          if git diff "$base...$head" -- src | grep -E 'NEXT_PUBLIC_ORGANIZATION_ID|service_role'; then
+            echo 'Forbidden public organization or service-role pattern detected in application code.' >&2
+            exit 1
+          fi
+          remote_supabase_pattern='supabase[[:space:]]+(link|db[[:space:]]+push)'
+          ignored_error_pattern='continue-on''-error'
+          if git diff "$base...$head" -- . | grep -E "$remote_supabase_pattern|$ignored_error_pattern"; then
+            echo 'Forbidden remote migration or ignored-error pattern detected.' >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.39.2
+
+      - name: Start ephemeral Supabase and apply local migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          supabase start >/dev/null
+          supabase db reset --local --no-seed
+
+      - name: Export local Supabase environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          supabase status -o env > "$RUNNER_TEMP/supabase.env"
+          read_env_value() {
+            local key="$1" value
+            value=$(awk -F= -v key="$key" '$1 == key {sub(/^[^=]*=/, ""); gsub(/^"|"$/, ""); print}' "$RUNNER_TEMP/supabase.env")
+            [ -n "$value" ] || { echo "Missing local Supabase value: $key" >&2; exit 1; }
+            printf '%s' "$value"
+          }
+          supabase_url=$(read_env_value API_URL)
+          supabase_anon_key=$(read_env_value ANON_KEY)
+          supabase_service_role_key=$(read_env_value SERVICE_ROLE_KEY)
+          echo "::add-mask::$supabase_anon_key"
+          echo "::add-mask::$supabase_service_role_key"
+          {
+            echo "SUPABASE_URL=$supabase_url"
+            echo "SUPABASE_ANON_KEY=$supabase_anon_key"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$supabase_service_role_key"
+          } >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/supabase.env"
+
+      - name: Create authenticated write fixtures
+        run: node scripts/ci/project-tasks-authenticated-write.mjs --fixtures
+
+      - name: Verify authorized task insertion
+        run: node scripts/ci/project-tasks-authenticated-write.mjs --authorized
+
+      - name: Verify denied and isolated insertions
+        run: node scripts/ci/project-tasks-authenticated-write.mjs --denied
+
+      - name: Run application validation
+        run: |
+          npx tsc --noEmit --incremental false
+          npm run lint
+          npm run test -- tests/services/project-task-create.test.ts tests/services/project-operational-permissions.test.ts tests/app/project-task-create-action.test.ts tests/app/project-tasks-page.test.ts tests/components/create-project-task-form.test.ts
+          npm run build
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup || true
