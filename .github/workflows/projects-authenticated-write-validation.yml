@@ -6,11 +6,14 @@ on:
       - 'src/app/app/projects/**'
       - 'src/lib/services/project-create.ts'
       - 'src/lib/services/project-operational-permissions.ts'
+      - 'src/lib/services/private-projects.ts'
       - 'src/lib/data/projects.ts'
       - 'src/app/projects/[id]/page.tsx'
       - 'tests/app/project-create-action.test.ts'
+      - 'tests/app/projects-page-actions.test.ts'
       - 'tests/components/create-project-form.test.ts'
       - 'tests/services/project-create.test.ts'
+      - 'tests/services/private-projects.test.ts'
       - 'tests/services/project-operational-permissions.test.ts'
       - 'scripts/ci/projects-authenticated-write.mjs'
       - 'supabase/migrations/20260728100000_project_create_mvp.sql'
@@ -49,10 +52,13 @@ jobs:
           src/lib/data/projects.ts
           src/lib/services/project-create.ts
           src/lib/services/project-operational-permissions.ts
+          src/lib/services/private-projects.ts
           tests/app/project-create-action.test.ts
+          tests/app/projects-page-actions.test.ts
           tests/components/create-project-form.test.ts
           tests/data/project-detail.test.ts
           tests/services/project-create.test.ts
+          tests/services/private-projects.test.ts
           tests/services/project-operational-permissions.test.ts
           scripts/ci/projects-authenticated-write.mjs
           supabase/migrations/20260728100000_project_create_mvp.sql
@@ -128,7 +134,7 @@ jobs:
         run: |
           npx tsc --noEmit --incremental false
           npm run lint
-          npm run test -- tests/services/project-create.test.ts tests/services/project-operational-permissions.test.ts tests/app/project-create-action.test.ts tests/components/create-project-form.test.ts tests/data/project-detail.test.ts tests/app/project-tasks-page.test.ts
+          npm run test -- tests/services/project-create.test.ts tests/services/project-operational-permissions.test.ts tests/app/project-create-action.test.ts tests/components/create-project-form.test.ts tests/app/projects-page-actions.test.ts tests/services/private-projects.test.ts tests/data/project-detail.test.ts tests/app/project-tasks-page.test.ts
           npm run build
 
       - name: Stop Supabase

@@ -1,0 +1,280 @@
+name: Project create incident remediation
+
+on:
+  push:
+    branches:
+      - fix/project-create-post-merge
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-create-incident-remediation
+  cancel-in-progress: false
+
+env:
+  TARGET_MIGRATION: "20260728100000"
+  TARGET_MIGRATION_FILE: supabase/migrations/20260728100000_project_create_mvp.sql
+
+jobs:
+  validate:
+    name: Validate corrective branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate scope and secrets review
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --check origin/main...HEAD
+          changed="$(git diff --name-only origin/main...HEAD)"
+          printf '%s\n' "$changed"
+          if git diff origin/main...HEAD -- src tests | grep -E 'NEXT_PUBLIC_ORGANIZATION_ID|service_role|SUPABASE_STAGING_DB_URL|APP_BETA_SSH_PRIVATE_KEY'; then
+            echo 'Forbidden secret or service-role pattern detected in application/test code.' >&2
+            exit 1
+          fi
+          test -f "$TARGET_MIGRATION_FILE"
+          test "$(git rev-parse HEAD^)" != "$(git rev-parse HEAD)"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run required validation
+        run: |
+          npx tsc --noEmit --incremental false
+          npm run lint
+          npm run test -- tests/services/private-projects.test.ts tests/app/projects-page-actions.test.ts tests/services/project-create.test.ts tests/app/project-create-action.test.ts tests/services/project-operational-permissions.test.ts
+          npm run test
+          npm run build
+
+  migrate-beta:
+    name: Apply approved project-create migration to beta
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      migration_action: ${{ steps.apply-state.outputs.action }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate beta database configuration
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [ -n "${SUPABASE_STAGING_DB_URL:-}" ] || { echo 'Missing SUPABASE_STAGING_DB_URL' >&2; exit 1; }
+          echo "::add-mask::$SUPABASE_STAGING_DB_URL"
+
+      - name: Install database tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          command -v psql >/dev/null 2>&1 || { sudo apt-get update -y >/dev/null && sudo apt-get install -y postgresql-client >/dev/null; }
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.39.2
+
+      - name: Backup public schema before migration
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/project-create-backup"
+          pg_dump "$SUPABASE_STAGING_DB_URL" --schema-only --no-owner --no-privileges --schema=public \
+            > "$RUNNER_TEMP/project-create-backup/public-before-project-create.sql"
+          test -s "$RUNNER_TEMP/project-create-backup/public-before-project-create.sql"
+
+      - name: Upload pre-migration schema backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-create-beta-schema-before-migration
+          path: ${{ runner.temp }}/project-create-backup/public-before-project-create.sql
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify migration compatibility and state
+        id: apply-state
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          applied="$(psql "$SUPABASE_STAGING_DB_URL" -X -Atqc "select count(*) from supabase_migrations.schema_migrations where version='${TARGET_MIGRATION}';")"
+          if [ "$applied" = "1" ]; then
+            echo 'action=already_applied' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          [ "$applied" = "0" ] || { echo "Unexpected migration history count: $applied" >&2; exit 1; }
+
+          psql "$SUPABASE_STAGING_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          do $$
+          begin
+            if to_regclass('public.projects') is null then
+              raise exception 'projects table is missing';
+            end if;
+            if not has_table_privilege('authenticated', 'public.projects', 'select') then
+              raise exception 'authenticated SELECT grant on projects is missing';
+            end if;
+            if not has_table_privilege('authenticated', 'public.projects', 'insert') then
+              raise exception 'authenticated INSERT grant on projects is missing';
+            end if;
+            if not exists (
+              select 1 from information_schema.columns
+              where table_schema='public' and table_name='projects' and column_name='client_id' and is_nullable='NO'
+            ) then
+              raise exception 'unexpected pre-migration client_id shape';
+            end if;
+            if not exists (
+              select 1 from information_schema.columns
+              where table_schema='public' and table_name='projects' and column_name='start_date' and is_nullable='NO'
+            ) then
+              raise exception 'unexpected pre-migration start_date shape';
+            end if;
+          end $$;
+          SQL
+          echo 'action=apply' >> "$GITHUB_OUTPUT"
+
+      - name: Apply only approved project-create migration
+        if: ${{ steps.apply-state.outputs.action == 'apply' }}
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          psql "$SUPABASE_STAGING_DB_URL" -X -v ON_ERROR_STOP=1 -f "$TARGET_MIGRATION_FILE"
+          supabase migration repair "$TARGET_MIGRATION" --status applied --db-url "$SUPABASE_STAGING_DB_URL"
+
+      - name: Verify migrated beta objects
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          psql "$SUPABASE_STAGING_DB_URL" -X -v ON_ERROR_STOP=1 <<SQL
+          do \$\$
+          begin
+            if not exists (select 1 from supabase_migrations.schema_migrations where version='${TARGET_MIGRATION}') then
+              raise exception 'target migration is not recorded';
+            end if;
+            if not exists (
+              select 1 from information_schema.columns
+              where table_schema='public' and table_name='projects' and column_name='description'
+            ) then
+              raise exception 'projects.description is missing';
+            end if;
+            if not exists (
+              select 1 from information_schema.columns
+              where table_schema='public' and table_name='projects' and column_name='expected_end_date'
+            ) then
+              raise exception 'projects.expected_end_date is missing';
+            end if;
+            if exists (
+              select 1 from information_schema.columns
+              where table_schema='public' and table_name='projects' and column_name in ('client_id','start_date') and is_nullable='NO'
+            ) then
+              raise exception 'optional project columns remain NOT NULL';
+            end if;
+            if not exists (
+              select 1 from pg_policies
+              where schemaname='public' and tablename='projects' and policyname='projects_insert_owner_admin' and cmd='INSERT'
+            ) then
+              raise exception 'project insert policy is missing';
+            end if;
+          end \$\$;
+          SQL
+          echo "::notice title=beta_project_create_migration::${TARGET_MIGRATION} verified"
+
+  deploy-beta:
+    name: Deploy corrective SHA to app-beta
+    needs: [validate, migrate-beta]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Validate app-beta configuration
+        env:
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_USER: ${{ secrets.APP_BETA_SSH_USER }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+          APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
+          APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
+          APP_BETA_HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          APP_BETA_HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for variable in APP_BETA_SSH_HOST APP_BETA_SSH_USER APP_BETA_SSH_PORT APP_BETA_SSH_PRIVATE_KEY APP_BETA_SSH_KNOWN_HOSTS APP_BETA_HEALTH_USERNAME APP_BETA_HEALTH_PASSWORD; do
+            [ -n "${!variable:-}" ] || { echo "Missing required secret: $variable" >&2; exit 1; }
+          done
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}" > ~/.ssh/app_beta_remediation_key
+          chmod 600 ~/.ssh/app_beta_remediation_key
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Build and deploy corrective SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            -i ~/.ssh/app_beta_remediation_key \
+            -p "${{ secrets.APP_BETA_SSH_PORT }}" \
+            "${{ secrets.APP_BETA_SSH_USER }}@${{ secrets.APP_BETA_SSH_HOST }}" \
+            "EXPECTED_SHA='$EXPECTED_SHA' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          REPO="/docker/openclaw-ejvk/data/apps/reformando-app"
+          COMPOSE="/docker/reformando-app-beta"
+          SERVICE="reformando-app-beta"
+          test -d "$REPO"
+          test -d "$COMPOSE"
+          restore_main() {
+            git -C "$REPO" checkout main >/dev/null 2>&1 || true
+            git -C "$REPO" pull --ff-only origin main >/dev/null 2>&1 || true
+          }
+          trap restore_main EXIT
+
+          git -C "$REPO" status --short
+          git -C "$REPO" remote set-url origin https://github.com/ReformandoPro/reforapp.git
+          git -C "$REPO" fetch origin "$EXPECTED_SHA"
+          git -C "$REPO" checkout --detach "$EXPECTED_SHA"
+          [ "$(git -C "$REPO" rev-parse HEAD)" = "$EXPECTED_SHA" ]
+
+          cd "$COMPOSE"
+          docker compose config --services | grep -qx "$SERVICE"
+          docker compose build --build-arg GIT_COMMIT_SHA="$EXPECTED_SHA" "$SERVICE"
+          docker compose up -d --no-deps "$SERVICE"
+          docker compose ps "$SERVICE"
+          docker compose logs --tail=120 "$SERVICE"
+          REMOTE
+
+      - name: Verify app-beta health and corrective SHA
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          response="$(curl --fail --silent --show-error --max-time 10 --user "$HEALTH_USERNAME:$HEALTH_PASSWORD" https://app-beta.reformando.pro/api/health)"
+          RESPONSE="$response" EXPECTED_SHA="$EXPECTED_SHA" node - <<'NODE'
+          const payload = JSON.parse(process.env.RESPONSE);
+          if (payload.status !== 'ok') throw new Error('Unexpected health status');
+          if (payload.commitSha !== process.env.EXPECTED_SHA) throw new Error('Unexpected deployed SHA');
+          console.log(`health:ok sha=${payload.commitSha}`);
+          NODE

@@ -98,8 +98,17 @@ export function createMockProjectsReader(): ProjectsReader {
   };
 }
 
+const PRIVATE_PROJECTS_LOG_PREFIX = "[private-projects]";
+
 const projectSelect =
-  "id, organization_id, client_id, name, status, address, type, progress, client_name, created_at, updated_at";
+  "id, organization_id, client_id, name, status, address, type, progress, client_name, updated_at";
+
+function logProjectsReadFailure(operation: "list" | "list_by_client" | "detail", code?: string): void {
+  console.error(PRIVATE_PROJECTS_LOG_PREFIX, {
+    operation,
+    code: code ?? "unknown",
+  });
+}
 
 export function createSupabaseProjectsReader(supabase: SupabaseClient): ProjectsReader {
   return {
@@ -111,7 +120,8 @@ export function createSupabaseProjectsReader(supabase: SupabaseClient): Projects
         .order("updated_at", { ascending: false });
 
       if (error) {
-        throw new Error(`Unable to read projects from Supabase: ${error.message}`);
+        logProjectsReadFailure("list", error.code);
+        throw new Error("Unable to read projects from Supabase");
       }
 
       return ((data ?? []) as ProjectRow[]).map(mapProjectRow);
@@ -125,7 +135,8 @@ export function createSupabaseProjectsReader(supabase: SupabaseClient): Projects
         .order("updated_at", { ascending: false });
 
       if (error) {
-        throw new Error(`Unable to read client projects from Supabase: ${error.message}`);
+        logProjectsReadFailure("list_by_client", error.code);
+        throw new Error("Unable to read client projects from Supabase");
       }
 
       return ((data ?? []) as ProjectRow[]).map(mapProjectRow);
@@ -139,7 +150,8 @@ export function createSupabaseProjectsReader(supabase: SupabaseClient): Projects
         .maybeSingle();
 
       if (error) {
-        throw new Error(`Unable to read project from Supabase: ${error.message}`);
+        logProjectsReadFailure("detail", error.code);
+        throw new Error("Unable to read project from Supabase");
       }
 
       if (!data) {
