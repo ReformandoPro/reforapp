@@ -19,6 +19,7 @@ on:
       - 'supabase/migrations/20260728100000_project_create_mvp.sql'
       - '.github/workflows/projects-authenticated-write-validation.yml'
       - '.github/workflows/projects-authenticated-read-validation.yml'
+      - '.github/workflows/project-tasks-authenticated-write-validation.yml'
   workflow_dispatch:
 
 permissions:
@@ -64,7 +65,8 @@ jobs:
           scripts/ci/projects-authenticated-write.mjs
           supabase/migrations/20260728100000_project_create_mvp.sql
           .github/workflows/projects-authenticated-write-validation.yml
-          .github/workflows/projects-authenticated-read-validation.yml'
+          .github/workflows/projects-authenticated-read-validation.yml
+          .github/workflows/project-tasks-authenticated-write-validation.yml'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed"; then
