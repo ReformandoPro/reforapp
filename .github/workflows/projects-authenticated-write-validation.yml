@@ -49,6 +49,7 @@ jobs:
           src/app/app/projects/new/actions.ts
           src/app/app/projects/new/CreateProjectForm.tsx
           src/app/app/projects/new/page.tsx
+          src/app/app/projects/new/state.ts
           src/app/projects/[id]/page.tsx
           src/lib/data/projects.ts
           src/lib/services/project-create.ts
