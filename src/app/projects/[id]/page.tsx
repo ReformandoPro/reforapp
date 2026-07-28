@@ -69,7 +69,7 @@ export default async function ProjectDetailPage({
           />
           <div className="grid gap-3 rounded-xl border border-subtle bg-bg-surface p-5 text-sm">
             <p>Dirección: {project.address}</p>
-            <p>Inicio: {project.startDate}</p>
+            <p>Inicio: {project.startDate ?? "Sin fecha"}</p>
             <p>Tipo: {project.type}</p>
           </div>
           <section

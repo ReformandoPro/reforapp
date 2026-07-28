@@ -2,13 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { StatusBadge } from "@/components/app/StatusBadge";
+import { CreateProjectTaskForm, TaskBoard } from "@/components/tasks";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { getProjectPhasesForRequest, getProjectTasksForRequest, groupProjectTasksByStatus } from "@/lib/data";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import { getProjectOperationalSummary } from "@/lib/services/project-operational-summary";
 import { createSupabaseProjectsReader, toProjectDetailState } from "@/lib/services/private-projects";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
@@ -106,12 +109,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   if (state.status !== "ready") return null;
 
   const project = state.item;
-  const summary = await getProjectOperationalSummary({
-    supabase,
-    organizationId: ctx.organizationId,
-    projectId: project.id,
-    currentProgress: project.progress,
-  });
+  const [summary, phases, tasks] = await Promise.all([
+    getProjectOperationalSummary({
+      supabase,
+      organizationId: ctx.organizationId,
+      projectId: project.id,
+      currentProgress: project.progress,
+    }),
+    getProjectPhasesForRequest(project.id),
+    getProjectTasksForRequest(project.id),
+  ]);
+  const taskColumns = groupProjectTasksByStatus(tasks);
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-7">
@@ -175,6 +183,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           )}
         </Card>
       </div>
+
+      <section aria-labelledby="project-task-board-heading" className="space-y-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-content-tertiary">Operativa</p>
+          <h2 id="project-task-board-heading" className="mt-2 font-num text-2xl font-bold tracking-tight">Task Board</h2>
+          <p className="mt-2 text-sm text-content-secondary">Las nuevas tareas aparecen en Pendientes.</p>
+        </div>
+        {canWriteProjectTasks(ctx.role) ? <CreateProjectTaskForm projectId={project.id} phases={phases} /> : null}
+        <TaskBoard columns={taskColumns} />
+      </section>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Card padding="lg" variant="surface">

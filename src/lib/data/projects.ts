@@ -38,7 +38,7 @@ export type ProjectDetail = {
   clientName: string;
   status: ProjectStatus;
   address: string;
-  startDate: string;
+  startDate: string | null;
   type: string;
 };
 
@@ -333,7 +333,7 @@ export async function getProjectDetail(projectId: string): Promise<ProjectDetail
     const client = await createServerSupabaseClient();
     const { data, error } = await client
       .from("projects")
-      .select("id, name, status, address, start_date, type, client:clients (display_name)")
+      .select("id, name, status, address, start_date, type, client_name, client:clients (display_name)")
       .eq("id", projectId)
       .eq("organization_id", context.organizationId)
       .maybeSingle();
@@ -345,14 +345,14 @@ export async function getProjectDetail(projectId: string): Promise<ProjectDetail
     if (!data) return null;
 
     const clientRow = Array.isArray(data.client) ? data.client[0] : data.client;
-    if (!clientRow?.display_name || !isProjectStatus(data.status)) {
+    if (!isProjectStatus(data.status)) {
       throw new Error("Unable to load project detail from Supabase");
     }
 
     return {
       id: data.id,
       name: data.name,
-      clientName: clientRow.display_name,
+      clientName: clientRow?.display_name ?? data.client_name ?? "Sin cliente",
       status: data.status,
       address: data.address,
       startDate: data.start_date,

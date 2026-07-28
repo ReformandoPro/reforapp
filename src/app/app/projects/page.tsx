@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canCreateProjects } from "@/lib/services/project-operational-permissions";
 import { createSupabaseProjectsReader, toProjectsListState } from "@/lib/services/private-projects";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
@@ -52,7 +53,12 @@ export default async function AppProjectsPage() {
         }
         title="Obras"
         description="Un listado claro para priorizar ejecución, revisar avance y entrar al detalle operativo de cada proyecto."
-        actions={<LinkButton href="/app" variant="secondary">Volver al panel</LinkButton>}
+        actions={
+          <>
+            {canCreateProjects(ctx.role) ? <LinkButton href="/app/projects/new">Nueva obra</LinkButton> : null}
+            <LinkButton href="/app" variant="secondary">Volver al panel</LinkButton>
+          </>
+        }
       />
 
       {state.status === "error" ? (
@@ -65,7 +71,10 @@ export default async function AppProjectsPage() {
       {state.status === "empty" ? (
         <EmptyState
           title="Todavía no hay obras"
-          description="Cuando se cree la primera obra, aparecerá aquí con su cliente, estado y avance."
+          description="Crea la primera obra para empezar a organizar tareas y seguimiento."
+          actions={
+            canCreateProjects(ctx.role) ? <LinkButton href="/app/projects/new">Nueva obra</LinkButton> : undefined
+          }
         />
       ) : null}
 

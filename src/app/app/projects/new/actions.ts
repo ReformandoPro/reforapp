@@ -1,132 +1,105 @@
 "use server";
 
-import crypto from "node:crypto";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { isProjectStatus } from "@/lib/domain/projects/status";
+import {
+  validateCreateProjectForm,
+  type CreateProjectFieldErrors,
+} from "@/lib/services/project-create";
 import { getOrganizationContextForRequest } from "@/lib/services/org-context";
+import { canCreateProjects } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
-function backToNewWithError(message: string) {
-  const url = new URL("/app/projects/new", "http://local");
-  url.searchParams.set("error", message);
-  redirect(url.pathname + url.search);
+const PROJECT_CREATE_LOG_PREFIX = "[project-create]";
+
+export type CreateProjectActionState = {
+  status: "idle" | "error";
+  message: string | null;
+  fieldErrors: CreateProjectFieldErrors;
+};
+
+export const INITIAL_CREATE_PROJECT_STATE: CreateProjectActionState = {
+  status: "idle",
+  message: null,
+  fieldErrors: {},
+};
+
+function errorState(
+  message: string,
+  fieldErrors: CreateProjectFieldErrors = {}
+): CreateProjectActionState {
+  return { status: "error", message, fieldErrors };
 }
 
-function readRequiredText(formData: FormData, key: string, label: string) {
-  const value = String(formData.get(key) ?? "").trim();
-  if (!value) {
-    backToNewWithError(`${label} es obligatorio.`);
-  }
-  return value;
+function logCreateFailure(reason: string): void {
+  console.error(PROJECT_CREATE_LOG_PREFIX, { reason });
 }
 
-function readOptionalText(formData: FormData, key: string) {
-  const value = String(formData.get(key) ?? "").trim();
-  return value.length > 0 ? value : null;
-}
-
-export async function createProjectWithOptionalQuickClient(formData: FormData) {
-  const ctx = await getOrganizationContextForRequest();
-
-  if (!ctx.ok) {
-    redirect("/login?redirectTo=/app/projects/new");
+export async function createProjectAction(
+  _previousState: CreateProjectActionState,
+  formData: FormData
+): Promise<CreateProjectActionState> {
+  const validation = validateCreateProjectForm(formData);
+  if (!validation.ok) {
+    return errorState("Revisa los campos indicados.", validation.fieldErrors);
   }
 
-  const canWrite = ctx.role === "owner" || ctx.role === "admin";
-  if (!canWrite) {
-    backToNewWithError("No tienes permisos para crear obras.");
+  const context = await getOrganizationContextForRequest();
+  if (!context.ok || !canCreateProjects(context.role)) {
+    return errorState("No tienes permisos para crear obras.");
   }
-
-  const name = readRequiredText(formData, "name", "Nombre");
-  const statusRaw = readRequiredText(formData, "status", "Estado");
-  if (!isProjectStatus(statusRaw)) {
-    backToNewWithError("Estado inválido.");
-  }
-  const address = readRequiredText(formData, "address", "Dirección");
-  const type = readRequiredText(formData, "type", "Tipo");
-
-  const progressRaw = String(formData.get("progress") ?? "0").trim();
-  const progress = Number.isFinite(Number(progressRaw)) ? Number(progressRaw) : NaN;
-  const safeProgress = Number.isFinite(progress) ? progress : 0;
-
-  const quickClientEnabled = String(formData.get("quickClientEnabled") ?? "") === "on";
 
   const supabase = await createServerSupabaseClient();
+  let clientName = "Sin cliente";
 
-  let clientId = String(formData.get("clientId") ?? "").trim();
-
-  if (quickClientEnabled) {
-    const displayName = readRequiredText(
-      formData,
-      "quickClientDisplayName",
-      "Nombre del cliente"
-    );
-    const email = readOptionalText(formData, "quickClientEmail");
-    const phone = readOptionalText(formData, "quickClientPhone");
-
-    const { data: createdClient, error: clientError } = await supabase
+  if (validation.input.clientId) {
+    const { data: client, error: clientError } = await supabase
       .from("clients")
-      .insert({
-        organization_id: ctx.organizationId,
-        display_name: displayName,
-        email,
-        phone,
-      })
-      .select("id")
-      .single();
+      .select("id, display_name")
+      .eq("organization_id", context.organizationId)
+      .eq("id", validation.input.clientId)
+      .maybeSingle();
 
-    const createdClientId = createdClient?.id;
-
-    if (clientError || !createdClientId) {
-      backToNewWithError(
-        "No pudimos crear el cliente. Revisa los datos e inténtalo de nuevo."
-      );
+    if (clientError) {
+      logCreateFailure("client_query_failed");
+      return errorState("No pudimos crear la obra.");
     }
 
-    clientId = createdClientId;
+    if (!client?.display_name) {
+      return errorState("Revisa los campos indicados.", {
+        clientId: "Selecciona un cliente válido para tu organización.",
+      });
+    }
+
+    clientName = client.display_name;
   }
 
-  if (!clientId) {
-    backToNewWithError("Debes seleccionar o crear un cliente.");
+  const { data: project, error: insertError } = await supabase
+    .from("projects")
+    .insert({
+      organization_id: context.organizationId,
+      client_id: validation.input.clientId,
+      name: validation.input.name,
+      title: validation.input.name,
+      client_name: clientName,
+      description: validation.input.description,
+      start_date: validation.input.startDate,
+      expected_end_date: validation.input.expectedEndDate,
+      status: "in_progress",
+      address: "",
+      type: "",
+      progress: 0,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !project?.id) {
+    logCreateFailure("insert_failed");
+    return errorState("No pudimos crear la obra. Inténtalo de nuevo.");
   }
 
-  // Validate client belongs to org (defense-in-depth; RLS also enforces this)
-  const { data: clientRow, error: clientLookupError } = await supabase
-    .from("clients")
-    .select("id, display_name")
-    .eq("organization_id", ctx.organizationId)
-    .eq("id", clientId)
-    .maybeSingle();
-
-  const clientDisplayName = clientRow?.display_name;
-
-  if (clientLookupError || !clientDisplayName) {
-    backToNewWithError("Cliente inválido para tu organización.");
-  }
-
-  const projectId = crypto.randomUUID();
-
-  // NOTE: projects table currently has legacy NOT NULL columns (title, client_name, start_date).
-  // We map minimally to satisfy constraints.
-  const { error: projectError } = await supabase.from("projects").insert({
-    id: projectId,
-    organization_id: ctx.organizationId,
-    client_id: clientId,
-    name,
-    title: name,
-    client_name: clientDisplayName,
-    status: statusRaw,
-    address,
-    type,
-    progress: Math.max(0, Math.min(100, Math.trunc(safeProgress))),
-    start_date: new Date().toISOString(),
-  });
-
-  if (projectError) {
-    backToNewWithError("No pudimos crear la obra. Revisa los datos e inténtalo de nuevo.");
-  }
-
-  redirect(`/app/projects/${projectId}`);
+  revalidatePath("/app");
+  revalidatePath("/app/projects");
+  redirect("/app/projects");
 }
-

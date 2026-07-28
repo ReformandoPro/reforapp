@@ -62,9 +62,18 @@ jobs:
           src/components/tasks/index.ts
           src/lib/services/project-operational-permissions.ts
           src/lib/services/project-task-create.ts
+          src/lib/services/project-create.ts
           tests/app/project-task-create-action.test.ts
+          tests/app/project-create-action.test.ts
           tests/components/create-project-task-form.test.ts
-          tests/services/project-task-create.test.ts'
+          tests/components/create-project-form.test.ts
+          tests/services/project-task-create.test.ts
+          tests/services/project-create.test.ts
+          src/app/app/projects/page.tsx
+          src/app/app/projects/[id]/page.tsx
+          src/app/app/projects/new/actions.ts
+          src/app/app/projects/new/CreateProjectForm.tsx
+          src/app/app/projects/new/page.tsx'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed" && [[ "$file" != .github/workflows/* ]] && [[ "$file" != scripts/ci/* ]] && [[ "$file" != supabase/* ]]; then
