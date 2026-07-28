@@ -16,7 +16,6 @@ on:
       - 'tests/services/project-task-create.test.ts'
       - 'scripts/ci/project-tasks-authenticated-write.mjs'
       - '.github/workflows/project-tasks-authenticated-write-validation.yml'
-      - '.github/workflows/projects-authenticated-read-validation.yml'
   workflow_dispatch:
 
 permissions:
