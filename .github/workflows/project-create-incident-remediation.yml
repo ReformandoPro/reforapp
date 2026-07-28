@@ -89,8 +89,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/project-create-backup"
-          pg_dump "$SUPABASE_STAGING_DB_URL" --schema-only --no-owner --no-privileges --schema=public \
-            > "$RUNNER_TEMP/project-create-backup/public-before-project-create.sql"
+          supabase db dump \
+            --db-url "$SUPABASE_STAGING_DB_URL" \
+            --schema public \
+            -f "$RUNNER_TEMP/project-create-backup/public-before-project-create.sql"
           test -s "$RUNNER_TEMP/project-create-backup/public-before-project-create.sql"
 
       - name: Upload pre-migration schema backup
