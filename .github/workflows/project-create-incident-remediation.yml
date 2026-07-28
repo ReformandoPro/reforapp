@@ -277,6 +277,6 @@ jobs:
           RESPONSE="$response" EXPECTED_SHA="$EXPECTED_SHA" node - <<'NODE'
           const payload = JSON.parse(process.env.RESPONSE);
           if (payload.status !== 'ok') throw new Error('Unexpected health status');
-          if (payload.commitSha !== process.env.EXPECTED_SHA) throw new Error('Unexpected deployed SHA');
-          console.log(`health:ok sha=${payload.commitSha}`);
+          if (payload.commit !== process.env.EXPECTED_SHA) throw new Error('Unexpected deployed SHA');
+          console.log(`health:ok sha=${payload.commit}`);
           NODE
