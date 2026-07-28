@@ -98,7 +98,14 @@ jobs:
           [ "$SERVICE" = "reformando-app-beta" ]
           test -d "$REPO"
           test -d "$COMPOSE"
-          test -z "$(git -C "$REPO" status --porcelain)"
+
+          repo_status="$(git -C "$REPO" status --porcelain)"
+          if [ -n "$repo_status" ]; then
+            echo 'Refusing to deploy: repository checkout is not clean.' >&2
+            printf '%s\n' "$repo_status" >&2
+            exit 1
+          fi
+          echo 'Repository checkout is clean.'
 
           restore_main() {
             git -C "$REPO" checkout main >/dev/null 2>&1 || true
@@ -106,7 +113,9 @@ jobs:
           }
           trap restore_main EXIT
 
+          echo "Fetching corrective SHA: $EXPECTED_SHA"
           timeout 20 git -C "$REPO" fetch origin "$EXPECTED_SHA"
+          echo 'Checking out corrective SHA.'
           git -C "$REPO" checkout --detach "$EXPECTED_SHA"
           [ "$(git -C "$REPO" rev-parse HEAD)" = "$EXPECTED_SHA" ]
 
