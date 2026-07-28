@@ -12,9 +12,19 @@ import { CreateProjectForm } from "./CreateProjectForm";
 export const dynamic = "force-dynamic";
 
 type ClientRow = {
-  id: string;
-  display_name: string;
+  id?: unknown;
+  display_name?: unknown;
 };
+
+export function mapClientRowsToOptions(rows: unknown): Array<{ id: string; displayName: string }> {
+  if (!Array.isArray(rows)) return [];
+
+  return rows.flatMap((row: ClientRow) => {
+    if (typeof row?.id !== "string" || typeof row.display_name !== "string") return [];
+    const displayName = row.display_name.trim();
+    return displayName ? [{ id: row.id, displayName }] : [];
+  });
+}
 
 export default async function NewProjectPage() {
   const context = await getOrganizationContextForRequest();
@@ -42,10 +52,7 @@ export default async function NewProjectPage() {
 
   if (error) console.error("[project-create]", { reason: "clients_query_failed" });
 
-  const clients = ((data ?? []) as ClientRow[]).map((client) => ({
-    id: client.id,
-    displayName: client.display_name,
-  }));
+  const clients = mapClientRowsToOptions(data);
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">

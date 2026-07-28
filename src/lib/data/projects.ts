@@ -69,7 +69,6 @@ type SupabaseProjectTaskQueryRow = {
   status: string;
   priority: string;
   due_date: string | null;
-  created_at: string;
   phase:
     | SupabaseProjectTaskPhaseQueryRow
     | SupabaseProjectTaskPhaseQueryRow[]
@@ -130,10 +129,6 @@ function isIsoDate(value: string): boolean {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-function isIsoDateTime(value: string): boolean {
-  return !Number.isNaN(Date.parse(value));
-}
-
 function normalizeJoinedTaskPhase(
   phase: SupabaseProjectTaskQueryRow["phase"]
 ): SupabaseProjectTaskPhaseQueryRow | null {
@@ -157,8 +152,6 @@ function mapSupabaseProjectTaskRow(
     (row.phase_id !== null && !isNonEmptyString(row.phase_id)) ||
     (row.due_date !== null &&
       (typeof row.due_date !== "string" || !isIsoDate(row.due_date))) ||
-    !isNonEmptyString(row.created_at) ||
-    !isIsoDateTime(row.created_at) ||
     !isProjectTaskStatus(row.status) ||
     !isProjectTaskPriority(row.priority)
   ) {
@@ -447,12 +440,11 @@ export async function getProjectTasksForRequest(projectId: string): Promise<Proj
     const { data, error } = await client
       .from("project_tasks")
       .select(
-        "id, organization_id, project_id, phase_id, title, description, status, priority, due_date, created_at, phase:project_phases(id, organization_id, project_id, title)"
+        "id, organization_id, project_id, phase_id, title, description, status, priority, due_date, phase:project_phases(id, organization_id, project_id, title)"
       )
       .eq("project_id", projectId)
       .eq("organization_id", context.organizationId)
       .order("due_date", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true })
       .order("id", { ascending: true });
 
     if (error) {
