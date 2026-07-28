@@ -116,19 +116,14 @@ jobs:
             exit 1
           fi
 
-          test -d "$REPO"
           test -d "$COMPOSE"
 
-          cd "$REPO"
-
-          git status --short
-          REMOTE_URL="$(git remote get-url origin)"
-          case "$REMOTE_URL" in
-            https://github.com/ReformandoPro/reforapp.git|git@github.com:ReformandoPro/reforapp.git|ssh://git@github.com/ReformandoPro/reforapp.git) ;;
-            *) echo "Refusing to deploy: unexpected repository remote" >&2; exit 1 ;;
-          esac
-
-          git fetch --no-tags origin "+refs/heads/*:refs/remotes/origin/*" "+refs/pull/*/head:refs/remotes/origin/pr/*"
+          REMOTE_URL="https://github.com/ReformandoPro/reforapp.git"
+          DEPLOY_ROOT="$(mktemp -d /tmp/reformando-app-beta-deploy.XXXXXX)"
+          trap 'rm -rf "$DEPLOY_ROOT"' EXIT
+          git clone --no-checkout --no-tags "$REMOTE_URL" "$DEPLOY_ROOT/repo"
+          cd "$DEPLOY_ROOT/repo"
+          git fetch --no-tags origin "$EXPECTED_SHA"
           if ! git cat-file -e "$EXPECTED_SHA^{commit}"; then
             echo "Refusing to deploy: requested commit does not exist in the repository" >&2
             exit 1
@@ -144,15 +139,24 @@ jobs:
           git rev-parse HEAD
           git --no-pager log --oneline -5
 
+          COMPOSE_OVERRIDE="$DEPLOY_ROOT/compose.override.yml"
+          cat > "$COMPOSE_OVERRIDE" <<'COMPOSE'
+          services:
+            reformando-app-beta:
+              build:
+                context: ${DEPLOY_ROOT}/repo
+                dockerfile: Dockerfile
+                args:
+                  GIT_COMMIT_SHA: ${EXPECTED_SHA}
+          COMPOSE
+
           cd "$COMPOSE"
 
-          docker compose config --services | grep -qx "$SERVICE"
-
-          docker compose build --build-arg GIT_COMMIT_SHA="$EXPECTED_SHA" "$SERVICE"
-          docker compose up -d --no-deps "$SERVICE"
-
-          docker compose ps "$SERVICE"
-          docker compose logs --tail=120 "$SERVICE"
+          docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" config --services | grep -qx "$SERVICE"
+          DEPLOY_ROOT="$DEPLOY_ROOT" EXPECTED_SHA="$EXPECTED_SHA" docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" build "$SERVICE"
+          docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" up -d --no-deps "$SERVICE"
+          docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" ps "$SERVICE"
+          docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" logs --tail=120 "$SERVICE"
           REMOTE
 
       - name: Verify app-beta health
