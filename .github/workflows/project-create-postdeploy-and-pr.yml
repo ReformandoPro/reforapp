@@ -115,31 +115,13 @@ jobs:
             echo 'Draft PR already exists.'
             exit 0
           fi
-          payload="$(node - <<'NODE'
-          console.log(JSON.stringify({
-            title: 'fix(projects): restore project creation in app-beta',
-            head: process.env.HEAD_BRANCH,
-            base: 'main',
-            draft: true,
-            body: `## Incident root cause
-- PR #129 deploy failed; app-beta remained on PR #128.
-- Beta legacy projects table does not contain created_at.
-- Project list selected created_at and failed before rendering data.
-- Project-create migration was not applied.
-
-## Fix
-- Use the beta-compatible projects projection without created_at.
-- Sanitize Supabase errors while retaining structured error codes.
-- Add regression coverage for owner/admin/member CTA behavior in error and empty states.
-- Apply and verify only migration 20260728100000 in app-beta with schema backup.
-
-## Validation
-- TypeScript, lint, focused tests, full suite and build pass.
-- Corrected SHA deployed to app-beta and health verified.
-- No production changes, no service role in application code, RLS remains enabled.`
-          }));
-NODE
-          )"
+          body=$'## Incident root cause\n- PR #129 deploy failed; app-beta remained on PR #128.\n- Beta legacy projects table does not contain created_at.\n- Project list selected created_at and failed before rendering data.\n- Project-create migration was not applied.\n\n## Fix\n- Use the beta-compatible projects projection without created_at.\n- Sanitize Supabase errors while retaining structured error codes.\n- Add regression coverage for owner/admin/member CTA behavior.\n- Apply and verify only migration 20260728100000 in app-beta with schema backup.\n\n## Validation\n- TypeScript, lint, focused tests, full suite and build pass.\n- Corrective SHA deployed to app-beta and health verified.\n- No production changes, no service role in application code, RLS remains enabled.'
+          payload="$(jq -n \
+            --arg title 'fix(projects): restore project creation in app-beta' \
+            --arg head "$HEAD_BRANCH" \
+            --arg base 'main' \
+            --arg body "$body" \
+            '{title: $title, head: $head, base: $base, body: $body, draft: true}')"
           response="$(curl --fail --silent --show-error \
             -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
