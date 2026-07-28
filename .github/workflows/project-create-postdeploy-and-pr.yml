@@ -30,7 +30,7 @@ jobs:
       - name: Verify app-beta runtime SHA and sanitized logs
         shell: bash
         env:
-          EXPECTED_SHA: a20266980e5cbb99256058bd10d6e5f4560fabf0
+          EXPECTED_SHA: a2026698dba03fb6391b12e6640a862923b9ebbf
         run: |
           set -Eeuo pipefail
           ssh -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
