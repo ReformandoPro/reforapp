@@ -17,6 +17,7 @@ on:
       - 'tests/services/project-operational-permissions.test.ts'
       - 'scripts/ci/projects-authenticated-write.mjs'
       - 'supabase/migrations/20260728100000_project_create_mvp.sql'
+      - '.github/workflows/project-create-incident-deploy.yml'
       - '.github/workflows/projects-authenticated-write-validation.yml'
       - '.github/workflows/projects-authenticated-read-validation.yml'
       - '.github/workflows/project-tasks-authenticated-write-validation.yml'
@@ -65,6 +66,7 @@ jobs:
           tests/data/project-tasks.test.ts
           scripts/ci/projects-authenticated-write.mjs
           supabase/migrations/20260728100000_project_create_mvp.sql
+          .github/workflows/project-create-incident-deploy.yml
           .github/workflows/projects-authenticated-write-validation.yml
           .github/workflows/projects-authenticated-read-validation.yml
           .github/workflows/project-tasks-authenticated-write-validation.yml'

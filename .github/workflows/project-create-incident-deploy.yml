@@ -1,0 +1,132 @@
+name: Project create incident deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-app-beta
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate corrective SHA
+    if: ${{ github.ref_name == 'fix/project-create-post-merge' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate branch and scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${GITHUB_REF_NAME}" = "fix/project-create-post-merge"
+          git diff --check origin/main...HEAD
+          if git diff origin/main...HEAD -- src tests | grep -E 'NEXT_PUBLIC_ORGANIZATION_ID|service_role'; then
+            echo 'Forbidden public organization or service-role pattern detected.' >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run required validation
+        run: |
+          npm run lint
+          npm run test
+          npm run build
+
+  deploy-beta:
+    name: Deploy corrective SHA to app-beta
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Validate app-beta configuration
+        env:
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_USER: ${{ secrets.APP_BETA_SSH_USER }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+          APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
+          APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
+          APP_BETA_HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          APP_BETA_HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for variable in APP_BETA_SSH_HOST APP_BETA_SSH_USER APP_BETA_SSH_PORT APP_BETA_SSH_PRIVATE_KEY APP_BETA_SSH_KNOWN_HOSTS APP_BETA_HEALTH_USERNAME APP_BETA_HEALTH_PASSWORD; do
+            [ -n "${!variable:-}" ] || { echo "Missing required secret: $variable" >&2; exit 1; }
+          done
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}" > ~/.ssh/app_beta_incident_key
+          chmod 600 ~/.ssh/app_beta_incident_key
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Build and deploy corrective SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            -i ~/.ssh/app_beta_incident_key \
+            -p "${{ secrets.APP_BETA_SSH_PORT }}" \
+            "${{ secrets.APP_BETA_SSH_USER }}@${{ secrets.APP_BETA_SSH_HOST }}" \
+            "EXPECTED_SHA='$EXPECTED_SHA' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          REPO="/docker/openclaw-ejvk/data/apps/reformando-app"
+          COMPOSE="/docker/reformando-app-beta"
+          SERVICE="reformando-app-beta"
+
+          [ "$REPO" = "/docker/openclaw-ejvk/data/apps/reformando-app" ]
+          [ "$COMPOSE" = "/docker/reformando-app-beta" ]
+          [ "$SERVICE" = "reformando-app-beta" ]
+          test -d "$REPO"
+          test -d "$COMPOSE"
+          test -z "$(git -C "$REPO" status --porcelain)"
+
+          restore_main() {
+            git -C "$REPO" checkout main >/dev/null 2>&1 || true
+            timeout 20 git -C "$REPO" pull --ff-only origin main >/dev/null 2>&1 || true
+          }
+          trap restore_main EXIT
+
+          timeout 20 git -C "$REPO" fetch origin "$EXPECTED_SHA"
+          git -C "$REPO" checkout --detach "$EXPECTED_SHA"
+          [ "$(git -C "$REPO" rev-parse HEAD)" = "$EXPECTED_SHA" ]
+
+          cd "$COMPOSE"
+          docker compose config --services | grep -qx "$SERVICE"
+          docker compose build --build-arg GIT_COMMIT_SHA="$EXPECTED_SHA" "$SERVICE"
+          docker compose up -d --no-deps "$SERVICE"
+          docker compose ps "$SERVICE"
+          docker compose logs --tail=120 "$SERVICE"
+          REMOTE
+
+      - name: Verify app-beta health and corrective SHA
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          response="$(curl --fail --silent --show-error --max-time 10 --user "$HEALTH_USERNAME:$HEALTH_PASSWORD" https://app-beta.reformando.pro/api/health)"
+          RESPONSE="$response" EXPECTED_SHA="$EXPECTED_SHA" node - <<'NODE'
+          const payload = JSON.parse(process.env.RESPONSE);
+          if (payload.status !== 'ok') throw new Error('Unexpected health status');
+          if (payload.commit !== process.env.EXPECTED_SHA) throw new Error('Unexpected deployed SHA');
+          console.log(`health:ok sha=${payload.commit}`);
+          NODE
