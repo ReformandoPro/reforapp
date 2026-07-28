@@ -16,10 +16,8 @@ vi.mock("../../src/lib/supabase/ssr", () => ({
   createServerSupabaseClient: mocks.createServerSupabaseClient,
 }));
 
-import {
-  createProjectAction,
-  INITIAL_CREATE_PROJECT_STATE,
-} from "../../src/app/app/projects/new/actions";
+import { createProjectAction } from "../../src/app/app/projects/new/actions";
+import { INITIAL_CREATE_PROJECT_STATE } from "../../src/app/app/projects/new/state";
 
 const ORGANIZATION_ID = "10000000-0000-4000-8000-000000000001";
 const CLIENT_ID = "20000000-0000-4000-8000-000000000001";

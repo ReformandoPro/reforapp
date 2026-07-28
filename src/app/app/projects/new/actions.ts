@@ -11,19 +11,9 @@ import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { canCreateProjects } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
+import type { CreateProjectActionState } from "./state";
+
 const PROJECT_CREATE_LOG_PREFIX = "[project-create]";
-
-export type CreateProjectActionState = {
-  status: "idle" | "error";
-  message: string | null;
-  fieldErrors: CreateProjectFieldErrors;
-};
-
-export const INITIAL_CREATE_PROJECT_STATE: CreateProjectActionState = {
-  status: "idle",
-  message: null,
-  fieldErrors: {},
-};
 
 function errorState(
   message: string,
