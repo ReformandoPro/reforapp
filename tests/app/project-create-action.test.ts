@@ -32,13 +32,17 @@ function validForm(values: Record<string, string> = {}) {
 
 function configureSupabase(options: {
   client?: { data: unknown; error: unknown };
-  insert?: { data: unknown; error: unknown };
+  insert?:
+    | { data: unknown; error: unknown }
+    | Array<{ data: unknown; error: unknown }>;
 } = {}) {
   const clientResult = options.client ?? {
     data: { id: CLIENT_ID, display_name: "Cliente A" },
     error: null,
   };
-  const insertResult = options.insert ?? { data: { id: PROJECT_ID }, error: null };
+  const insertResults = Array.isArray(options.insert)
+    ? options.insert
+    : [options.insert ?? { data: { id: PROJECT_ID }, error: null }];
   const clientEqCalls: Array<[string, string]> = [];
   const clientQuery = {
     select: vi.fn().mockReturnThis(),
@@ -55,7 +59,7 @@ function configureSupabase(options: {
       return projectQuery;
     }),
     select: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue(insertResult),
+    single: vi.fn().mockImplementation(async () => insertResults.shift() ?? insertResults[0]),
   };
   const supabase = {
     from: vi.fn((table: string) => {
@@ -130,6 +134,41 @@ describe("createProjectAction", () => {
       client_id: CLIENT_ID,
       client_name: "Cliente A",
     });
+  });
+
+  it("retries only the legacy project status constraint with compatible active aliases", async () => {
+    const supabase = configureSupabase({
+      insert: [
+        {
+          data: null,
+          error: {
+            code: "23514",
+            message:
+              'new row for relation "projects" violates check constraint "projects_status_check"',
+          },
+        },
+        { data: { id: PROJECT_ID }, error: null },
+      ],
+    });
+
+    await expect(run()).rejects.toThrow("NEXT_REDIRECT");
+
+    expect(supabase.insertPayloads).toHaveLength(2);
+    expect(supabase.insertPayloads[0]).toMatchObject({ status: "in_progress" });
+    expect(supabase.insertPayloads[1]).toMatchObject({ status: "active" });
+  });
+
+  it("does not retry unrelated insert failures", async () => {
+    const supabase = configureSupabase({
+      insert: {
+        data: null,
+        error: { code: "42501", message: "row-level security policy rejected the insert" },
+      },
+    });
+
+    await expect(run()).resolves.toMatchObject({ status: "error" });
+
+    expect(supabase.insertPayloads).toHaveLength(1);
   });
 
   it("rejects a client outside the active organization", async () => {

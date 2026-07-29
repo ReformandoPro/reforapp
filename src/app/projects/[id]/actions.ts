@@ -11,19 +11,9 @@ import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
+import type { CreateProjectTaskActionState } from "./state";
+
 const PROJECT_TASK_CREATE_LOG_PREFIX = "[project-task-create]";
-
-export type CreateProjectTaskActionState = {
-  status: "idle" | "error" | "success";
-  message: string | null;
-  fieldErrors: CreateProjectTaskFieldErrors;
-};
-
-export const INITIAL_CREATE_PROJECT_TASK_STATE: CreateProjectTaskActionState = {
-  status: "idle",
-  message: null,
-  fieldErrors: {},
-};
 
 function errorState(
   message: string,
@@ -113,7 +103,7 @@ export async function createProjectTaskAction(
     return errorState("No pudimos crear la tarea. Inténtalo de nuevo.");
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/app/projects/${projectId}`);
 
   return {
     status: "success",

@@ -14,10 +14,10 @@ vi.mock("../../src/lib/services/org-context", () => ({
   getOrganizationContextForRequest: mocks.getOrganizationContextForRequest,
 }));
 
+import { createProjectTaskAction } from "../../src/app/projects/[id]/actions";
 import {
-  createProjectTaskAction,
   INITIAL_CREATE_PROJECT_TASK_STATE,
-} from "../../src/app/projects/[id]/actions";
+} from "../../src/app/projects/[id]/state";
 
 const ORGANIZATION_ID = "10000000-0000-4000-8000-000000000001";
 const OTHER_ORGANIZATION_ID = "10000000-0000-4000-8000-000000000002";
@@ -121,7 +121,7 @@ describe("createProjectTaskAction", () => {
         status: "pending",
       },
     ]);
-    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/projects/${PROJECT_ID}`);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/app/projects/${PROJECT_ID}`);
   });
 
   it("takes organization only from authenticated context and ignores client organization/status", async () => {
@@ -196,6 +196,14 @@ describe("createProjectTaskAction", () => {
     });
     expect(supabase.from).not.toHaveBeenCalledWith("project_phases");
     expect(supabase.insertPayloads[0]).toMatchObject({ phase_id: null });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/app/projects/${PROJECT_ID}`);
+  });
+
+  it("keeps the use-server module limited to server functions", async () => {
+    const actions = await import("../../src/app/projects/[id]/actions");
+
+    expect(Object.keys(actions)).toEqual(["createProjectTaskAction"]);
+    expect(Object.values(actions).every((value) => typeof value === "function")).toBe(true);
   });
 
   it("rejects missing membership and roles without write permission", async () => {
