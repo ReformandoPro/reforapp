@@ -51,12 +51,16 @@ jobs:
           src/app/app/projects/new/CreateProjectForm.tsx
           src/app/app/projects/new/page.tsx
           src/app/app/projects/new/state.ts
+          src/app/projects/[id]/actions.ts
           src/app/projects/[id]/page.tsx
+          src/app/projects/[id]/state.ts
+          src/components/tasks/CreateProjectTaskForm.tsx
           src/lib/data/projects.ts
           src/lib/services/project-create.ts
           src/lib/services/project-operational-permissions.ts
           src/lib/services/private-projects.ts
           tests/app/project-create-action.test.ts
+          tests/app/project-task-create-action.test.ts
           tests/app/projects-page-actions.test.ts
           tests/components/create-project-form.test.ts
           tests/data/project-detail.test.ts

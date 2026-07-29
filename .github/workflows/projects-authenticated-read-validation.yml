@@ -51,6 +51,7 @@ jobs:
           src/app/projects/page.tsx
           src/app/projects/[id]/page.tsx
           src/app/projects/[id]/actions.ts
+          src/app/projects/[id]/state.ts
           src/lib/data/index.ts
           src/lib/data/projects.ts
           tests/data/projects-first-read.test.ts

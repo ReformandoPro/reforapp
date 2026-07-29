@@ -39,20 +39,35 @@ jobs:
           set -Eeuo pipefail
           base='${{ github.event.pull_request.base.sha || github.event.repository.default_branch }}'
           head='${{ github.event.pull_request.head.sha || github.sha }}'
-          allowed='src/app/projects/[id]/actions.ts
+          allowed='src/app/app/projects/[id]/page.tsx
+          src/app/app/projects/new/CreateProjectForm.tsx
+          src/app/app/projects/new/actions.ts
+          src/app/app/projects/new/page.tsx
+          src/app/app/projects/new/state.ts
+          src/app/projects/[id]/actions.ts
           src/app/projects/[id]/page.tsx
+          src/app/projects/[id]/state.ts
           src/components/tasks/CreateProjectTaskForm.tsx
           src/components/tasks/index.ts
+          src/lib/data/projects.ts
+          src/lib/services/private-projects.ts
           src/lib/services/project-operational-permissions.ts
           src/lib/services/project-task-create.ts
+          tests/app/project-create-action.test.ts
           tests/app/project-task-create-action.test.ts
+          tests/app/projects-page-actions.test.ts
           tests/app/project-tasks-page.test.ts
+          tests/components/create-project-form.test.ts
           tests/components/create-project-task-form.test.ts
+          tests/data/project-tasks.test.ts
+          tests/services/private-projects.test.ts
           tests/services/project-operational-permissions.test.ts
           tests/services/project-task-create.test.ts
           scripts/ci/project-tasks-authenticated-write.mjs
+          .github/workflows/project-create-incident-deploy.yml
           .github/workflows/project-tasks-authenticated-write-validation.yml
-          .github/workflows/projects-authenticated-read-validation.yml'
+          .github/workflows/projects-authenticated-read-validation.yml
+          .github/workflows/projects-authenticated-write-validation.yml'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if ! grep -qxF "$file" <<< "$allowed"; then
