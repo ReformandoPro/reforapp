@@ -109,16 +109,24 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   if (state.status !== "ready") return null;
 
   const project = state.item;
-  const [summary, phases, tasks] = await Promise.all([
+  const [summary, phasesResult, tasksResult] = await Promise.all([
     getProjectOperationalSummary({
       supabase,
       organizationId: ctx.organizationId,
       projectId: project.id,
       currentProgress: project.progress,
     }),
-    getProjectPhasesForRequest(project.id),
-    getProjectTasksForRequest(project.id),
+    getProjectPhasesForRequest(project.id).catch((error: unknown) => {
+      console.error("Project phases query failed", error);
+      return [];
+    }),
+    getProjectTasksForRequest(project.id).catch((error: unknown) => {
+      console.error("Project tasks query failed", error);
+      return [];
+    }),
   ]);
+  const phases = phasesResult;
+  const tasks = tasksResult;
   const taskColumns = groupProjectTasksByStatus(tasks);
 
   return (

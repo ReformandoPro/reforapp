@@ -47,6 +47,20 @@ describe("project creation validation", () => {
     });
   });
 
+  it("accepts PostgreSQL UUID values used by the beta fixtures", () => {
+    expect(
+      validateCreateProjectForm(
+        form({
+          name: "Proyecto Demo Org 2",
+          client_id: "bbbbbbbb-0000-0000-0000-000000000001",
+        })
+      )
+    ).toMatchObject({
+      ok: true,
+      input: { clientId: "bbbbbbbb-0000-0000-0000-000000000001" },
+    });
+  });
+
   it("rejects invalid names and oversized descriptions", () => {
     expect(validateCreateProjectForm(form({ name: " " }))).toMatchObject({
       ok: false,

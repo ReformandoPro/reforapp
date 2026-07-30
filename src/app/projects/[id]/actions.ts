@@ -11,19 +11,9 @@ import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { canWriteProjectTasks } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
+import type { CreateProjectTaskActionState } from "./state";
+
 const PROJECT_TASK_CREATE_LOG_PREFIX = "[project-task-create]";
-
-export type CreateProjectTaskActionState = {
-  status: "idle" | "error" | "success";
-  message: string | null;
-  fieldErrors: CreateProjectTaskFieldErrors;
-};
-
-export const INITIAL_CREATE_PROJECT_TASK_STATE: CreateProjectTaskActionState = {
-  status: "idle",
-  message: null,
-  fieldErrors: {},
-};
 
 function errorState(
   message: string,
@@ -93,18 +83,20 @@ export async function createProjectTaskAction(
     }
   }
 
+  const taskPayload = {
+    organization_id: context.organizationId,
+    project_id: projectId,
+    title: validation.input.title,
+    description: validation.input.description,
+    priority: validation.input.priority,
+    due_date: validation.input.dueDate,
+    status: "pending",
+    ...(validation.input.phaseId ? { phase_id: validation.input.phaseId } : {}),
+  };
+
   const { data: inserted, error: insertError } = await supabase
     .from("project_tasks")
-    .insert({
-      organization_id: context.organizationId,
-      project_id: projectId,
-      phase_id: validation.input.phaseId,
-      title: validation.input.title,
-      description: validation.input.description,
-      priority: validation.input.priority,
-      due_date: validation.input.dueDate,
-      status: "pending",
-    })
+    .insert(taskPayload)
     .select("id")
     .single();
 
@@ -113,7 +105,7 @@ export async function createProjectTaskAction(
     return errorState("No pudimos crear la tarea. Inténtalo de nuevo.");
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/app/projects/${projectId}`);
 
   return {
     status: "success",
