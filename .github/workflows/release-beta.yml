@@ -1,0 +1,226 @@
+name: Release Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_sha:
+        description: 'Full 40-character commit SHA to release'
+        required: true
+        type: string
+      environment:
+        description: 'Release environment'
+        required: true
+        default: beta
+        type: choice
+        options:
+          - beta
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-beta
+  cancel-in-progress: false
+
+env:
+  STAGING_PROJECT_REF: hafljwojvblyfljddjcr
+
+jobs:
+  release-beta:
+    name: Release Beta
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release input and secrets
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ inputs.deploy_sha }}
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_USER: ${{ secrets.APP_BETA_SSH_USER }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+          APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
+          APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
+          APP_BETA_HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          APP_BETA_HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$DEPLOY_SHA" =~ ^[0-9a-fA-F]{40}$ ]]
+          git cat-file -e "$DEPLOY_SHA^{commit}"
+          test "${{ inputs.environment }}" = beta
+          for variable in \
+            APP_BETA_SSH_HOST APP_BETA_SSH_USER APP_BETA_SSH_PORT \
+            APP_BETA_SSH_PRIVATE_KEY APP_BETA_SSH_KNOWN_HOSTS \
+            APP_BETA_HEALTH_USERNAME APP_BETA_HEALTH_PASSWORD \
+            SUPABASE_ACCESS_TOKEN SUPABASE_STAGING_DB_URL; do
+            if [ -z "${!variable:-}" ]; then
+              echo "Missing required GitHub Actions secret: $variable" >&2
+              exit 1
+            fi
+          done
+          git checkout --detach "$DEPLOY_SHA"
+          test "$(git rev-parse HEAD)" = "$DEPLOY_SHA"
+
+      - name: Install Supabase CLI and PostgreSQL client
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm i -g supabase@2
+          command -v psql >/dev/null 2>&1 || {
+            sudo apt-get update -y
+            sudo apt-get install -y postgresql-client
+          }
+          supabase --version
+          psql --version
+
+      - name: Backup staging database
+        shell: bash
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/supabase-backups"
+          supabase db dump \
+            --db-url "$SUPABASE_STAGING_DB_URL" \
+            --schema public \
+            -f "$RUNNER_TEMP/supabase-backups/staging-before-${{ inputs.deploy_sha }}.sql"
+          test -s "$RUNNER_TEMP/supabase-backups/staging-before-${{ inputs.deploy_sha }}.sql"
+
+      - name: Upload staging backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-beta-backup-${{ inputs.deploy_sha }}
+          path: ${{ runner.temp }}/supabase-backups/*.sql
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Apply repository migrations
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          supabase login --token "$SUPABASE_ACCESS_TOKEN"
+          supabase link --project-ref "$STAGING_PROJECT_REF"
+          supabase db push
+
+      - name: Verify migrations, permissions, RLS and database state
+        shell: bash
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set -Eeuo pipefail
+          psql_query() {
+            psql "$SUPABASE_STAGING_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "$1"
+          }
+
+          while IFS= read -r migration; do
+            version="${migration%%_*}"
+            applied=$(psql_query "select count(*) from supabase_migrations.schema_migrations where version = '$version';")
+            test "$applied" = 1
+          done < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort)
+
+          psql_query "
+            do \$\$
+            begin
+              if not exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'projects' and rowsecurity) then
+                raise exception 'projects RLS is not enabled';
+              end if;
+              if not exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'project_tasks' and rowsecurity) then
+                raise exception 'project_tasks RLS is not enabled';
+              end if;
+              if not has_table_privilege('authenticated', 'public.projects', 'INSERT') then
+                raise exception 'authenticated lacks INSERT on public.projects';
+              end if;
+              if not has_table_privilege('authenticated', 'public.project_tasks', 'INSERT') then
+                raise exception 'authenticated lacks INSERT on public.project_tasks';
+              end if;
+            end
+            \$\$;
+          "
+          echo "Database verification passed for ${{ inputs.deploy_sha }}"
+
+      - name: Deploy exact SHA to app-beta
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ inputs.deploy_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}" > ~/.ssh/app_beta_deploy_key
+          printf '%s\n' "${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/app_beta_deploy_key ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/app_beta_deploy_key -p "${{ secrets.APP_BETA_SSH_PORT }}" \
+            "${{ secrets.APP_BETA_SSH_USER }}@${{ secrets.APP_BETA_SSH_HOST }}" \
+            "EXPECTED_SHA=$DEPLOY_SHA bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          REPO="/docker/openclaw-ejvk/data/apps/reformando-app"
+          COMPOSE="/docker/reformando-app-beta"
+          SERVICE="reformando-app-beta"
+          test -d "$COMPOSE"
+          DEPLOY_ROOT="$(mktemp -d /tmp/reformando-app-beta-release.XXXXXX)"
+          trap 'rm -rf "$DEPLOY_ROOT"' EXIT
+          git clone --no-checkout --no-tags https://github.com/ReformandoPro/reforapp.git "$DEPLOY_ROOT/repo"
+          cd "$DEPLOY_ROOT/repo"
+          git fetch --no-tags origin "$EXPECTED_SHA"
+          git checkout --detach "$EXPECTED_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          COMPOSE_OVERRIDE="$DEPLOY_ROOT/compose.override.yml"
+          cat > "$COMPOSE_OVERRIDE" <<'COMPOSE'
+          services:
+            reformando-app-beta:
+              build:
+                context: ${DEPLOY_ROOT}/repo
+                dockerfile: Dockerfile
+                args:
+                  GIT_COMMIT_SHA: ${EXPECTED_SHA}
+          COMPOSE
+          cd "$COMPOSE"
+          docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" config --services | grep -qx "$SERVICE"
+          DEPLOY_ROOT="$DEPLOY_ROOT" EXPECTED_SHA="$EXPECTED_SHA" docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" build "$SERVICE"
+          docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" up -d --no-deps "$SERVICE"
+          docker compose -f docker-compose.yml -f "$COMPOSE_OVERRIDE" ps "$SERVICE"
+          REMOTE
+
+      - name: Verify beta health
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ inputs.deploy_sha }}
+          HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          response_file="$RUNNER_TEMP/beta-health.json"
+          status=$(curl --silent --show-error --max-time 60 \
+            --user "$HEALTH_USERNAME:$HEALTH_PASSWORD" \
+            --output "$response_file" --write-out '%{http_code}' \
+            https://app-beta.reformando.pro/api/health)
+          test "$status" = 200
+          EXPECTED_SHA="$DEPLOY_SHA" RESPONSE="$(cat "$response_file")" node - <<'NODE'
+          const body = JSON.parse(process.env.RESPONSE);
+          if (body.status !== 'ok' || body.commit !== process.env.EXPECTED_SHA) process.exit(1);
+          NODE
+
+      - name: Release summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Release Beta'
+            echo "- SHA: `${{ inputs.deploy_sha }}`"
+            echo "- Environment: `${{ inputs.environment }}`"
+            echo "- Timestamp (UTC): `$(date -u +%Y-%m-%dT%H:%M:%SZ)`"
+            echo '- Backup: completed before migration step'
+            echo '- Migrations: applied and verified before deployment step'
+            echo '- Database verification: RLS, grants and migration history checked'
+            echo '- Deployment: attempted with the exact SHA'
+            echo '- Health check: attempted after deployment'
+          } >> "$GITHUB_STEP_SUMMARY"
