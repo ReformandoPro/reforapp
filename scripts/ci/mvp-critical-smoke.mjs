@@ -64,7 +64,7 @@ function safeMessage(error) {
 function fail(step, error, table = "") {
   const code = error?.code ?? error?.status ?? "unknown";
   log(step, "failed", `code=${String(code)}${table ? ` table=${table}` : ""} message=${safeMessage(error)}`);
-  throw new Error(`${step} failed`);
+  throw new Error(`${step} failed`, { cause: error });
 }
 
 async function expectNoError(step, operation, table) {
