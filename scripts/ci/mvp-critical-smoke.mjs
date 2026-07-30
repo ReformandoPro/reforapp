@@ -137,7 +137,6 @@ async function cleanup() {
     ["projects", ids.project],
     ["clients", ids.client],
     ["clients", ids.otherClient],
-    ["projects", ids.otherProject],
   ];
 
   for (const [table, id] of resources) {
@@ -201,6 +200,14 @@ async function verifyAdminPersistence() {
     if (!data) throw new Error(`administrative persistence check found no row in ${table}`);
   }
   log("verify_admin_persistence", "passed");
+}
+
+async function assertAdminAbsent(table, id, step) {
+  const { data, error } = await admin.from(table).select("id").eq("id", id).limit(1);
+  if (error) throw error;
+  if (Array.isArray(data) && data.length > 0) {
+    fail(step, new Error(`unexpected row ${id} exists after denied write`), table);
+  }
 }
 
 let functionalError;
@@ -328,6 +335,26 @@ try {
 
   const noMembership = await signIn(emails.noMembershipUser);
   const otherOrganization = await signIn(emails.otherOrganizationUser);
+  await expectNoError(
+    "create_other_organization",
+    () => otherOrganization.from("organizations").insert({ id: ids.otherOrganization, name: `MVP Smoke Other ${runId}` }),
+    "organizations"
+  );
+  await expectNoError(
+    "create_other_organization_membership",
+    () => otherOrganization.from("memberships").insert({ organization_id: ids.otherOrganization, user_id: ids.otherOrganizationUser, role: "owner" }),
+    "memberships"
+  );
+  const ownOrganization = await expectNoError(
+    "read_other_organization",
+    () => otherOrganization.from("organizations").select("id").eq("id", ids.otherOrganization).single(),
+    "organizations"
+  );
+  if (ownOrganization.id !== ids.otherOrganization) fail("read_other_organization", new Error("own organization was not returned"), "organizations");
+  log("create_other_organization", "passed");
+  log("create_other_organization_membership", "passed");
+  log("read_other_organization", "passed");
+
   for (const [label, client] of [["no_membership", noMembership], ["other_organization", otherOrganization]]) {
     const { data, error } = await client.from("projects").select("id").eq("id", ids.project);
     if (error) fail(`negative_read_${label}`, error, "projects");
@@ -336,10 +363,12 @@ try {
   }
 
   const { data: anonymousData, error: anonymousError } = await clientForSession().from("clients").insert({ id: ids.otherClient, organization_id: ids.organization, display_name: `Anonymous ${runId}` }).select("id");
+  await assertAdminAbsent("clients", ids.otherClient, "negative_write_anonymous");
   if (!anonymousError && Array.isArray(anonymousData) && anonymousData.length > 0) fail("negative_write_anonymous", new Error("anonymous write unexpectedly succeeded"), "clients");
   log("negative_write_anonymous", "passed", `result=${anonymousError ? "explicitly_denied" : "empty_due_to_rls"}`);
 
   const { data: otherWriteData, error: otherWriteError } = await otherOrganization.from("project_tasks").insert({ id: ids.otherTask, organization_id: ids.organization, project_id: ids.project, phase_id: ids.phase, title: `Unexpected ${runId}`, status: "pending", priority: "medium" }).select("id");
+  await assertAdminAbsent("project_tasks", ids.otherTask, "negative_write_other_organization");
   if (!otherWriteError && Array.isArray(otherWriteData) && otherWriteData.length > 0) fail("negative_write_other_organization", new Error("cross-organization write unexpectedly succeeded"), "project_tasks");
   log("negative_write_other_organization", "passed", `result=${otherWriteError ? "explicitly_denied" : "empty_due_to_rls"}`);
 } catch (error) {
