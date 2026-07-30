@@ -113,6 +113,13 @@ describe("project tasks real read", () => {
     await expect(getProjectTasksForRequest("project-b")).resolves.toEqual([]);
   });
 
+  it("fails explicitly when Supabase is not configured", async () => {
+    await expect(getProjectTasksForRequest("project-a")).rejects.toThrow(
+      "Unable to load project tasks from Supabase"
+    );
+    expect(mocks.createServerSupabaseClient).not.toHaveBeenCalled();
+  });
+
   it("rejects rows from another project or organization", async () => {
     configureAuthenticatedOrganization();
     mockQuery({ data: [taskRow({ project_id: "project-b" })], error: null });

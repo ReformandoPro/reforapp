@@ -48,6 +48,15 @@ describe("project phases real read", () => {
     await expect(getProjectPhasesForRequest("project-b")).resolves.toEqual([]);
   });
 
+  it("fails explicitly when Supabase is not configured", async () => {
+    mocks.getOrganizationContextForRequest.mockResolvedValue({ ok: true, organizationId: "org-a", role: "member", user: { id: "user-a" } });
+
+    await expect(getProjectPhasesForRequest("project-a")).rejects.toThrow(
+      "Unable to load project phases from Supabase"
+    );
+    expect(mocks.createServerSupabaseClient).not.toHaveBeenCalled();
+  });
+
   it("does not use public organization variables and sanitizes query errors", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");

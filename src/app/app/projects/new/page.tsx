@@ -50,7 +50,9 @@ export default async function NewProjectPage() {
     .eq("organization_id", context.organizationId)
     .order("display_name");
 
-  if (error) console.error("[project-create]", { reason: "clients_query_failed" });
+  if (error) {
+    throw new Error("Unable to load clients from Supabase", { cause: error });
+  }
 
   const clients = mapClientRowsToOptions(data);
 

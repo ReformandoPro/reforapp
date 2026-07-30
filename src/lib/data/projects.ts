@@ -365,7 +365,7 @@ export async function getProjectPhasesForRequest(projectId: string): Promise<Pro
       throw new Error("Unable to load project phases from Supabase");
     }
 
-    return [];
+    throw new Error("Unable to load project phases from Supabase");
   }
 
   const context = await getOrganizationContextForRequest();
@@ -426,7 +426,7 @@ export async function getProjectTasksForRequest(projectId: string): Promise<Proj
       throw new Error("Unable to load project tasks from Supabase");
     }
 
-    return [];
+    throw new Error("Unable to load project tasks from Supabase");
   }
 
   const context = await getOrganizationContextForRequest();
