@@ -27,6 +27,7 @@ const ids = {
   issue: randomUUID(),
   budget: randomUUID(),
   budgetLine: randomUUID(),
+  noMembershipClient: randomUUID(),
   otherClient: randomUUID(),
   otherTask: randomUUID(),
 };
@@ -136,6 +137,7 @@ async function cleanup() {
     ["project_phases", ids.phase],
     ["projects", ids.project],
     ["clients", ids.client],
+    ["clients", ids.noMembershipClient],
     ["clients", ids.otherClient],
   ];
 
@@ -361,6 +363,14 @@ try {
     if (Array.isArray(data) && data.length !== 0) fail(`negative_read_${label}`, new Error("protected project was returned"), "projects");
     log(`negative_read_${label}`, "passed", "result=empty_due_to_rls");
   }
+
+  const { data: noMembershipWriteData, error: noMembershipWriteError } = await noMembership
+    .from("clients")
+    .insert({ id: ids.noMembershipClient, organization_id: ids.organization, display_name: `No membership ${runId}` })
+    .select("id");
+  await assertAdminAbsent("clients", ids.noMembershipClient, "negative_write_no_membership");
+  if (!noMembershipWriteError && Array.isArray(noMembershipWriteData) && noMembershipWriteData.length > 0) fail("negative_write_no_membership", new Error("no-membership write unexpectedly succeeded"), "clients");
+  log("negative_write_no_membership", "passed", `result=${noMembershipWriteError ? "explicitly_denied" : "empty_due_to_rls"}`);
 
   const { data: anonymousData, error: anonymousError } = await clientForSession().from("clients").insert({ id: ids.otherClient, organization_id: ids.organization, display_name: `Anonymous ${runId}` }).select("id");
   await assertAdminAbsent("clients", ids.otherClient, "negative_write_anonymous");
