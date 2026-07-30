@@ -17,6 +17,8 @@ on:
       - 'tests/services/project-operational-permissions.test.ts'
       - 'scripts/ci/projects-authenticated-write.mjs'
       - 'supabase/migrations/20260728100000_project_create_mvp.sql'
+      - 'supabase/migrations/20260730103000_authenticated_project_write_grants.sql'
+      - 'supabase/rollbacks/20260730103000_authenticated_project_write_grants.rollback.sql'
       - '.github/workflows/project-create-incident-deploy.yml'
       - '.github/workflows/projects-authenticated-write-validation.yml'
       - '.github/workflows/projects-authenticated-read-validation.yml'
@@ -43,7 +45,11 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          base='${{ github.event.pull_request.base.sha || github.event.repository.default_branch }}'
+          if [ -n '${{ github.event.pull_request.base.sha }}' ]; then
+            base='${{ github.event.pull_request.base.sha }}'
+          else
+            base="$(git rev-parse 'origin/${{ github.event.repository.default_branch }}')"
+          fi
           head='${{ github.event.pull_request.head.sha || github.sha }}'
           allowed='src/app/app/projects/page.tsx
           src/app/app/projects/[id]/page.tsx
@@ -57,6 +63,7 @@ jobs:
           src/components/tasks/CreateProjectTaskForm.tsx
           src/lib/data/projects.ts
           src/lib/services/project-create.ts
+          src/lib/services/project-task-create.ts
           src/lib/services/project-operational-permissions.ts
           src/lib/services/private-projects.ts
           tests/app/project-create-action.test.ts
@@ -65,23 +72,78 @@ jobs:
           tests/components/create-project-form.test.ts
           tests/data/project-detail.test.ts
           tests/services/project-create.test.ts
+          tests/services/project-task-create.test.ts
           tests/services/private-projects.test.ts
           tests/services/project-operational-permissions.test.ts
           tests/data/project-tasks.test.ts
-          scripts/ci/projects-authenticated-write.mjs
-          supabase/migrations/20260728100000_project_create_mvp.sql
+          supabase/migrations/20260730103000_authenticated_project_write_grants.sql
+          supabase/rollbacks/20260730103000_authenticated_project_write_grants.rollback.sql
           .github/workflows/project-create-incident-deploy.yml
           .github/workflows/projects-authenticated-write-validation.yml
           .github/workflows/projects-authenticated-read-validation.yml
           .github/workflows/project-tasks-authenticated-write-validation.yml'
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            if ! grep -qxF "$file" <<< "$allowed"; then
-              echo "Unexpected file outside authenticated project write scope: $file" >&2
-              exit 1
-            fi
-          done < <(git diff --name-only "$base...$head")
+          while IFS= read -r -d '' status; do
+            case "$status" in
+              R*|C*)
+                IFS= read -r -d '' source
+                IFS= read -r -d '' destination
+                echo "Renames and copies are not allowed in authenticated project write scope: $source -> $destination" >&2
+                exit 1
+                ;;
+              *)
+                IFS= read -r -d '' file
+                if ! grep -qxF "$file" <<< "$allowed"; then
+                  echo "Unexpected file outside authenticated project write scope: $file" >&2
+                  exit 1
+                fi
+                ;;
+            esac
+          done < <(git diff --name-status -z --find-renames --find-copies "$base...$head")
           git diff --check "$base...$head"
+          allowed_migrations='supabase/migrations/20260730103000_authenticated_project_write_grants.sql'
+          while IFS= read -r -d '' status; do
+            case "$status" in
+              R*|C*)
+                IFS= read -r -d '' source
+                IFS= read -r -d '' destination
+                echo "Renames and copies are not allowed for migrations: $source -> $destination" >&2
+                exit 1
+                ;;
+              *)
+                IFS= read -r -d '' migration
+                case "$migration" in
+                  supabase/migrations/*)
+                    if ! grep -qxF "$migration" <<< "$allowed_migrations"; then
+                      echo "Unexpected migration outside authenticated project write scope: $migration" >&2
+                      exit 1
+                    fi
+                    ;;
+                esac
+                ;;
+            esac
+          done < <(git diff --name-status -z --find-renames --find-copies "$base...$head")
+          allowed_rollbacks='supabase/rollbacks/20260730103000_authenticated_project_write_grants.rollback.sql'
+          while IFS= read -r -d '' status; do
+            case "$status" in
+              R*|C*)
+                IFS= read -r -d '' source
+                IFS= read -r -d '' destination
+                echo "Renames and copies are not allowed for rollbacks: $source -> $destination" >&2
+                exit 1
+                ;;
+              *)
+                IFS= read -r -d '' rollback
+                case "$rollback" in
+                  supabase/rollbacks/*)
+                    if ! grep -qxF "$rollback" <<< "$allowed_rollbacks"; then
+                      echo "Unexpected rollback outside authenticated project write scope: $rollback" >&2
+                      exit 1
+                    fi
+                    ;;
+                esac
+                ;;
+            esac
+          done < <(git diff --name-status -z --find-renames --find-copies "$base...$head")
           if git diff "$base...$head" -- src | grep -E 'NEXT_PUBLIC_ORGANIZATION_ID|service_role'; then
             echo 'Forbidden public organization or service-role pattern detected in application code.' >&2
             exit 1
