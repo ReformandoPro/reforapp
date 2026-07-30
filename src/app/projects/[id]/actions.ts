@@ -83,18 +83,20 @@ export async function createProjectTaskAction(
     }
   }
 
+  const taskPayload = {
+    organization_id: context.organizationId,
+    project_id: projectId,
+    title: validation.input.title,
+    description: validation.input.description,
+    priority: validation.input.priority,
+    due_date: validation.input.dueDate,
+    status: "pending",
+    ...(validation.input.phaseId ? { phase_id: validation.input.phaseId } : {}),
+  };
+
   const { data: inserted, error: insertError } = await supabase
     .from("project_tasks")
-    .insert({
-      organization_id: context.organizationId,
-      project_id: projectId,
-      phase_id: validation.input.phaseId,
-      title: validation.input.title,
-      description: validation.input.description,
-      priority: validation.input.priority,
-      due_date: validation.input.dueDate,
-      status: "pending",
-    })
+    .insert(taskPayload)
     .select("id")
     .single();
 

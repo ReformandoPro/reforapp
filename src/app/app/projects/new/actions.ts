@@ -82,6 +82,7 @@ export async function createProjectAction(
   }
 
   const projectPayload = {
+    id: crypto.randomUUID(),
     organization_id: context.organizationId,
     client_id: validation.input.clientId,
     name: validation.input.name,

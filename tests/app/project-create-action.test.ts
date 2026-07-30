@@ -107,6 +107,9 @@ describe("createProjectAction", () => {
     await expect(run(formData)).rejects.toThrow("NEXT_REDIRECT");
 
     expect(supabase.insertPayloads[0]).toMatchObject({
+      id: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      ),
       organization_id: ORGANIZATION_ID,
       client_id: null,
       name: "Reforma Centro",
@@ -156,6 +159,9 @@ describe("createProjectAction", () => {
     expect(supabase.insertPayloads).toHaveLength(2);
     expect(supabase.insertPayloads[0]).toMatchObject({ status: "in_progress" });
     expect(supabase.insertPayloads[1]).toMatchObject({ status: "active" });
+    expect(supabase.insertPayloads[1]).toMatchObject({
+      id: (supabase.insertPayloads[0] as { id: string }).id,
+    });
   });
 
   it("does not retry unrelated insert failures", async () => {

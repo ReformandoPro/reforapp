@@ -21,7 +21,7 @@ import {
 
 const ORGANIZATION_ID = "10000000-0000-4000-8000-000000000001";
 const OTHER_ORGANIZATION_ID = "10000000-0000-4000-8000-000000000002";
-const PROJECT_ID = "20000000-0000-4000-8000-000000000001";
+const PROJECT_ID = "dddddddd-0000-0000-0000-000000000001";
 const OTHER_PROJECT_ID = "20000000-0000-4000-8000-000000000002";
 const PHASE_ID = "30000000-0000-4000-8000-000000000001";
 
@@ -188,14 +188,14 @@ describe("createProjectTaskAction", () => {
     expect(supabase.insertBuilder.insert).not.toHaveBeenCalled();
   });
 
-  it("creates a task without phase using null", async () => {
+  it("creates a task without sending the absent legacy phase column", async () => {
     const supabase = configureSupabase();
 
     await expect(run(validForm({ phase_id: "" }))).resolves.toMatchObject({
       status: "success",
     });
     expect(supabase.from).not.toHaveBeenCalledWith("project_phases");
-    expect(supabase.insertPayloads[0]).toMatchObject({ phase_id: null });
+    expect(supabase.insertPayloads[0]).not.toHaveProperty("phase_id");
     expect(mocks.revalidatePath).toHaveBeenCalledWith(`/app/projects/${PROJECT_ID}`);
   });
 
