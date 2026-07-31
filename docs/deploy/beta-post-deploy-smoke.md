@@ -14,11 +14,11 @@ Este procedimiento es operativo y debe ejecutarse solo con autorización explíc
 
 ## Comandos y comprobaciones
 
-### 1. Verificar migraciones
+### 1. Verificar migraciones — lectura de evidencia
 
 Ejecutar el workflow manual `Supabase Staging Ops (manual)` con `mode=db_push`, confirmación de backup y project ref correcto. Debe terminar con `supabase db push` exitoso y sin conflictos.
 
-### 2. Verificar aplicación
+### 2. Verificar aplicación — lectura de workflow
 
 El workflow `Deploy app-beta` se dispara por push a `main` o manualmente con un SHA completo. Debe validar secretos, construir `reformando-app-beta` y no tocar `reformando-beta`.
 
@@ -32,9 +32,9 @@ curl --fail --silent --show-error --max-time 10 \
   https://app-beta.reformando.pro/api/health
 ```
 
-PASS solo si devuelve HTTP 200, JSON válido, `status: "ok"` y el SHA esperado.
+PASS solo si devuelve HTTP 200, JSON válido, `status: "ok"`, campo `commit` presente y el SHA esperado.
 
-### 4. Smoke autenticado
+### 4. Smoke autenticado — lecturas y escrituras autorizadas
 
 Con una sesión QA legítima, ejecutar los casos de `docs/qa/beta-functional-audit.md` en este orden:
 
@@ -48,6 +48,8 @@ Con una sesión QA legítima, ejecutar los casos de `docs/qa/beta-functional-aud
 8. responsive y errores.
 
 Registrar timestamp, ruta, status, duración, usuario/organización anonimizados y evidencia sanitizada. Nunca registrar cookies, JWT, contraseñas o claves.
+
+La auditoría de navegador se ejecuta con Chrome/DevTools para capturar consola, red y errores 500/503 sin exportar secretos.
 
 ## Limpieza
 
