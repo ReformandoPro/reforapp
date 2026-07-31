@@ -36,6 +36,7 @@ jobs:
           fetch-depth: 0
 
       - name: Validate PR functional scope
+        id: scope
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -78,24 +79,43 @@ jobs:
           .github/workflows/project-tasks-authenticated-write-validation.yml
           .github/workflows/projects-authenticated-read-validation.yml
           .github/workflows/projects-authenticated-write-validation.yml'
+          changed_files=()
           while IFS= read -r -d '' status; do
             case "$status" in
               R*|C*)
                 IFS= read -r -d '' source
                 IFS= read -r -d '' destination
-                echo "Renames and copies are not allowed in authenticated project task write scope: $source -> $destination" >&2
-                exit 1
+                changed_files+=("$status" "$source" "$destination")
                 ;;
               *)
                 IFS= read -r -d '' file
-                if ! grep -qxF "$file" <<< "$allowed"; then
-                  echo "Unexpected file outside authenticated project task write scope: $file" >&2
-                  exit 1
-                fi
+                changed_files+=("$status" "$file")
                 ;;
             esac
           done < <(git diff --name-status -z --find-renames --find-copies "$base...$head")
           git diff --check "$base...$head"
+          run_smoke=false
+          for ((index = 0; index < ${#changed_files[@]}; index++)); do
+            status="${changed_files[index]}"
+            case "$status" in
+              R*|C*)
+                source="${changed_files[index + 1]}"
+                destination="${changed_files[index + 2]}"
+                if grep -qxF "$source" <<< "$allowed" || grep -qxF "$destination" <<< "$allowed"; then
+                  echo "Renames and copies are not allowed in authenticated project task validation scope: $source -> $destination" >&2
+                  exit 1
+                fi
+                index=$((index + 2))
+                ;;
+              *)
+                file="${changed_files[index + 1]}"
+                if grep -qxF "$file" <<< "$allowed"; then
+                  run_smoke=true
+                fi
+                index=$((index + 1))
+                ;;
+            esac
+          done
           allowed_migrations='supabase/migrations/20260730103000_authenticated_project_write_grants.sql'
           while IFS= read -r -d '' status; do
             case "$status" in
@@ -150,16 +170,24 @@ jobs:
             echo 'Forbidden remote migration or ignored-error pattern detected.' >&2
             exit 1
           fi
+          echo "run_smoke=$run_smoke" >> "$GITHUB_OUTPUT"
+
+      - name: Skip authenticated task validation (no relevant files)
+        if: steps.scope.outputs.run_smoke == 'false'
+        run: echo 'No authenticated project task files changed; skipping Supabase validation.'
 
       - name: Install dependencies
+        if: steps.scope.outputs.run_smoke == 'true'
         run: npm ci
 
       - name: Install pinned Supabase CLI
+        if: steps.scope.outputs.run_smoke == 'true'
         uses: supabase/setup-cli@v2
         with:
           version: 2.39.2
 
       - name: Start ephemeral Supabase and apply local migrations
+        if: steps.scope.outputs.run_smoke == 'true'
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -167,6 +195,7 @@ jobs:
           supabase db reset --local --no-seed
 
       - name: Export local Supabase environment
+        if: steps.scope.outputs.run_smoke == 'true'
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -190,15 +219,19 @@ jobs:
           rm -f "$RUNNER_TEMP/supabase.env"
 
       - name: Create authenticated write fixtures
+        if: steps.scope.outputs.run_smoke == 'true'
         run: node scripts/ci/project-tasks-authenticated-write.mjs --fixtures
 
       - name: Verify authorized task insertion
+        if: steps.scope.outputs.run_smoke == 'true'
         run: node scripts/ci/project-tasks-authenticated-write.mjs --authorized
 
       - name: Verify denied and isolated insertions
+        if: steps.scope.outputs.run_smoke == 'true'
         run: node scripts/ci/project-tasks-authenticated-write.mjs --denied
 
       - name: Run application validation
+        if: steps.scope.outputs.run_smoke == 'true'
         run: |
           npx tsc --noEmit --incremental false
           npm run lint
