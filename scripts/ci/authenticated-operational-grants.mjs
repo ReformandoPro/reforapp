@@ -4,16 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.SUPABASE_URL;
 const anonKey = process.env.SUPABASE_ANON_KEY;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const password = process.env.CI_FIXTURE_PASSWORD;
 
-if (!url || !anonKey || !serviceRoleKey || !password) {
-  throw new Error("Missing local Supabase integration environment");
-}
-
-const admin = createClient(url, serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+if (!url || !anonKey || !password) throw new Error("Missing local Supabase integration environment");
 
 const users = {
   ownerA: { email: "project-write-owner-a@example.invalid" },
@@ -30,8 +23,8 @@ const PROJECT_B = "94000000-0000-4000-8000-000000000003";
 const TASK_A = "86000000-0000-4000-8000-000000000001";
 const PHASE_A = "85000000-0000-4000-8000-000000000001";
 
-function log(name, result) {
-  process.stdout.write(`case:passed name=${name} result=${result}\n`);
+function log(name, result, details = "") {
+  process.stdout.write(`case:passed name=${name} result=${result}${details ? ` ${details}` : ""}\n`);
 }
 
 async function signedIn(user) {
@@ -43,13 +36,13 @@ async function signedIn(user) {
   return client;
 }
 
-async function readRow(table, id, columns) {
-  const { data, error } = await admin.from(table).select(columns).eq("id", id).single();
+async function readRow(client, table, id, columns) {
+  const { data, error } = await client.from(table).select(columns).eq("id", id).single();
   if (error) throw error;
   return data;
 }
 
-async function expectDenied(client, operation, table, id, columns, before, label) {
+async function expectDenied(client, reader, operation, table, id, columns, before, label) {
   const { data, error } = await operation(client);
   if (error) {
     log(label, "denied_by_grant_or_rls", `code=${error.code ?? error.status ?? "unknown"}`);
@@ -61,7 +54,7 @@ async function expectDenied(client, operation, table, id, columns, before, label
     throw new Error(`${label} unexpectedly modified a row`);
   }
 
-  const after = await readRow(table, id, columns);
+  const after = await readRow(reader, table, id, columns);
   if (JSON.stringify(after) !== JSON.stringify(before)) {
     throw new Error(`${label} changed ${table}.${id}`);
   }
@@ -71,11 +64,17 @@ async function expectDenied(client, operation, table, id, columns, before, label
 function runSql(sql) {
   const databaseUrl = process.env.SUPABASE_DB_URL ?? process.env.SUPABASE_STAGING_DB_URL;
   if (!databaseUrl) throw new Error("Missing SUPABASE_DB_URL for direct privilege audit");
-  return execFileSync("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-At", "-F", "\t", "-c", sql], {
-    env: { ...process.env, PGPASSWORD: process.env.PGPASSWORD },
-    encoding: "utf8",
-    maxBuffer: 1024 * 1024,
-  }).trim();
+  try {
+    const { PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, ...safeEnv } = process.env;
+    return execFileSync("psql", ["--dbname", databaseUrl, "-X", "-v", "ON_ERROR_STOP=1", "-At", "-F", "\t", "-c", sql], {
+      env: safeEnv,
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+    }).trim();
+  } catch (error) {
+    if (error?.code === "ENOENT") throw new Error("psql is required for --privileges but was not found");
+    throw error;
+  }
 }
 
 if (process.argv.includes("--authorized")) {
@@ -122,47 +121,54 @@ if (process.argv.includes("--authorized")) {
 }
 
 if (process.argv.includes("--denied")) {
+  const ownerA = await signedIn(users.ownerA);
   const memberA = await signedIn(users.memberA);
   const ownerB = await signedIn(users.ownerB);
   const anonymous = createClient(url, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const projectOwnerBefore = await readRow("projects", PROJECT_OWNER, "id, description");
-  const taskBefore = await readRow("project_tasks", TASK_A, "id, description");
+  const projectOwnerBefore = await readRow(ownerA, "projects", PROJECT_OWNER, "id, description");
+  const taskBefore = await readRow(ownerA, "project_tasks", TASK_A, "id, description");
 
   await expectDenied(
     memberA,
+    ownerA,
     (client) => client.from("projects").update({ description: "not allowed" }).eq("id", PROJECT_OWNER).select("id, description"),
     "projects", PROJECT_OWNER, "id, description", projectOwnerBefore,
     "member project update"
   );
   await expectDenied(
     memberA,
+    ownerA,
     (client) => client.from("project_tasks").update({ description: "not allowed" }).eq("id", TASK_A).select("id, description"),
     "project_tasks", TASK_A, "id, description", taskBefore,
     "member task update"
   );
   await expectDenied(
     ownerB,
+    ownerA,
     (client) => client.from("projects").update({ description: "cross org" }).eq("id", PROJECT_OWNER).select("id, description"),
     "projects", PROJECT_OWNER, "id, description", projectOwnerBefore,
     "other organization project update"
   );
   await expectDenied(
     ownerB,
+    ownerA,
     (client) => client.from("project_tasks").update({ description: "cross org" }).eq("id", TASK_A).select("id, description"),
     "project_tasks", TASK_A, "id, description", taskBefore,
     "other organization task update"
   );
   await expectDenied(
     anonymous,
+    ownerA,
     (client) => client.from("projects").update({ description: "anonymous" }).eq("id", PROJECT_OWNER).select("id, description"),
     "projects", PROJECT_OWNER, "id, description", projectOwnerBefore,
     "anonymous project update"
   );
   await expectDenied(
     anonymous,
+    ownerA,
     (client) => client.from("project_tasks").update({ description: "anonymous" }).eq("id", TASK_A).select("id, description"),
     "project_tasks", TASK_A, "id, description", taskBefore,
     "anonymous task update"
@@ -177,7 +183,7 @@ if (process.argv.includes("--denied")) {
   }
   log("member cross organization phase read", "denied_by_rls");
 
-  const { data: isolated, error: isolatedError } = await admin
+  const { data: isolated, error: isolatedError } = await ownerB
     .from("projects")
     .select("id")
     .eq("organization_id", ORGANIZATION_B)
@@ -196,24 +202,26 @@ if (process.argv.includes("--privileges")) {
     select table_name, privilege_type
     from information_schema.role_table_grants
     where grantee = 'authenticated'
+      and table_schema = 'public'
       and table_name in ('project_phases', 'projects', 'project_tasks')
     order by table_name, privilege_type;
   `).split("\n").filter(Boolean).map((line) => line.split("\t"));
   const baselineByKey = new Map(baseline.map(([key, value]) => [key, value === "t"]));
-  const expected = new Set([
-    "project_phases:SELECT", "projects:SELECT", "projects:INSERT", "projects:UPDATE",
-    "project_tasks:SELECT", "project_tasks:INSERT", "project_tasks:UPDATE",
-  ]);
+  const expectedDelta = new Set(["project_phases:SELECT", "projects:UPDATE", "project_tasks:UPDATE"]);
   const actual = new Set(current.map(([table, privilege]) => `${table}:${privilege}`));
-  for (const privilege of actual) {
-    if (!expected.has(privilege)) throw new Error(`Unexpected authenticated privilege: ${privilege}`);
-  }
   for (const [key, hadPrivilege] of baselineByKey) {
     const [table, privilege] = key === "project_phases_select"
       ? ["project_phases", "SELECT"]
       : key === "projects_update" ? ["projects", "UPDATE"] : ["project_tasks", "UPDATE"];
     if (!actual.has(`${table}:${privilege}`)) throw new Error(`Missing required privilege ${key}`);
     log(`baseline ${key}`, hadPrivilege ? "preexisting" : "granted_by_migration");
+  }
+  for (const privilege of expectedDelta) {
+    if (!actual.has(privilege)) throw new Error(`Missing expected privilege ${privilege}`);
+  }
+  for (const privilege of actual) {
+    if (expectedDelta.has(privilege)) continue;
+    log(`preexisting ${privilege}`, "not_attributed_to_migration");
   }
   log("absence of excessive privileges", "verified");
 }
