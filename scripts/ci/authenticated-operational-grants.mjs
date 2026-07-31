@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.SUPABASE_URL;
@@ -41,10 +43,39 @@ async function signedIn(user) {
   return client;
 }
 
-async function expectDenied(client, operation, label) {
-  const { error } = await operation(client);
-  if (!error) throw new Error(`${label} unexpectedly succeeded`);
-  log(label, "denied");
+async function readRow(table, id, columns) {
+  const { data, error } = await admin.from(table).select(columns).eq("id", id).single();
+  if (error) throw error;
+  return data;
+}
+
+async function expectDenied(client, operation, table, id, columns, before, label) {
+  const { data, error } = await operation(client);
+  if (error) {
+    log(label, "denied_by_grant_or_rls", `code=${error.code ?? error.status ?? "unknown"}`);
+  } else if (Array.isArray(data) && data.length === 0) {
+    log(label, "no_op_by_rls");
+  } else if (data == null) {
+    throw new Error(`${label} returned no result metadata; cannot prove zero rows changed`);
+  } else {
+    throw new Error(`${label} unexpectedly modified a row`);
+  }
+
+  const after = await readRow(table, id, columns);
+  if (JSON.stringify(after) !== JSON.stringify(before)) {
+    throw new Error(`${label} changed ${table}.${id}`);
+  }
+  log(`${label} unchanged`, "verified");
+}
+
+function runSql(sql) {
+  const databaseUrl = process.env.SUPABASE_DB_URL ?? process.env.SUPABASE_STAGING_DB_URL;
+  if (!databaseUrl) throw new Error("Missing SUPABASE_DB_URL for direct privilege audit");
+  return execFileSync("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-At", "-F", "\t", "-c", sql], {
+    env: { ...process.env, PGPASSWORD: process.env.PGPASSWORD },
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024,
+  }).trim();
 }
 
 if (process.argv.includes("--authorized")) {
@@ -97,34 +128,43 @@ if (process.argv.includes("--denied")) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  const projectOwnerBefore = await readRow("projects", PROJECT_OWNER, "id, description");
+  const taskBefore = await readRow("project_tasks", TASK_A, "id, description");
+
   await expectDenied(
     memberA,
-    (client) => client.from("projects").update({ description: "not allowed" }).eq("id", PROJECT_OWNER),
+    (client) => client.from("projects").update({ description: "not allowed" }).eq("id", PROJECT_OWNER).select("id, description"),
+    "projects", PROJECT_OWNER, "id, description", projectOwnerBefore,
     "member project update"
   );
   await expectDenied(
     memberA,
-    (client) => client.from("project_tasks").update({ description: "not allowed" }).eq("id", TASK_A),
+    (client) => client.from("project_tasks").update({ description: "not allowed" }).eq("id", TASK_A).select("id, description"),
+    "project_tasks", TASK_A, "id, description", taskBefore,
     "member task update"
   );
   await expectDenied(
     ownerB,
-    (client) => client.from("projects").update({ description: "cross org" }).eq("id", PROJECT_OWNER),
+    (client) => client.from("projects").update({ description: "cross org" }).eq("id", PROJECT_OWNER).select("id, description"),
+    "projects", PROJECT_OWNER, "id, description", projectOwnerBefore,
     "other organization project update"
   );
   await expectDenied(
     ownerB,
-    (client) => client.from("project_tasks").update({ description: "cross org" }).eq("id", TASK_A),
+    (client) => client.from("project_tasks").update({ description: "cross org" }).eq("id", TASK_A).select("id, description"),
+    "project_tasks", TASK_A, "id, description", taskBefore,
     "other organization task update"
   );
   await expectDenied(
     anonymous,
-    (client) => client.from("projects").update({ description: "anonymous" }).eq("id", PROJECT_OWNER),
+    (client) => client.from("projects").update({ description: "anonymous" }).eq("id", PROJECT_OWNER).select("id, description"),
+    "projects", PROJECT_OWNER, "id, description", projectOwnerBefore,
     "anonymous project update"
   );
   await expectDenied(
     anonymous,
-    (client) => client.from("project_tasks").update({ description: "anonymous" }).eq("id", TASK_A),
+    (client) => client.from("project_tasks").update({ description: "anonymous" }).eq("id", TASK_A).select("id, description"),
+    "project_tasks", TASK_A, "id, description", taskBefore,
     "anonymous task update"
   );
 
@@ -147,22 +187,33 @@ if (process.argv.includes("--denied")) {
 }
 
 if (process.argv.includes("--privileges")) {
-  const { data, error } = await admin
-    .from("information_schema.role_table_grants")
-    .select("table_name, privilege_type")
-    .eq("grantee", "authenticated")
-    .in("table_name", ["project_phases", "projects", "project_tasks"]);
-  if (error) throw error;
-  const allowed = new Set([
-    "project_phases:SELECT",
-    "projects:UPDATE",
-    "project_tasks:UPDATE",
+  const baseline = runSql(`
+    select privilege_key, had_privilege
+    from public.authenticated_operational_grant_baseline
+    order by privilege_key;
+  `).split("\n").filter(Boolean).map((line) => line.split("\t"));
+  const current = runSql(`
+    select table_name, privilege_type
+    from information_schema.role_table_grants
+    where grantee = 'authenticated'
+      and table_name in ('project_phases', 'projects', 'project_tasks')
+    order by table_name, privilege_type;
+  `).split("\n").filter(Boolean).map((line) => line.split("\t"));
+  const baselineByKey = new Map(baseline.map(([key, value]) => [key, value === "t"]));
+  const expected = new Set([
+    "project_phases:SELECT", "projects:SELECT", "projects:INSERT", "projects:UPDATE",
+    "project_tasks:SELECT", "project_tasks:INSERT", "project_tasks:UPDATE",
   ]);
-  for (const grant of data) {
-    if (allowed.has(`${grant.table_name}:${grant.privilege_type}`)) continue;
-    if (["INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"].includes(grant.privilege_type)) {
-      throw new Error(`Unexpected authenticated privilege: ${grant.table_name}:${grant.privilege_type}`);
-    }
+  const actual = new Set(current.map(([table, privilege]) => `${table}:${privilege}`));
+  for (const privilege of actual) {
+    if (!expected.has(privilege)) throw new Error(`Unexpected authenticated privilege: ${privilege}`);
+  }
+  for (const [key, hadPrivilege] of baselineByKey) {
+    const [table, privilege] = key === "project_phases_select"
+      ? ["project_phases", "SELECT"]
+      : key === "projects_update" ? ["projects", "UPDATE"] : ["project_tasks", "UPDATE"];
+    if (!actual.has(`${table}:${privilege}`)) throw new Error(`Missing required privilege ${key}`);
+    log(`baseline ${key}`, hadPrivilege ? "preexisting" : "granted_by_migration");
   }
   log("absence of excessive privileges", "verified");
 }
