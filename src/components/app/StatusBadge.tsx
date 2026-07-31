@@ -6,7 +6,7 @@ const labels: Record<ProjectLifecycleStatus, string> = {
   budgeting: "En presupuesto",
   approved: "Aprobada",
   scheduled: "Planificada",
-  in_progress: "En obra",
+  in_progress: "En curso",
   paused: "Pausada",
   completed: "Completada",
   delivered: "Entregada",

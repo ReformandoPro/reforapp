@@ -29,7 +29,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
 
   return (
-    <p id={id} role="alert" className="text-sm text-red-700">
+    <p id={id} role="alert" className="text-sm text-danger-100">
       {message}
     </p>
   );
@@ -54,9 +54,11 @@ export function CreateProjectTaskFields({
           required
           minLength={PROJECT_TASK_TITLE_MIN_LENGTH}
           maxLength={PROJECT_TASK_TITLE_MAX_LENGTH}
+          disabled={pending}
           aria-invalid={Boolean(errors.title)}
           aria-describedby={errors.title ? "task-title-error" : undefined}
-          className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className={`w-full rounded-xl border bg-bg-surface px-3 py-2 text-sm text-content-primary placeholder:text-content-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-60 ${errors.title ? "border-danger-500/70" : "border-subtle"}`}
+          placeholder="Ej. Revisar mediciones"
         />
         <FieldError id="task-title-error" message={errors.title} />
       </div>
@@ -70,9 +72,11 @@ export function CreateProjectTaskFields({
           name="description"
           rows={3}
           maxLength={PROJECT_TASK_DESCRIPTION_MAX_LENGTH}
+          disabled={pending}
           aria-invalid={Boolean(errors.description)}
           aria-describedby={errors.description ? "task-description-error" : undefined}
-          className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className={`w-full rounded-xl border bg-bg-surface px-3 py-2 text-sm text-content-primary placeholder:text-content-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-60 ${errors.description ? "border-danger-500/70" : "border-subtle"}`}
+          placeholder="Añade contexto para el equipo (opcional)"
         />
         <FieldError id="task-description-error" message={errors.description} />
       </div>
@@ -86,9 +90,10 @@ export function CreateProjectTaskFields({
             id="task-phase"
             name="phase_id"
             defaultValue=""
+            disabled={pending}
             aria-invalid={Boolean(errors.phaseId)}
             aria-describedby={errors.phaseId ? "task-phase-error" : undefined}
-            className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className={`w-full rounded-xl border bg-bg-surface px-3 py-2 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-60 ${errors.phaseId ? "border-danger-500/70" : "border-subtle"}`}
           >
             <option value="">Sin fase</option>
             {phases.map((phase) => (
@@ -109,9 +114,10 @@ export function CreateProjectTaskFields({
             name="priority"
             defaultValue="medium"
             required
+            disabled={pending}
             aria-invalid={Boolean(errors.priority)}
             aria-describedby={errors.priority ? "task-priority-error" : undefined}
-            className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className={`w-full rounded-xl border bg-bg-surface px-3 py-2 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-60 ${errors.priority ? "border-danger-500/70" : "border-subtle"}`}
           >
             <option value="low">Baja</option>
             <option value="medium">Media</option>
@@ -130,9 +136,10 @@ export function CreateProjectTaskFields({
           id="task-due-date"
           name="due_date"
           type="date"
+          disabled={pending}
           aria-invalid={Boolean(errors.dueDate)}
           aria-describedby={errors.dueDate ? "task-due-date-error" : undefined}
-          className="w-full rounded-xl border border-subtle bg-bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className={`w-full rounded-xl border bg-bg-surface px-3 py-2 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-60 ${errors.dueDate ? "border-danger-500/70" : "border-subtle"}`}
         />
         <FieldError id="task-due-date-error" message={errors.dueDate} />
       </div>
@@ -140,7 +147,7 @@ export function CreateProjectTaskFields({
       {state.message ? (
         <p
           role={state.status === "error" ? "alert" : "status"}
-          className={state.status === "error" ? "text-sm text-red-700" : "text-sm text-emerald-700"}
+          className={state.status === "error" ? "text-sm text-danger-100" : "text-sm text-emerald-700"}
         >
           {state.message}
         </p>
@@ -177,7 +184,7 @@ export function CreateProjectTaskForm({ projectId, phases }: CreateProjectTaskFo
       <summary className="cursor-pointer text-sm font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">
         Nueva tarea
       </summary>
-      <form ref={formRef} action={formAction} className="mt-4 space-y-4" noValidate>
+      <form ref={formRef} action={formAction} className="mt-4 space-y-4">
         <CreateProjectTaskFields state={state} phases={phases} pending={pending} />
       </form>
     </details>

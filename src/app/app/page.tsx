@@ -89,8 +89,8 @@ export default async function AppDashboardPage() {
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-7">
       <PageHeader
         eyebrow={
-          <span className="inline-flex rounded-full border border-primary-300/20 bg-primary-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary-100">
-            {organization.name} · {ctx.role}
+          <span className="inline-flex min-w-0 max-w-full whitespace-normal rounded-full border border-primary-300/20 bg-primary-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary-100">
+            <span className="min-w-0 max-w-full break-words text-center sm:text-left">{organization.name} · {ctx.role}</span>
           </span>
         }
         title="Tu centro de operaciones"
