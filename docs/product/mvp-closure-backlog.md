@@ -19,6 +19,18 @@
 
 PR #118 y OBRAMAT no son bloqueantes de beta ni de este cierre, salvo que aparezca un hallazgo nuevo que afecte a seguridad, datos o flujos centrales.
 
+## Decisiones de validación y ramas
+
+- `review/pr3-mvp-smoke-diff` queda clasificada como `EXTRAER SELECTIVAMENTE DESPUÉS DE BETA`.
+- No se mergeará como unidad, ni se modificará o eliminará por ahora.
+- En el futuro solo se extraerá su cobertura funcional útil del smoke, adaptada al `main` vigente.
+- Se descartarán su workflow antiguo y todos sus cambios de aplicación, permisos y esquema.
+- La validación queda estructurada en tres capas:
+  - **Capa A:** grants en CI.
+  - **Capa B:** smoke crítico MVP actual en CI.
+  - **Capa C:** smoke remoto y auditoría Chrome post-despliegue.
+- La rama de grants debe permanecer en `32ddb6bfb504a7ba2f923dce7a403a70b33e2081` mientras Claude revalida; no se abrirá PR hasta `APROBADO PARA PR`.
+
 ## Post-MVP
 
 1. Catálogo multi-proveedor y aprovisionamiento asistido — OBRAMAT.
@@ -26,3 +38,8 @@ PR #118 y OBRAMAT no son bloqueantes de beta ni de este cierre, salvo que aparez
 3. Automatizaciones de compras, únicamente con autorización legal y comercial.
 4. Mejoras de comparación, equivalencias y optimización logística.
 5. Funcionalidades no esenciales identificadas en la auditoría UX.
+6. Adjuntos Storage end-to-end.
+7. Invitaciones y acceso cliente.
+8. Registro de horas.
+9. Gastos con factura.
+10. Runner reutilizable local/remoto.
