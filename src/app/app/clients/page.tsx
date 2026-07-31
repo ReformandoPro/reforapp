@@ -49,7 +49,12 @@ export default async function AppClientsPage() {
       <PageHeader
         title="Clientes"
         description="Expedientes de clientes vinculados a obras, presupuestos y documentación."
-        actions={<LinkButton href="/app" variant="secondary">Volver al panel</LinkButton>}
+        actions={
+          <>
+            <LinkButton href="/app/clients/new">Nuevo cliente</LinkButton>
+            <LinkButton href="/app" variant="secondary">Volver al panel</LinkButton>
+          </>
+        }
       />
 
       {state.status === "error" ? (
