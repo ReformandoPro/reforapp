@@ -2,7 +2,7 @@
 
 ## Uso
 
-Ejecutar después de un despliegue validado, con una sesión autorizada y sin compartir credenciales. Registrar para cada caso: timestamp UTC, URL, usuario/rol, organización anonimizados, resultado, captura o log sanitizado y severidad.
+Ejecutar después de un despliegue validado, con una sesión autorizada y sin compartir credenciales. Usar Chrome/DevTools para capturas de pantalla, consola y red. Registrar para cada caso: timestamp UTC, URL, usuario/rol, organización anonimizados, resultado, captura o log sanitizado y severidad.
 
 Estados permitidos: `PASS`, `FAIL`, `BLOCKED`, `N/A`.
 
@@ -30,13 +30,13 @@ Estados permitidos: `PASS`, `FAIL`, `BLOCKED`, `N/A`.
 | KAN-01 | Kanban | Abrir tablero; localizar tarea; cambiar estado si procede | owner/admin/member | Tarea aparece en columna correcta | Captura y estado | ` ` | P1 |
 | INC-01 | Incidencias | Abrir tarea; crear incidencia; consultar listado | owner/admin | Incidencia creada y visible según permisos | ID, captura | ` ` | P1 |
 | ACL-01 | Permisos | Repetir lectura/escritura de proyectos y tareas | owner/admin | Operaciones permitidas por política | Logs/status sanitizados | ` ` | P1 |
-| ACL-02 | Permisos | Intentar editar como member | member | Operación permitida o denegada exactamente según política; nunca bypass | Status y captura | ` ` | P1/P2 |
+| ACL-02 | Permisos | Intentar editar como member | member | Operación permitida o denegada exactamente según política; nunca bypass | Status y captura | ` ` | P1 |
 | ACL-03 | Aislamiento | Abrir IDs de otra organización y consultar/editar | owner de org B | Sin lectura ni escritura de org A | Status y evidencia | ` ` | P0 |
 | ACL-04 | Anónimo | Cerrar sesión y repetir rutas protegidas | anónimo | Redirección o denegación; ningún dato | URL/status | ` ` | P0 |
 | UI-01 | Responsive | Repetir dashboard, clientes y obra a 390×844 | cualquier QA | Sin solapamientos ni overflow horizontal | Capturas viewport | ` ` | P3 |
 | UI-02 | Estados vacíos | Abrir una organización/obra sin datos | owner | Empty states claros, sin errores | Captura | ` ` | P2 |
 | UI-03 | Errores | Provocar validación inválida y revisar mensaje | owner | Mensaje visible, asociado y accionable | Captura | ` ` | P2 |
-| HTTP-01 | Runtime | Revisar consola/red durante flujos principales | cualquier QA | Cero 500/503 inesperados | Export/log sanitizado | ` ` | P0/P1 |
+| HTTP-01 | Runtime | Revisar consola/red durante flujos principales | cualquier QA | Cero 500/503 inesperados | Export/log sanitizado | ` ` | P0 |
 | PILOT-01 | Obra piloto | Completar cliente → obra → fase → tarea → incidencia → estado | owner/admin | Flujo completo persistido | IDs y checklist firmada | ` ` | P1 |
 
 ## Criterio de auditoría

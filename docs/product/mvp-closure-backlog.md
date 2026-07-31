@@ -11,7 +11,7 @@
 
 ## Bloqueantes del MVP
 
-1. Completar una obra piloto de principio a fin.
+1. Completar una obra piloto de principio a fin: cliente → obra → fase → tarea → incidencia → estado.
 2. Confirmar persistencia tras recarga y nueva sesión.
 3. Confirmar feedback de errores y estados vacíos.
 4. Cerrar cualquier P0/P1 descubierto en la auditoría funcional.
@@ -33,11 +33,16 @@ PR #118 y OBRAMAT no son bloqueantes de beta ni de este cierre, salvo que aparez
 
 ## Post-MVP
 
-1. Catálogo multi-proveedor y aprovisionamiento asistido — OBRAMAT.
-2. Integración autorizada con proveedores.
-3. Automatizaciones de compras, únicamente con autorización legal y comercial.
-4. Mejoras de comparación, equivalencias y optimización logística.
-5. Funcionalidades no esenciales identificadas en la auditoría UX.
+1. Presupuestos como flujo completo de producto.
+2. Catálogo multi-proveedor y aprovisionamiento asistido — OBRAMAT.
+3. Integración autorizada con proveedores.
+4. Automatizaciones de compras, únicamente con autorización legal y comercial.
+5. Mejoras de comparación, equivalencias y optimización logística.
+6. Funcionalidades no esenciales identificadas en la auditoría UX.
+
+El despliegue automático de beta se activa al mergear cambios en `main`. El orden obligatorio es: backup → migración aplicada → merge → deploy automático → health check con `commit` → smoke.
+
+`reformando-beta` no debe tocarse bajo ninguna circunstancia; el destino válido es únicamente `reformando-app-beta`.
 6. Adjuntos Storage end-to-end.
 7. Invitaciones y acceso cliente.
 8. Registro de horas.
