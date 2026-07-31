@@ -208,6 +208,10 @@ if (process.argv.includes("--privileges")) {
   `).split("\n").filter(Boolean).map((line) => line.split("\t"));
   const baselineByKey = new Map(baseline.map(([key, value]) => [key, value === "t"]));
   const expectedDelta = new Set(["project_phases:SELECT", "projects:UPDATE", "project_tasks:UPDATE"]);
+  const knownPreexisting = new Set([
+    "projects:SELECT", "projects:INSERT",
+    "project_tasks:SELECT", "project_tasks:INSERT",
+  ]);
   const actual = new Set(current.map(([table, privilege]) => `${table}:${privilege}`));
   for (const [key, hadPrivilege] of baselineByKey) {
     const [table, privilege] = key === "project_phases_select"
@@ -219,9 +223,14 @@ if (process.argv.includes("--privileges")) {
   for (const privilege of expectedDelta) {
     if (!actual.has(privilege)) throw new Error(`Missing expected privilege ${privilege}`);
   }
+  const delta = new Set([...actual].filter((privilege) => !knownPreexisting.has(privilege)));
+  if (delta.size !== expectedDelta.size || [...expectedDelta].some((privilege) => !delta.has(privilege))) {
+    const unexpected = [...delta].filter((privilege) => !expectedDelta.has(privilege));
+    throw new Error(`Unauthorized privilege delta: ${unexpected.join(", ") || "missing expected privilege"}`);
+  }
   for (const privilege of actual) {
-    if (expectedDelta.has(privilege)) continue;
-    log(`preexisting ${privilege}`, "not_attributed_to_migration");
+    if (expectedDelta.has(privilege)) log(`delta ${privilege}`, "granted_by_migration");
+    else log(`preexisting ${privilege}`, "not_attributed_to_migration");
   }
   log("absence of excessive privileges", "verified");
 }
