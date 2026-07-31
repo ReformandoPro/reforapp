@@ -2,11 +2,11 @@
 
 import { useActionState } from "react";
 
+import { createProjectAction } from "@/app/app/projects/new/actions";
 import {
-  createProjectAction,
   INITIAL_CREATE_PROJECT_STATE,
   type CreateProjectActionState,
-} from "@/app/app/projects/new/actions";
+} from "@/app/app/projects/new/state";
 import {
   PROJECT_DESCRIPTION_MAX_LENGTH,
   PROJECT_NAME_MAX_LENGTH,

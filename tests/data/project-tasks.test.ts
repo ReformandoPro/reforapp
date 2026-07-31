@@ -42,8 +42,7 @@ function taskRow(overrides: Record<string, unknown> = {}) {
 
 function mockQuery(result: { data: unknown; error: unknown }) {
   const orderId = vi.fn().mockResolvedValue(result);
-  const orderCreatedAt = vi.fn().mockReturnValue({ order: orderId });
-  const orderDueDate = vi.fn().mockReturnValue({ order: orderCreatedAt });
+  const orderDueDate = vi.fn().mockReturnValue({ order: orderId });
   const eqOrganization = vi.fn().mockReturnValue({ order: orderDueDate });
   const eqProject = vi.fn().mockReturnValue({ eq: eqOrganization });
   const select = vi.fn().mockReturnValue({ eq: eqProject });
@@ -55,7 +54,6 @@ function mockQuery(result: { data: unknown; error: unknown }) {
     eqProject,
     eqOrganization,
     orderDueDate,
-    orderCreatedAt,
     orderId,
   };
 }
@@ -91,9 +89,6 @@ describe("project tasks real read", () => {
     expect(query.orderDueDate).toHaveBeenCalledWith("due_date", {
       ascending: true,
       nullsFirst: false,
-    });
-    expect(query.orderCreatedAt).toHaveBeenCalledWith("created_at", {
-      ascending: true,
     });
     expect(query.orderId).toHaveBeenCalledWith("id", { ascending: true });
   });

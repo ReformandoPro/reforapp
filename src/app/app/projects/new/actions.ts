@@ -11,18 +11,16 @@ import { getOrganizationContextForRequest } from "@/lib/services/org-context";
 import { canCreateProjects } from "@/lib/services/project-operational-permissions";
 import { createServerSupabaseClient } from "@/lib/supabase/ssr";
 
+import type { CreateProjectActionState } from "./state";
+
 const PROJECT_CREATE_LOG_PREFIX = "[project-create]";
+const PROJECT_STATUS_CANDIDATES = ["in_progress", "active", "open"] as const;
 
-export type CreateProjectActionState = {
-  status: "idle" | "error";
-  message: string | null;
-  fieldErrors: CreateProjectFieldErrors;
-};
-
-export const INITIAL_CREATE_PROJECT_STATE: CreateProjectActionState = {
-  status: "idle",
-  message: null,
-  fieldErrors: {},
+type ProjectInsertError = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
 };
 
 function errorState(
@@ -34,6 +32,14 @@ function errorState(
 
 function logCreateFailure(reason: string): void {
   console.error(PROJECT_CREATE_LOG_PREFIX, { reason });
+}
+
+function isProjectStatusConstraintError(error: ProjectInsertError | null): boolean {
+  if (error?.code !== "23514") return false;
+
+  return [error.message, error.details, error.hint].some((value) =>
+    value?.includes("projects_status_check")
+  );
 }
 
 export async function createProjectAction(
@@ -75,24 +81,36 @@ export async function createProjectAction(
     clientName = client.display_name;
   }
 
-  const { data: project, error: insertError } = await supabase
-    .from("projects")
-    .insert({
-      organization_id: context.organizationId,
-      client_id: validation.input.clientId,
-      name: validation.input.name,
-      title: validation.input.name,
-      client_name: clientName,
-      description: validation.input.description,
-      start_date: validation.input.startDate,
-      expected_end_date: validation.input.expectedEndDate,
-      status: "in_progress",
-      address: "",
-      type: "",
-      progress: 0,
-    })
-    .select("id")
-    .single();
+  const projectPayload = {
+    id: crypto.randomUUID(),
+    organization_id: context.organizationId,
+    client_id: validation.input.clientId,
+    name: validation.input.name,
+    title: validation.input.name,
+    client_name: clientName,
+    description: validation.input.description,
+    start_date: validation.input.startDate,
+    expected_end_date: validation.input.expectedEndDate,
+    address: "",
+    type: "",
+    progress: 0,
+  };
+
+  let project: { id: string } | null = null;
+  let insertError: ProjectInsertError | null = null;
+
+  for (const status of PROJECT_STATUS_CANDIDATES) {
+    const result = await supabase
+      .from("projects")
+      .insert({ ...projectPayload, status })
+      .select("id")
+      .single();
+
+    project = result.data as { id: string } | null;
+    insertError = result.error;
+
+    if (!insertError || !isProjectStatusConstraintError(insertError)) break;
+  }
 
   if (insertError || !project?.id) {
     logCreateFailure("insert_failed");

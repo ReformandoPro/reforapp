@@ -3,8 +3,30 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { CreateProjectFields } from "../../src/app/app/projects/new/CreateProjectForm";
+import { mapClientRowsToOptions } from "../../src/app/app/projects/new/page";
+import { INITIAL_CREATE_PROJECT_STATE } from "../../src/app/app/projects/new/state";
 
 describe("CreateProjectForm", () => {
+  it("keeps the initial action state as serializable client data", () => {
+    expect(INITIAL_CREATE_PROJECT_STATE).toEqual({
+      status: "idle",
+      message: null,
+      fieldErrors: {},
+    });
+  });
+
+  it("normalizes empty, malformed and valid client rows without dereferencing missing values", () => {
+    expect(
+      mapClientRowsToOptions([
+        { id: "client-a", display_name: " Cliente A " },
+        { id: "client-without-name" },
+        { display_name: "Cliente sin id" },
+        undefined,
+      ])
+    ).toEqual([{ id: "client-a", displayName: "Cliente A" }]);
+    expect(mapClientRowsToOptions(null)).toEqual([]);
+  });
+
   it("renders only the MVP fields and keeps the client optional", () => {
     const html = renderToStaticMarkup(
       React.createElement(CreateProjectFields, {

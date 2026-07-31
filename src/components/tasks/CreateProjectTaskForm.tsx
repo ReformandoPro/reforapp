@@ -2,11 +2,11 @@
 
 import { useActionState, useEffect, useRef } from "react";
 
+import { createProjectTaskAction } from "@/app/projects/[id]/actions";
 import {
-  createProjectTaskAction,
   INITIAL_CREATE_PROJECT_TASK_STATE,
   type CreateProjectTaskActionState,
-} from "@/app/projects/[id]/actions";
+} from "@/app/projects/[id]/state";
 import type { ProjectPhase } from "@/lib/data/projects";
 import {
   PROJECT_TASK_DESCRIPTION_MAX_LENGTH,

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   PROJECT_TASK_DESCRIPTION_MAX_LENGTH,
   PROJECT_TASK_TITLE_MAX_LENGTH,
+  isUuid,
   validateCreateProjectTaskForm,
 } from "../../src/lib/services/project-task-create";
 import { canWriteProjectTasks } from "../../src/lib/services/project-operational-permissions";
@@ -14,6 +15,10 @@ function form(values: Record<string, string> = {}) {
 }
 
 describe("project task creation validation", () => {
+  it("accepts PostgreSQL UUID values used by the beta fixtures", () => {
+    expect(isUuid("dddddddd-0000-0000-0000-000000000001")).toBe(true);
+  });
+
   it("accepts valid input, trims text and defaults priority to medium", () => {
     expect(
       validateCreateProjectTaskForm(
