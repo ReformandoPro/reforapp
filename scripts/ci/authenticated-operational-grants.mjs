@@ -204,32 +204,40 @@ if (process.argv.includes("--privileges")) {
     where grantee = 'authenticated'
       and table_schema = 'public'
       and table_name in ('project_phases', 'projects', 'project_tasks')
+      and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE')
     order by table_name, privilege_type;
   `).split("\n").filter(Boolean).map((line) => line.split("\t"));
   const baselineByKey = new Map(baseline.map(([key, value]) => [key, value === "t"]));
-  const expectedDelta = new Set(["project_phases:SELECT", "projects:UPDATE", "project_tasks:UPDATE"]);
+  const allowedChanges = new Set(["project_phases:SELECT", "projects:UPDATE", "project_tasks:UPDATE"]);
   const knownPreexisting = new Set([
     "projects:SELECT", "projects:INSERT",
     "project_tasks:SELECT", "project_tasks:INSERT",
   ]);
-  const actual = new Set(current.map(([table, privilege]) => `${table}:${privilege}`));
+  const baselineDml = new Set(knownPreexisting);
   for (const [key, hadPrivilege] of baselineByKey) {
     const [table, privilege] = key === "project_phases_select"
       ? ["project_phases", "SELECT"]
       : key === "projects_update" ? ["projects", "UPDATE"] : ["project_tasks", "UPDATE"];
-    if (!actual.has(`${table}:${privilege}`)) throw new Error(`Missing required privilege ${key}`);
+    const privilegeKey = `${table}:${privilege}`;
+    if (hadPrivilege) baselineDml.add(privilegeKey);
     log(`baseline ${key}`, hadPrivilege ? "preexisting" : "granted_by_migration");
   }
-  for (const privilege of expectedDelta) {
-    if (!actual.has(privilege)) throw new Error(`Missing expected privilege ${privilege}`);
+  const postDml = new Set(current.map(([table, privilege]) => `${table}:${privilege}`));
+  const deltaAdded = new Set([...postDml].filter((privilege) => !baselineDml.has(privilege)));
+  const deltaRemoved = new Set([...baselineDml].filter((privilege) => !postDml.has(privilege)));
+  const expectedDelta = new Set([...allowedChanges].filter((privilege) => !baselineDml.has(privilege)));
+  if (
+    deltaAdded.size !== expectedDelta.size
+    || [...expectedDelta].some((privilege) => !deltaAdded.has(privilege))
+    || deltaRemoved.size > 0
+  ) {
+    const unexpected = [...deltaAdded].filter((privilege) => !expectedDelta.has(privilege));
+    throw new Error(
+      `Unauthorized DML privilege delta: added=${unexpected.join(", ") || "none"} removed=${[...deltaRemoved].join(", ") || "none"}`
+    );
   }
-  const delta = new Set([...actual].filter((privilege) => !knownPreexisting.has(privilege)));
-  if (delta.size !== expectedDelta.size || [...expectedDelta].some((privilege) => !delta.has(privilege))) {
-    const unexpected = [...delta].filter((privilege) => !expectedDelta.has(privilege));
-    throw new Error(`Unauthorized privilege delta: ${unexpected.join(", ") || "missing expected privilege"}`);
-  }
-  for (const privilege of actual) {
-    if (expectedDelta.has(privilege)) log(`delta ${privilege}`, "granted_by_migration");
+  for (const privilege of postDml) {
+    if (deltaAdded.has(privilege)) log(`delta ${privilege}`, "granted_by_migration");
     else log(`preexisting ${privilege}`, "not_attributed_to_migration");
   }
   log("absence of excessive privileges", "verified");
