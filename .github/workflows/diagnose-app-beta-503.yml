@@ -1,0 +1,283 @@
+name: Diagnose app-beta HTTP 503 (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diagnose-app-beta-503
+  cancel-in-progress: false
+
+env:
+  TARGET_CONTAINER: reformando-app-beta
+  FORBIDDEN_CONTAINER: reformando-beta
+  APP_BETA_HOST: app-beta.reformando.pro
+
+jobs:
+  diagnose:
+    name: Runtime read-only diagnostic
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Create artifact evidence directory early
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/app-beta-503"
+          INSPECT_ERRORS="$RUNNER_TEMP/container-inspect-errors.txt"
+          APP_LOG_ERRORS="$RUNNER_TEMP/app-logs-stderr.txt"
+          HEADERS="$RUNNER_TEMP/http-headers.tmp"
+          mkdir -p "$OUT"
+          {
+            printf 'RAW_INSPECT=%s\n' "$RUNNER_TEMP/container-inspect.raw.json"
+            printf 'INSPECT_ERRORS=%s\n' "$INSPECT_ERRORS"
+            printf 'APP_LOG_ERRORS=%s\n' "$APP_LOG_ERRORS"
+            printf 'HEADERS=%s\n' "$HEADERS"
+            printf 'SANITIZER_SCRIPT=%s\n' "$RUNNER_TEMP/app-beta-503-sanitizer.sh"
+          } >> "$GITHUB_ENV"
+          for file in report.txt guard-report.txt command-manifest.txt container-inventory.txt container-inspect-sanitized.txt container-health-sanitized.txt container-env-names.txt container-stats.txt host-metrics.txt app-logs-sanitized.txt app-error-summary.txt traefik-identification.txt traefik-logs-sanitized.txt http-probes.txt correlation.csv sanitization-report.txt; do
+            printf 'status=not_verified\nreason=collection_not_started\n' > "$OUT/$file"
+          done
+          printf '%s\n' 'app-beta HTTP 503 runtime diagnostic' > "$OUT/report.txt"
+          cat >> "$OUT/report.txt" <<REPORT
+          app-beta HTTP 503 runtime diagnostic
+          status=started
+          error=none
+          main_sha=$GITHUB_SHA
+          workflow_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_attempt=$GITHUB_RUN_ATTEMPT
+          generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          mode=read-only
+          target_container=reformando-app-beta
+          forbidden_container=reformando-beta
+          inspected_containers=reformando-app-beta
+          remote_access_started=false
+          docker_available=false
+          app_logs_collected=false
+          traefik_logs_collected=false
+          probes_executed=false
+          secrets_detected=false
+          prohibited_command_detected=false
+          sections_completed=none
+          sections_not_verified=none
+          REPORT
+          cat > "$RUNNER_TEMP/app-beta-503-sanitizer.sh" <<'SANITIZER'
+          sanitize_stream() {
+            sed -E 's/(Authorization:|authorization:|Bearer[[:space:]]+|Basic[[:space:]]+|cookie:|Cookie:|Set-Cookie:|jwt|token|password|secret|api[_-]?key|service_role|anon|postgres(ql)?:\/\/)[^;[:space:]]*/\1[REDACTED]/Ig; s/(anon[ _-]*key|service_role|api[_-]*key)[[:space:]]*=[[:space:]]*[^;[:space:]]+/\1=[REDACTED]/Ig; s/(Cookie:|Set-Cookie:)[^;]*/\1[REDACTED]/Ig; s/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/[JWT_REDACTED]/g; s/[?&](token|code|key|password|secret|authorization)=[^&[:space:]]+/\1=[REDACTED]/Ig; s/[[:alnum:]._%+-]+@[[:alnum:].-]+\.[[:alpha:]]{2,}/[EMAIL_REDACTED]/g'
+          }
+          SANITIZER
+          cat > "$RUNNER_TEMP/app-beta-503/command-manifest.txt" <<'MANIFEST'
+          docker ps --format '{{.Names}}'
+          docker inspect "$TARGET_CONTAINER"
+          docker stats --no-stream "$TARGET_CONTAINER"
+          docker logs --since 6h --tail 5000 --timestamps "$TARGET_CONTAINER"
+          docker ps --format '{{.Names}}\\t{{.Labels}}' (inventory only for Traefik label identification)
+          docker logs --since 6h --tail 5000 --timestamps <uniquely identified Traefik container> (Traefik only)
+          free -m; uptime; df -h; df -i; /proc/pressure/memory; journalctl -k (read-only)
+          curl GET probes only, sequential, max 3
+          MANIFEST
+
+      - name: Validate secrets without printing values
+        shell: bash
+        env:
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_USER: ${{ secrets.APP_BETA_SSH_USER }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+          APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
+          APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
+          APP_BETA_HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          APP_BETA_HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        run: |
+          set +x
+          missing=0
+          for variable in APP_BETA_SSH_HOST APP_BETA_SSH_USER APP_BETA_SSH_PORT APP_BETA_SSH_PRIVATE_KEY APP_BETA_SSH_KNOWN_HOSTS APP_BETA_HEALTH_USERNAME APP_BETA_HEALTH_PASSWORD; do
+            if [ -z "${!variable:-}" ]; then
+              echo "::error::Missing required secret: $variable"
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+
+      - name: Configure read-only SSH
+        shell: bash
+        env:
+          APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
+          APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
+        run: |
+          set +x
+          mkdir -p "$RUNNER_TEMP/ssh"
+          chmod 700 "$RUNNER_TEMP/ssh"
+          printf '%s\n' "$APP_BETA_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/ssh/key"
+          printf '%s\n' "$APP_BETA_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/ssh/key" "$RUNNER_TEMP/ssh/known_hosts"
+
+      - name: Runtime evidence over SSH (read-only)
+        shell: bash
+        env:
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_USER: ${{ secrets.APP_BETA_SSH_USER }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+          APP_BETA_HEALTH_USERNAME: ${{ secrets.APP_BETA_HEALTH_USERNAME }}
+          APP_BETA_HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
+        run: |
+          set +x
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/app-beta-503"
+          cleanup_runtime_temporaries() {
+            rm -f -- "$RAW_INSPECT" "$INSPECT_ERRORS" "$APP_LOG_ERRORS" "$HEADERS"
+          }
+          trap cleanup_runtime_temporaries EXIT
+          SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -i "$RUNNER_TEMP/ssh/key" -p "$APP_BETA_SSH_PORT" "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST")
+          remote() { "${SSH[@]}" "$@"; }
+          export TARGET_CONTAINER FORBIDDEN_CONTAINER APP_BETA_HOST
+
+          remote 'set -euo pipefail
+            TARGET_CONTAINER="reformando-app-beta"
+            FORBIDDEN_CONTAINER="reformando-beta"
+            names=$(docker ps --format "{{.Names}}")
+            count=$(printf "%s\n" "$names" | grep -Fxc "$TARGET_CONTAINER" || true)
+            test "$count" -eq 1
+            printf "target_present=true\nforbidden_present=%s\n" "$(printf "%s\n" "$names" | grep -Fxq "$FORBIDDEN_CONTAINER" && echo true || echo false)"
+            printf "inspected_containers=%s\n" "$TARGET_CONTAINER"
+            docker inspect "$TARGET_CONTAINER" >/dev/null
+            docker stats --no-stream "$TARGET_CONTAINER" >/dev/null
+            docker logs --since 6h --tail 5000 --timestamps "$TARGET_CONTAINER" >/dev/null
+          ' > "$OUT/guard-report.txt" 2>&1
+          remote 'docker ps --format "{{.Names}}"' > "$OUT/container-inventory.txt"
+          grep -Fxq "$TARGET_CONTAINER" "$OUT/container-inventory.txt"
+          test "$(grep -Fxc "$TARGET_CONTAINER" "$OUT/container-inventory.txt")" -eq 1
+          printf 'inspected_containers=%s\n' "$TARGET_CONTAINER" >> "$OUT/guard-report.txt"
+          printf 'remote_access_started=true\ndocker_available=true\n' >> "$OUT/report.txt"
+
+          remote 'docker inspect --format "{{json .}}" "$TARGET_CONTAINER"' 2> "$INSPECT_ERRORS" \
+            | jq '.[0] // .' > "$RAW_INSPECT"
+          jq 'del(.Config.Env) | .Config += {"Env": ((.Config.Env // []) | map(split("=",2)[0] + "=[REDACTED]"))} | .State.Health.Log = ((.State.Health.Log // []) | map(del(.Output) + {Output:"[REDACTED]"})) | .Mounts = (.Mounts // []) | map(. + {Source:"[REDACTED]"})' \
+            "$RAW_INSPECT" > "$OUT/container-inspect-sanitized.txt"
+          jq -r '.Config.Env[]? | split("=",2)[0]' "$RAW_INSPECT" \
+            > "$OUT/container-env-names.txt"
+          jq '.State.Health // {Status:"none"}' "$RAW_INSPECT" \
+            | jq 'if .Log then .Log |= map(del(.Output) + {Output:"[REDACTED]"}) else . end' > "$OUT/container-health-sanitized.txt"
+
+          remote 'docker stats --no-stream --format "{{json .}}" "$TARGET_CONTAINER"' \
+            > "$OUT/container-stats.txt" 2>&1
+          remote 'set -o pipefail; { free -m; uptime; df -h; (cat /proc/pressure/memory || true); (journalctl -k --since "6 hours ago" --no-pager 2>/dev/null || true) | grep -Ei "oom|out of memory|killed process|reforming-app-beta" || true; }' \
+            > "$OUT/host-metrics.txt" 2>&1
+
+          source "$SANITIZER_SCRIPT"
+          remote 'docker logs --since 6h --tail 5000 --timestamps "$TARGET_CONTAINER" 2>/dev/null' \
+            | sanitize_stream \
+            > "$OUT/app-logs-sanitized.txt" 2> "$APP_LOG_ERRORS"
+          grep -Ein -C 3 '503|500|timeout|ECONNRESET|ETIMEDOUT|fetch failed|supabase|postgrest|postgresql|connection|pool|too many clients|out of memory|killed|unhandled|redirect|revalidate|server action|digest|RSC' "$OUT/app-logs-sanitized.txt" \
+            > "$OUT/app-error-summary.txt" || true
+          printf 'app_logs_collected=true\napp_log_tail_limit=5000\napp_log_lines=%s\napp_log_may_be_truncated=%s\n' "$(wc -l < "$OUT/app-logs-sanitized.txt")" "$(test "$(wc -l < "$OUT/app-logs-sanitized.txt")" -ge 5000 && echo true || echo false)" >> "$OUT/report.txt"
+
+          traefik=$(
+            remote 'docker ps --format "{{.Names}}\\t{{.Image}}"' \
+              | awk -F '\t' '$2 ~ /(^|\/)traefik(:|@)/ && $1 != "reformando-app-beta" && $1 != "reformando-beta" { print $1 }'
+          )
+          if [ "$(printf '%s\n' "$traefik" | sed '/^$/d' | wc -l)" -eq 1 ]; then
+            printf 'status=verified\ntraefik_container=%s\nidentification=image_exact_match\n' "$traefik" > "$OUT/traefik-identification.txt"
+            remote "docker logs --since 6h --tail 5000 --timestamps \"$traefik\" 2>/dev/null" \
+              | grep -Ei 'app-beta\.reformando\.pro| 5[0-9][0-9] |upstream|duration|retry|timeout|router|service' \
+              | sanitize_stream \
+              > "$OUT/traefik-logs-sanitized.txt" || true
+            printf 'traefik_logs_collected=true\n' >> "$OUT/report.txt"
+            printf 'traefik_log_tail_limit=5000\ntraefik_log_lines=%s\ntraefik_log_may_be_truncated=%s\n' "$(wc -l < "$OUT/traefik-logs-sanitized.txt")" "$(test "$(wc -l < "$OUT/traefik-logs-sanitized.txt")" -ge 5000 && echo true || echo false)" >> "$OUT/report.txt"
+          else
+            printf 'status=not_verified\nreason=zero_or_multiple_traefik_images\n' > "$OUT/traefik-identification.txt"
+            printf 'status=not_verified\nreason=traefik_not_inequivocally_identified\n' > "$OUT/traefik-logs-sanitized.txt"
+            printf 'traefik_logs_collected=false\n' >> "$OUT/report.txt"
+          fi
+
+          : > "$OUT/http-probes.txt"
+          : > "$OUT/correlation.csv"
+          printf 'timestamp|route/event|HTTP status|emitter|upstream|duration|related error\n' > "$OUT/correlation.csv"
+          for route in /api/health /login /api/projects; do
+            timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            result=$(curl -sS --max-time 15 -o /dev/null -D "$HEADERS" -u "$APP_BETA_HEALTH_USERNAME:$APP_BETA_HEALTH_PASSWORD" \
+              -w 'status=%{http_code} duration=%{time_total} connect=%{time_connect} ttfb=%{time_starttransfer}\n' "https://$APP_BETA_HOST$route" 2>&1 || true)
+            server=$(awk -F': ' 'tolower($1)=="server" {print $2}' "$HEADERS" | tr -d '\r' | head -1)
+            request_id=$(awk -F': ' 'tolower($1) ~ /^(x-request-id|traceparent)$/ {print $2}' "$HEADERS" | tr -d '\r' | head -1)
+            printf '%s route=%s %s server=%s request_id=%s\n' "$timestamp" "$route" "$result" "${server:-unknown}" "${request_id:-unknown}" >> "$OUT/http-probes.txt"
+            status=$(printf '%s' "$result" | sed -n 's/.*status=\([^ ]*\).*/\1/p')
+            duration=$(printf '%s' "$result" | sed -n 's/.*duration=\([^ ]*\).*/\1/p')
+            printf '%s|%s|%s|probe|unknown|%s|%s\n' "$timestamp" "$route" "${status:-000}" "${duration:-unknown}" "${status:-000}" >> "$OUT/correlation.csv"
+            rm -f "$HEADERS"
+            sleep 1
+          done
+          printf 'probes_executed=true\n' >> "$OUT/report.txt"
+
+          cat >> "$OUT/report.txt" <<REPORT
+          completed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          verdict=F_CAUSA_NO_CONCLUYENTE
+          remote_write=false
+          workflow_mode=read-only
+          sections_completed=guards,container,host,app_logs,http_probes
+          REPORT
+
+      - name: Validate evidence and sanitization fixtures
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/app-beta-503"
+          if [ -z "${RAW_INSPECT:-}" ] || [ -z "${INSPECT_ERRORS:-}" ] || [ -z "${APP_LOG_ERRORS:-}" ] || [ -z "${HEADERS:-}" ] || [ -z "${SANITIZER_SCRIPT:-}" ]; then
+            printf 'temporary_cleanup_verified=false\nreason=temporary_paths_not_exported\n' >> "$OUT/report.txt"
+            exit 1
+          fi
+          for temporary in "$RAW_INSPECT" "$INSPECT_ERRORS" "$APP_LOG_ERRORS" "$HEADERS"; do
+            if [ -e "$temporary" ]; then
+              printf 'temporary_cleanup_verified=false\nremaining_temp=%s\n' "$(basename -- "$temporary")" >> "$OUT/report.txt"
+              printf 'temporary_cleanup_verified=false\nremaining_temp=%s\n' "$(basename -- "$temporary")" >> "$OUT/sanitization-report.txt"
+              exit 1
+            fi
+          done
+          printf 'temporary_cleanup_verified=true\n' >> "$OUT/report.txt"
+          printf 'temporary_cleanup_verified=true\nchecked_external_temporaries=4\n' >> "$OUT/sanitization-report.txt"
+          trap 'rm -f -- "$SANITIZER_SCRIPT"' EXIT
+          test -s "$OUT/report.txt"
+          test -s "$OUT/command-manifest.txt"
+          test -s "$OUT/container-inventory.txt"
+          test "$(grep -c '^inspected_containers=reformando-app-beta$' "$OUT/guard-report.txt" || true)" -eq 1
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('.github/workflows/diagnose-app-beta-503.yml').read_text()
+          forbidden = ['docker '+'exec', 'docker '+'cp', 'docker '+'restart', 'docker '+'stop', 'docker '+'start', 'docker '+'kill', 'docker '+'pause', 'docker '+'unpause', 'docker '+'update', 'docker '+'rename', 'docker '+'rm', 'docker '+'compose', 'git '+'pull', 'ps'+'ql']
+          assert not any(token in text for token in forbidden), 'prohibited command present'
+          for line in text.splitlines():
+              if 'docker logs' in line:
+                  assert '--since 6h' in line and '--tail 5000' in line and '--timestamps' in line, line
+              if 'docker inspect' in line:
+                  assert '"$TARGET_CONTAINER"' in line, line
+              if 'docker stats' in line:
+                  assert '"$TARGET_CONTAINER"' in line and '--no-stream' in line, line
+          PY
+          source "$SANITIZER_SCRIPT"
+          fixture='Authorization: Bearer abc; Basic YWJj; Cookie: sid=xyz; Set-Cookie: sid=xyz; jwt=abc; eyJabc.def.ghi; password=hunter2; postgres://u:p@db/x; anon key=abc; service_role=abc; api_key=abc; a@b.example; ?token=abc'
+          sanitized=$(printf '%s\n' "$fixture" | sanitize_stream)
+          printf '%s\n' "$sanitized" > "$OUT/sanitization-report.txt"
+          ! grep -Eiq 'hunter2|postgres://|YWJj|sid=xyz|a@b|eyJabc|api_key=abc|service_role=abc' "$OUT/sanitization-report.txt"
+          artifact_files=$(find "$OUT" -maxdepth 1 -type f -printf '%f\n' | sort)
+          printf 'artifact_files:\n%s\n' "$artifact_files" >> "$OUT/sanitization-report.txt"
+          ! printf '%s\n' "$artifact_files" | grep -Eiq '(^|\.)raw|\.tmp$|secret|credential|key$'
+          secret_hits=$(find "$OUT" -maxdepth 1 -type f ! -name report.txt ! -name sanitization-report.txt ! -name command-manifest.txt -print0 | xargs -0 grep -Ehi '(Authorization:|Bearer |Basic |eyJ[A-Za-z0-9_-]+\.|password=|postgres(ql)?://[^[:space:]]+:[^[:space:]]+@|service_role|anon key|api[_-]?key|Set-Cookie:|Cookie:)' || true)
+          if [ -n "$secret_hits" ]; then
+            printf 'secrets_detected=true\n' >> "$OUT/report.txt"
+            exit 1
+          fi
+          printf 'secrets_detected=false\nprohibited_command_detected=false\n' >> "$OUT/report.txt"
+          find "$OUT" -maxdepth 1 -type f -size +0c -print > "$OUT/evidence-files.txt"
+          test "$(wc -l < "$OUT/evidence-files.txt")" -ge 1
+
+      - name: Upload runtime diagnostic artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-beta-503-runtime-diagnostic
+          path: ${{ runner.temp }}/app-beta-503
+          retention-days: 7
+          if-no-files-found: error
