@@ -132,17 +132,58 @@ jobs:
           supabase db push --help > "$RUNNER_TEMP/r1-isolated/db-push-help.txt" 2>&1
           grep -F -- '--dry-run' "$RUNNER_TEMP/r1-isolated/db-push-help.txt"
           supabase migration list --db-url "$DATABASE_URL" > "$RUNNER_TEMP/r1-isolated/migration-list.txt" 2>&1
-          mapfile -t remote_timestamps < <(awk -F'|' '{gsub(/[[:space:]]/, "", $2); if ($2 ~ /^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/) print $2}' "$RUNNER_TEMP/r1-isolated/migration-list.txt" | sort -u)
+          sed -E 's#(postgres(ql)?://)[^@[:space:]]+@#\1[REDACTED]@#g; s/(key|token|password|secret|authorization)=?[^[:space:]]+/\1=[REDACTED]/gi' \
+            "$RUNNER_TEMP/r1-isolated/migration-list.txt" > "$RUNNER_TEMP/r1-isolated/migration-list.sanitized.txt"
+          parser_errors="$RUNNER_TEMP/r1-isolated/parser-errors.txt"
+          : > "$parser_errors"
+          set +e
+          awk -F'|' -v errors="$parser_errors" '
+            function clean(value) {
+              gsub(/[[:space:]`]/, "", value)
+              return value
+            }
+            {
+              if ($0 !~ /\|/ || $0 ~ /^[[:space:]-]+$/) next
+              left = clean($1)
+              right = clean($2)
+              if (left ~ /^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/) {
+                if (right == "") next
+                if (right !~ /^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/) {
+                  print "ambiguous remote version: " $2 > errors
+                  bad = 1
+                  next
+                }
+                print right
+              } else if (left ~ /[0-9]/ || right ~ /[0-9]/) {
+                print "ambiguous migration row: " $0 > errors
+                bad = 1
+              }
+            }
+            END { exit bad ? 1 : 0 }
+          ' "$RUNNER_TEMP/r1-isolated/migration-list.txt" > "$RUNNER_TEMP/r1-isolated/remote-versions.raw"
+          parser_status=$?
+          set -e
+          test "$parser_status" -eq 0
+          test -s "$RUNNER_TEMP/r1-isolated/remote-versions.raw"
+          sort "$RUNNER_TEMP/r1-isolated/remote-versions.raw" > "$RUNNER_TEMP/r1-isolated/remote-versions.txt"
+          if [ -n "$(uniq -d "$RUNNER_TEMP/r1-isolated/remote-versions.txt")" ]; then
+            echo 'duplicate remote migration version' >> "$parser_errors"
+            exit 1
+          fi
+          mapfile -t remote_timestamps < "$RUNNER_TEMP/r1-isolated/remote-versions.txt"
+          : > "$RUNNER_TEMP/r1-isolated/remote-mapping.txt"
           for timestamp in "${remote_timestamps[@]}"; do
             mapfile -t matches < <(find "$WORK/supabase/migrations" -maxdepth 1 -type f -name "${timestamp}_*.sql" -printf '%f\n')
             test "${#matches[@]}" -eq 1
             mkdir -p "$WORK/supabase/migrations-min"
             cp "$WORK/supabase/migrations/${matches[0]}" "$WORK/supabase/migrations-min/${matches[0]}"
+            printf '%s\t%s\n' "$timestamp" "${matches[0]}" >> "$RUNNER_TEMP/r1-isolated/remote-mapping.txt"
           done
           mkdir -p "$WORK/supabase/migrations-min"
           cp "$WORK/supabase/migrations/$R1_NAME" "$WORK/supabase/migrations-min/$R1_NAME"
           rm -rf "$WORK/supabase/migrations"
           mv "$WORK/supabase/migrations-min" "$WORK/supabase/migrations"
+          find "$WORK/supabase/migrations" -maxdepth 1 -type f -printf '%f\n' | sort > "$RUNNER_TEMP/r1-isolated/workspace-manifest.txt"
           pushd "$WORK" >/dev/null
           supabase db push --dry-run --db-url "$DATABASE_URL" > "$RUNNER_TEMP/r1-isolated/dry-run.txt" 2>&1
           popd >/dev/null
