@@ -404,6 +404,115 @@ jobs:
             AND c.relkind IN ('r', 'p')
           ORDER BY c.relrowsecurity, c.relname;
 
+          SELECT '## UUID convertibility: projects';
+          SELECT COUNT(*) AS total_rows,
+                 COUNT(*) FILTER (
+                   WHERE id IS NOT NULL
+                     AND id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+                 ) AS valid_uuid_rows,
+                 COUNT(*) FILTER (
+                   WHERE id IS NOT NULL
+                     AND NOT (id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+                 ) AS nonconvertible_rows,
+                 COUNT(*) FILTER (WHERE id IS NULL) AS null_id_rows,
+                 MIN(length(id)) AS min_id_length,
+                 MAX(length(id)) AS max_id_length
+          FROM public.projects;
+          SELECT id, COUNT(*) AS duplicate_count
+          FROM public.projects
+          WHERE id IS NOT NULL
+          GROUP BY id
+          HAVING COUNT(*) > 1
+          ORDER BY id
+          LIMIT 100;
+          SELECT id
+          FROM public.projects
+          WHERE id IS NOT NULL
+            AND NOT (id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+          ORDER BY id
+          LIMIT 5;
+
+          SELECT '## Foreign keys referencing projects.id';
+          SELECT conrelid::regclass AS table_name,
+                 att.attname AS column_name,
+                 format_type(att.atttypid, att.atttypmod) AS column_type,
+                 conname,
+                 CASE confdeltype
+                   WHEN 'a' THEN 'NO ACTION'
+                   WHEN 'r' THEN 'RESTRICT'
+                   WHEN 'c' THEN 'CASCADE'
+                   WHEN 'n' THEN 'SET NULL'
+                   WHEN 'd' THEN 'SET DEFAULT'
+                 END AS on_delete,
+                 s.n_live_tup AS estimated_row_count
+          FROM pg_catalog.pg_constraint fk
+          JOIN pg_catalog.pg_attribute att
+            ON att.attrelid = fk.conrelid
+           AND att.attnum = fk.conkey[1]
+          JOIN pg_catalog.pg_stat_all_tables s ON s.relid = fk.conrelid
+          WHERE fk.contype = 'f'
+            AND fk.confrelid = 'public.projects'::regclass
+            AND array_length(fk.conkey, 1) = 1
+          ORDER BY table_name, column_name, conname;
+          SELECT '## Exact project dependency counts';
+          SELECT COUNT(*) AS project_tasks_rows,
+                 COUNT(*) FILTER (
+                   WHERE project_id IS NOT NULL
+                     AND project_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+                 ) AS project_id_valid_uuid_rows,
+                 COUNT(*) FILTER (
+                   WHERE project_id IS NOT NULL
+                     AND NOT (project_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+                 ) AS project_id_nonconvertible_rows,
+                 COUNT(*) FILTER (
+                   WHERE project_id IS NOT NULL
+                     AND NOT EXISTS (
+                       SELECT 1
+                       FROM public.projects p
+                       WHERE p.id = project_tasks.project_id
+                     )
+                 ) AS project_id_orphan_rows
+          FROM public.project_tasks;
+
+          SELECT '## Profiles user_id uniqueness';
+          SELECT conname, contype, pg_get_constraintdef(oid) AS constraint_definition
+          FROM pg_catalog.pg_constraint
+          WHERE conrelid = 'public.profiles'::regclass
+            AND contype IN ('p', 'u')
+          ORDER BY conname;
+          SELECT COUNT(*) FILTER (WHERE user_id IS NULL) AS null_user_id_rows,
+                 COUNT(*) FILTER (WHERE user_id IS NOT NULL) AS nonnull_user_id_rows,
+                 COUNT(*) - COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL) AS duplicate_nonnull_user_id_rows
+          FROM public.profiles;
+
+          SELECT '## Tables without RLS: safe metadata';
+          SELECT c.relname AS table_name,
+                 counts.row_count,
+                 pg_total_relation_size(c.oid) AS total_relation_bytes,
+                 array_agg(cols.column_name ORDER BY cols.ordinal_position)
+                   FILTER (WHERE cols.data_type IN ('timestamp without time zone', 'timestamp with time zone', 'date'))
+                   AS temporal_columns
+          FROM pg_catalog.pg_class c
+          JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+          LEFT JOIN information_schema.columns cols
+            ON cols.table_schema = n.nspname
+           AND cols.table_name = c.relname
+          CROSS JOIN LATERAL (
+            SELECT SUM(row_count) AS row_count
+            FROM (
+              SELECT COUNT(*) AS row_count FROM ONLY public.budgets WHERE c.relname = 'budgets'
+              UNION ALL SELECT COUNT(*) FROM ONLY public.budget_items WHERE c.relname = 'budget_items'
+              UNION ALL SELECT COUNT(*) FROM ONLY public.materials WHERE c.relname = 'materials'
+              UNION ALL SELECT COUNT(*) FROM ONLY public.notifications WHERE c.relname = 'notifications'
+              UNION ALL SELECT COUNT(*) FROM ONLY public.tasks WHERE c.relname = 'tasks'
+            ) counts_for_table
+          ) counts
+          WHERE n.nspname = 'public'
+            AND c.relname IN ('budgets', 'budget_items', 'materials', 'notifications', 'tasks')
+            AND c.relkind IN ('r', 'p')
+          GROUP BY c.relname, c.oid, counts.row_count
+          ORDER BY c.relname;
+
           SELECT '## Baselines';
           SELECT to_regclass('public.b18_grant_baseline') IS NOT NULL AS b18_baseline_present \gset
           \if :b18_baseline_present
