@@ -331,29 +331,65 @@ jobs:
             | sort -u || true
 
           echo '## Runtime references (filenames only)'
+          service_role_references_found=0
           SEARCH_ROOTS="/docker/reformando-app-beta"
           while IFS= read -r mount; do
             [ -n "$mount" ] && SEARCH_ROOTS="$SEARCH_ROOTS"$'\n'"$mount"
           done <<< "$TARGET_MOUNTS"
           while IFS= read -r root; do
             [ -d "$root" ] || continue
-            timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null \
-              | xargs -0 -r grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|createClient|supabase-js' 2>/dev/null \
-              | sed -n '1,200p'
-          done <<< "$SEARCH_ROOTS" | sort -u
+            mapfile -d '' candidate_files < <(timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null)
+            if [ "${#candidate_files[@]}" -eq 0 ]; then
+              echo "root=$root files=(sin archivos candidatos)"
+              continue
+            fi
+            set +e
+            matches="$(grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|createClient|supabase-js' "${candidate_files[@]}" 2>/dev/null)"
+            grep_status=$?
+            set -e
+            if [ "$grep_status" -gt 1 ]; then
+              echo "ERROR file scan failed root=$root status=$grep_status" >&2
+              exit "$grep_status"
+            fi
+            if [ -n "$matches" ]; then
+              printf '%s\n' "$matches" | sed -n '1,200p'
+              service_role_references_found=$((service_role_references_found + $(printf '%s\n' "$matches" | sed '/^$/d' | wc -l)))
+            else
+              echo "root=$root files=(sin coincidencias)"
+            fi
+          done <<< "$SEARCH_ROOTS"
+          echo "file_scan_status=completed"
+          echo "service_role_references_found=$service_role_references_found"
 
           echo '## Inferred tables and operations (metadata patterns only)'
           while IFS= read -r root; do
             [ -d "$root" ] || continue
-            timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null \
-              | xargs -0 -r grep -IhoE '(from|into|update|delete[[:space:]]+from)[[:space:]]+public\\.[a-z_][a-z0-9_]*|\\.from\\([[:space:]]*["'"'"'][a-z_][a-z0-9_]*' 2>/dev/null
+            mapfile -d '' candidate_files < <(timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null)
+            [ "${#candidate_files[@]}" -gt 0 ] || continue
+            set +e
+            matches="$(grep -IhoE '(from|into|update|delete[[:space:]]+from)[[:space:]]+public\\.[a-z_][a-z0-9_]*|\\.from\\([[:space:]]*["'"'"'][a-z_][a-z0-9_]*' "${candidate_files[@]}" 2>/dev/null)"
+            grep_status=$?
+            set -e
+            if [ "$grep_status" -gt 1 ]; then
+              echo "ERROR metadata scan failed root=$root status=$grep_status" >&2
+              exit "$grep_status"
+            fi
+            [ -n "$matches" ] && printf '%s\n' "$matches"
           done <<< "$SEARCH_ROOTS" | sed -E 's/.*(from|into|update|delete[[:space:]]+from)[[:space:]]+//; s/.*\\.from\\([[:space:]]*["'"'"']//; s/[^a-z0-9_].*$//' | sort -u | sed -n '1,200p'
 
           echo '## Cron and systemd references (paths only)'
-          find /etc/cron* /var/spool/cron /etc/systemd/system /usr/lib/systemd/system \
-            -type f -readable -print 2>/dev/null \
-            | while read -r file; do grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|supabase' "$file" 2>/dev/null && true; done \
-            | sort -u
+          mapfile -t operational_files < <(find /etc/cron* /var/spool/cron /etc/systemd/system /usr/lib/systemd/system \
+            -type f -readable -print 2>/dev/null)
+          for file in "${operational_files[@]}"; do
+            set +e
+            grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|supabase' "$file" 2>/dev/null
+            grep_status=$?
+            set -e
+            if [ "$grep_status" -gt 1 ]; then
+              echo "ERROR operational file scan failed file=$file status=$grep_status" >&2
+              exit "$grep_status"
+            fi
+          done
           systemctl list-unit-files --no-legend 2>/dev/null | grep -Ei 'supabase|reformando|beta' | sed -E 's/[[:space:]]+/ /g' || true
 
           echo '## Compose/configuration filenames'
