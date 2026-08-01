@@ -1,0 +1,39 @@
+name: Verify public table security (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_project_ref:
+        description: 'Must equal the staging project ref'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify project ref
+        env:
+          PROJECT_REF: ${{ inputs.confirm_project_ref }}
+        run: test "$PROJECT_REF" = "hafljwojvblyfljddjcr"
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - name: Verify public table security (read-only)
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: node scripts/ci/verify-public-table-security.mjs | tee "$RUNNER_TEMP/public-table-security.txt"
+      - name: Upload read-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-table-security-evidence
+          path: ${{ runner.temp }}/public-table-security.txt
+          retention-days: 7
