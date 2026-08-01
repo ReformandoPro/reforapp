@@ -6,9 +6,17 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'Operation mode'
+        required: true
+        type: choice
+        default: deploy
+        options:
+          - deploy
+          - diagnose_service_role
       deploy_sha:
         description: 'Full 40-character commit SHA to deploy'
-        required: true
+        required: false
         type: string
 
 permissions:
@@ -21,6 +29,7 @@ concurrency:
 jobs:
   deploy-app-beta:
     name: Deploy reformando-app-beta
+    if: ${{ github.event_name == 'push' || inputs.mode == 'deploy' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -246,3 +255,107 @@ jobs:
 
           echo "Health check failed for expected SHA $EXPECTED_SHA after 60 seconds (last_http_status=$LAST_HTTP_STATUS)" >&2
           exit 1
+
+  diagnose-service-role:
+    name: Diagnose app-beta service_role runtime (read-only)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'diagnose_service_role' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate diagnostic mode
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ inputs.mode }}" = "diagnose_service_role"
+
+      - name: Configure read-only SSH
+        shell: bash
+        env:
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+          APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
+          APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          test -n "${APP_BETA_SSH_PORT:-}"
+          test -n "${APP_BETA_SSH_PRIVATE_KEY:-}"
+          test -n "${APP_BETA_SSH_KNOWN_HOSTS:-}"
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$APP_BETA_SSH_PRIVATE_KEY" > "$HOME/.ssh/app_beta_diagnose_key"
+          printf '%s\n' "$APP_BETA_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Collect runtime evidence (read-only)
+        shell: bash
+        env:
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_USER: ${{ secrets.APP_BETA_SSH_USER }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
+        run: |
+          set -Eeuo pipefail
+          REPORT="$RUNNER_TEMP/app-beta-service-role-runtime.txt"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i "$HOME/.ssh/app_beta_diagnose_key" -p "$APP_BETA_SSH_PORT" \
+            "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST" 'bash -s' > "$REPORT" <<'REMOTE'
+          set -Eeuo pipefail
+          echo '## Runtime service_role diagnostic (read-only)'
+          echo '## Guard'
+          if docker ps -a --format '{{.Names}}' | grep -qx 'reformando-beta'; then
+            echo 'ERROR forbidden container reference detected; refusing inspection'
+            exit 1
+          fi
+          echo 'forbidden_container_guard=passed'
+          echo 'inspection_scope=reformando-app-beta plus operational metadata'
+
+          echo '## Target container'
+          docker ps --filter 'name=^reformando-app-beta$' --format 'name={{.Names}} image={{.Image}} status={{.Status}}'
+          docker inspect --format 'name={{.Name}} image={{.Config.Image}} status={{.State.Status}}' reformando-app-beta 2>/dev/null || echo 'target_container=absent'
+          docker inspect --format '{{range .Mounts}}{{println "mount" .Source "->" .Destination}}{{end}}' reformando-app-beta 2>/dev/null || true
+
+          echo '## Target environment variable names (values redacted)'
+          docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' reformando-app-beta 2>/dev/null \
+            | sed -E 's/=.*$/=[REDACTED]/' \
+            | grep -Ei 'SUPABASE|SERVICE_ROLE|DATABASE|APP_|NODE_ENV' \
+            | sort -u || true
+
+          echo '## Runtime references (filenames only)'
+          for root in /docker /opt /srv /app /etc; do
+            [ -d "$root" ] || continue
+            timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null \
+              | xargs -0 -r grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|createClient|supabase-js' 2>/dev/null \
+              | sed -n '1,200p'
+          done | sort -u
+
+          echo '## Inferred tables and operations (metadata patterns only)'
+          for root in /docker /opt /srv /app /etc; do
+            [ -d "$root" ] || continue
+            timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null \
+              | xargs -0 -r grep -IhoE '(from|into|update|delete[[:space:]]+from)[[:space:]]+public\\.[a-z_][a-z0-9_]*|\\.from\\([[:space:]]*["'"'"'][a-z_][a-z0-9_]*' 2>/dev/null
+          done | sed -E 's/.*(from|into|update|delete[[:space:]]+from)[[:space:]]+//; s/.*\\.from\\([[:space:]]*["'"'"']//; s/[^a-z0-9_].*$//' | sort -u | sed -n '1,200p'
+
+          echo '## Cron and systemd references (paths only)'
+          find /etc/cron* /var/spool/cron /etc/systemd/system /usr/lib/systemd/system \
+            -type f -readable -print 2>/dev/null \
+            | while read -r file; do grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|supabase' "$file" 2>/dev/null && true; done \
+            | sort -u
+          systemctl list-unit-files --no-legend 2>/dev/null | grep -Ei 'supabase|reformando|beta' | sed -E 's/[[:space:]]+/ /g' || true
+
+          echo '## Compose/configuration filenames'
+          find /docker /opt /srv /app -type f \( -iname '*compose*.yml' -o -iname '*compose*.yaml' -o -iname '*.env' -o -iname '*.service' \) \
+            -readable -print 2>/dev/null | sort -u | sed -n '1,200p'
+          REMOTE
+          sed -E 's#(postgres(ql)?://)[^@[:space:]]+@#\1[REDACTED]@#g; s/(key|token|password|secret|authorization)=?[^[:space:]]+/\1=[REDACTED]/gi' "$REPORT" > "$REPORT.sanitized"
+          mv "$REPORT.sanitized" "$REPORT"
+          test -s "$REPORT"
+          {
+            echo '## app-beta service_role runtime diagnostic (sanitized)'
+            cat "$REPORT"
+          } >> "${GITHUB_STEP_SUMMARY:?}"
+
+      - name: Upload runtime diagnostic artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-beta-service-role-runtime-diagnostic
+          path: ${{ runner.temp }}/app-beta-service-role-runtime.txt
+          if-no-files-found: error
+          retention-days: 2
