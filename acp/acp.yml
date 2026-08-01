@@ -1,0 +1,282 @@
+# ACP/1 — configuración del programa
+# Fichero normativo. La spec (ACP-1.md) describe la gramática; esto declara la
+# configuración de ESTE programa. Se cambia por PR, nunca a mano en caliente.
+#
+# Estado: PROPUESTA en revisión comparativa. Nada de aquí está activo.
+# No hay automatización: ni workflows, ni Actions, ni bots, ni webhooks, ni scripts.
+
+acp: 1                          # versión del protocolo (semver mayor)
+spec: "1.0.0-draft"             # versión del documento ACP-1.md
+program: reforapp
+status: proposed                # proposed | active | superseded
+profile: ACP-1                  # ACP-0 | ACP-1 | ACP-2 | ACP-3
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Repositorios
+# ─────────────────────────────────────────────────────────────────────────────
+repos:
+  coordination: ReformandoPro/reforapp
+  code:
+    - ReformandoPro/reforapp
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Espacio de nombres de identificadores (ACP-1.md §4.2)
+# ─────────────────────────────────────────────────────────────────────────────
+ids:
+  work_item_prefix: "RF"        # RF-<numero-de-issue>
+  initiative_prefix: "RF-I"
+  decision_prefix: "ACD"
+  risk_prefix: "RSK"
+  debt_prefix: "DEBT"
+  # Reservados por el roadmap de producto: NO son work items ACP.
+  # Usarlos como `item:` es violation:reserved-id.
+  reserved:
+    - "R1"
+    - "R2"
+    - "R2.1"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agentes
+#
+# `handle` debe ser una cuenta GitHub DISTINTA por agente. Mientras sean @TODO
+# o compartan cuenta, `actor` es autodeclarado y la separación de poderes es
+# honor system, no garantía (ACP-1.md §18.2). Cerrarlo es el paso 2 de §19.
+# ─────────────────────────────────────────────────────────────────────────────
+agents:
+  - id: jorge
+    kind: human
+    role: product-owner
+    handle: "@TODO-po"
+  - id: chatgpt
+    kind: llm
+    role: coordinator
+    handle: "@TODO-coordinator"
+  - id: openclaw
+    kind: llm
+    role: lead-engineer
+    handle: "@TODO-lead"
+    capabilities_extra: ["shell", "deploy:staging"]
+  - id: claude
+    kind: llm
+    role: engineer
+    handle: "@TODO-engineer"
+    capabilities_extra: ["shell"]
+  - id: hermes
+    kind: llm
+    role: reviewer
+    handle: "@TODO-reviewer"
+    adversarial: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Roles y capacidades: qué eventos puede emitir cada rol (ACP-1.md §8.1)
+# ─────────────────────────────────────────────────────────────────────────────
+roles:
+  product-owner:
+    capabilities: ["specify", "triage", "decide", "authorize", "close", "veto", "revoke", "approve:scope", "approve:release"]
+  coordinator:
+    capabilities: ["specify", "triage", "decide", "checkpoint", "reconcile", "validate", "block", "unblock", "supersede", "close", "approve:scope"]
+  lead-engineer:
+    capabilities: ["claim", "heartbeat", "progress", "submit", "validate", "review", "handoff", "assume", "checkpoint", "reconcile", "approve:code"]
+  engineer:
+    capabilities: ["claim", "heartbeat", "progress", "submit", "validate", "question", "assume", "handoff"]
+  reviewer:
+    capabilities: ["review", "validate", "block", "violation", "veto", "approve:code"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Permisos de plataforma: default deny.
+# Distinto de `capabilities` (qué eventos emites) — esto es qué puedes hacer
+# en el mundo. Todo lo marcado `authorization` exige un evento `authorize`
+# vigente del PO, atado a un basis.sha (ACP-1.md §13.5).
+# ─────────────────────────────────────────────────────────────────────────────
+permissions:
+  default: deny
+  push_branch: ["lead-engineer", "engineer", "coordinator"]
+  open_pr: ["lead-engineer", "engineer", "coordinator"]
+  merge_main: authorization
+  force_push: forbidden
+  rewrite_history: forbidden
+  delete_branch_others: forbidden
+  remote_db_write: authorization
+  run_migration: authorization
+  deploy_staging: authorization
+  deploy_production: authorization
+  modify_workflows: authorization
+  modify_secrets: forbidden
+  manage_labels: authorization
+  manage_projects: authorization
+  manage_issue_templates: authorization
+  create_release: authorization
+  post_secrets: forbidden       # tokens, JWTs, cookies, URLs con credenciales
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Gates (ACP-1.md §8.4). Se evalúan al cruzar, contra el head actual.
+# ─────────────────────────────────────────────────────────────────────────────
+gates:
+  ready:
+    requires:
+      - spec: {accept: required, touches: required}
+      - blockers: none
+  merge:
+    requires:
+      - review: {verdict: "approve", by_role: "reviewer", count: 1, fresh: true}
+      - review: {verdict: "!reject", by_capability: "veto", all: true}
+      - validation: ["tests", "lint", "types"]
+      - blockers: none
+      - unverified_ack: true      # alguien con autoridad firmó los huecos declarados
+      - self_approval: forbidden  # submit.actor != review.actor sobre el mismo basis
+  release:
+    requires:
+      - gate: "merge"
+      - authorization: {by_role: "product-owner", scope: "release"}
+      - validation: ["migration-dry-run", "rollback-plan"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Leases (ACP-1.md §10.1). Duraciones relativas: el reloj es el created_at
+# de GitHub, nunca el del agente (invariante I4).
+# ─────────────────────────────────────────────────────────────────────────────
+lease:
+  default: 6h
+  max: 48h
+  heartbeat: 24h
+  review_lease: 12h
+  on_expiry: return_to_ready
+  preempt_requires: ["read_previous_work", "preempts_field"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Política de invalidación / frescura (ACP-1.md §6.2)
+# ─────────────────────────────────────────────────────────────────────────────
+invalidation:
+  review_ttl: 7d                # R4: caduca aunque nada cambie
+  approval_ttl: 3d
+  authorization_ttl: 24h
+  drift_max_commits: 50         # R2: divergencia con la base
+  drift_max_days: 10
+  on_sha_change: stale          # R1
+  on_dependency_change: suspect # R3: vale si alguien firma `ack`
+  on_revoke: void               # R5: irreversible
+  revalidate_allowed: true      # review sobrevive a diffs fuera de basis.scope
+  stale_counts_for_gates: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Política de revisión (ACP-1.md §8.3)
+# ─────────────────────────────────────────────────────────────────────────────
+review:
+  min_independent: 1
+  self_review: forbidden
+  require_basis: true
+  require_unverified: true
+  require_falsified_if_adversarial: true
+  require_would_change_my_mind_if_not_approve: true
+  verdicts: ["approve", "changes", "reject"]
+  adversarial_reviewers: ["hermes"]
+  veto_holders: ["jorge", "hermes"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Política de silencio (ACP-1.md §13.6). El silencio tiene semántica
+# definida: el humano es árbitro de excepciones, no cuello de botella.
+# ─────────────────────────────────────────────────────────────────────────────
+silence:
+  require_default: true         # `question` sin default_if_silent es no conforme
+  require_expires: true
+  require_options: true
+  default_expires: 24h
+  max_expires: 72h
+  on_expiry: apply_default      # emite `assume` + `risk`, y sigue
+  on_expiry_emits: ["assume", "risk"]
+  blocking_default: false       # preguntar no detiene el trabajo no dependiente
+  never_default:                # excepciones: aquí el silencio NO autoriza nada
+    - "authorize"
+    - "approve:release"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Superficies de escritura declaradas (ACP-1.md §10.2).
+# El solape entre `touches` de items activos se detecta como intersección de
+# conjuntos, antes de escribir código.
+# ─────────────────────────────────────────────────────────────────────────────
+write_surfaces:
+  require_touches_in: ["spec", "claim"]
+  enforce_scope: true           # diff fuera de `touches` = violation:scope-creep
+  surfaces:
+    app: {globs: ["src/**"], owner_role: "engineer"}
+    database: {globs: ["supabase/**"], owner_role: "lead-engineer", risk: "high"}
+    tests: {globs: ["tests/**"], owner_role: "engineer"}
+    tooling: {globs: ["scripts/**", "package.json"], owner_role: "lead-engineer"}
+    docs: {globs: ["docs/**", "README.md"], owner_role: "coordinator"}
+    protocol: {globs: ["acp/**"], owner_role: "coordinator"}
+  protected:                    # exigen `authorize` del PO, no solo review
+    - globs: [".github/workflows/**"]
+      reason: "CI/CD: cambiar un workflow es cambiar la definicion de la evidencia"
+    - globs: ["supabase/migrations/**"]
+      reason: "Efecto en datos, no reversible con un revert"
+  do_not_touch:                 # propiedad de otras propuestas o del roadmap
+    - globs: ["docs/agents/**", ".github/ISSUE_TEMPLATE/agent-task.yml"]
+      reason: "Propuesta paralela en chore/agent-protocol-mvp. No modificar, no mergear, no cherry-pick"
+    - globs: ["AGENTS.md"]
+      reason: "AGENTS.md de la raiz: instruccion vigente del repo. acp/AGENTS.md no lo sustituye"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Límites operativos (ACP-1.md §9.2 y §18)
+# ─────────────────────────────────────────────────────────────────────────────
+limits:
+  context_budget:
+    total_tokens: 5000
+    log_tokens: 2000            # superarlo obliga a emitir checkpoint
+    resume_tokens: 500
+    agents_md_tokens: 700
+  checkpoint:
+    every_events: 30
+    every_days: 7
+    on_phase: ["ACCEPTED", "INTEGRATED"]
+  rotation:
+    max_events_per_item: 300
+    max_rotations_warn: 1       # rotar dos veces = item mal cortado
+  scale:
+    max_active_items_manual: 50 # limite practico de ACP a mano (§18)
+    warn_active_items: 30
+  branches:
+    pattern: "acp/{item}/{slug}"
+    integration: "main"
+    one_to_one: true            # 1 item <-> 1 rama <-> 1 PR
+    max_stack_depth: 3
+  debt:
+    require_authorization: true # deuda sin approve:scope = violation
+    require_payoff_trigger: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Reconciliación (ACP-1.md §15.3). Manual: las 14 comprobaciones se ejecutan
+# a mano. Automatizarlas es L3 y está fuera de alcance.
+# ─────────────────────────────────────────────────────────────────────────────
+reconcile:
+  mode: manual
+  cadence: weekly
+  owners: ["chatgpt", "openclaw"]
+  checklist_items: 14
+  publishes: "program-checkpoint"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Automatización: declarada explícitamente como ausente.
+# ─────────────────────────────────────────────────────────────────────────────
+automation:
+  enabled: false
+  workflows: none
+  bots: none
+  webhooks: none
+  apps: none
+  scripts: none
+  rationale: "Fase de protocolo. Ver ACP-1.md 17.4"
+  eligible_when_adopted: ["validation", "reconcile", "projection_refresh"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Extensiones locales (ACP-1.md §16). Un lector conforme ignora `x-`.
+# ─────────────────────────────────────────────────────────────────────────────
+x-reforapp:
+  parallel_proposals:
+    - branch: "chore/agent-protocol-mvp"
+      path: "docs/agents/protocol.md"
+      author: "chatgpt"
+    - branch: "openclaw/agent-operating-protocol"
+      author: "openclaw"
+    - branch: "feat/acp-1-protocol"
+      path: "acp/ACP-1.md"
+      author: "claude"
+  out_of_scope_while_in_review: ["R1", "R2", "R2.1", "workflows", "deploys", "migrations"]
