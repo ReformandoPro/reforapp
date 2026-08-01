@@ -1,1 +1,12 @@
-{ "v": 1, "type": "claim", "item": "R2.1", "actor": "openclaw", "after": 2451890100, "lease": "6h", "touches": ["supabase/**"], "intent": "Authenticated INSERT grant on memberships" }
+{
+  "v": "1.1",
+  "type": "claim",
+  "item": "R2.1",
+  "actor": "openclaw",
+  "after": "github-comment:2451890100",
+  "lease": "6h",
+  "touches": [
+    "supabase/**"
+  ],
+  "intent": "Authenticated INSERT grant on memberships"
+}

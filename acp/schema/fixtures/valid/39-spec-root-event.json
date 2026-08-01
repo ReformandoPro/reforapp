@@ -1,11 +1,15 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "spec",
   "item": "RF-160",
   "actor": "chatgpt",
   "role": "coordinator",
   "root": true,
-  "accept": ["npm run typecheck exits 0"],
-  "touches": ["src/**"],
+  "accept": [
+    "npm run typecheck exits 0"
+  ],
+  "touches": [
+    "src/**"
+  ],
   "size": "s"
 }

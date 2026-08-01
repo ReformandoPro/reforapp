@@ -1,0 +1,3 @@
+{ "v": "1.1", "type": "assume", "item": "RF-142", "actor": "chatgpt", "after": "github-comment:2451890160",
+  "premise": "Se fija la imagen de CI", "authority": "default-on-timeout",
+  "verify_by": "Confirmacion del PO", "risk_if_wrong": "RSK-016" }

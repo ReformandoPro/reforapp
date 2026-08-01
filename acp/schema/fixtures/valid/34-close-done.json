@@ -1,9 +1,12 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "close",
   "item": "RF-142",
   "actor": "jorge",
-  "after": 2451890215,
+  "after": "github-comment:2451890215",
   "resolution": "done",
-  "carries": ["RSK-014 open", "DEBT-031 open"]
+  "carries": [
+    "RSK-014 open",
+    "DEBT-031 open"
+  ]
 }

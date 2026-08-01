@@ -1,1 +1,19 @@
-{ "v": 1, "type": "handoff", "item": "RF-142", "actor": "claude", "after": 2451890195, "to": "any:engineer", "releases_lease": true, "resume": { "goal": "Idempotent grants", "done": ["migration rewritten"], "remaining": ["CI red"], "traps": [] } }
+{
+  "v": "1.1",
+  "type": "handoff",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": "github-comment:2451890195",
+  "to": "any:engineer",
+  "releases_lease": true,
+  "resume": {
+    "goal": "Idempotent grants",
+    "done": [
+      "migration rewritten"
+    ],
+    "remaining": [
+      "CI red"
+    ],
+    "traps": []
+  }
+}

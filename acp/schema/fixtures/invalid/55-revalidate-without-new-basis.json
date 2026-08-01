@@ -1,0 +1,4 @@
+{ "v": "1.1", "type": "revalidate", "item": "RF-142", "actor": "hermes", "after": "github-comment:2451890130",
+  "revalidates": "github-comment:2451890120",
+  "old_basis": { "ref": "acp/RF-142/x", "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b", "scope": ["db/migrations/**"] },
+  "scope_diff": { "outside_scope": true, "paths": ["README.md"] } }

@@ -1,1 +1,9 @@
-{ "v": 1, "type": "heartbeat", "item": "RF-142", "actor": "claude", "after": "the comment above where Jorge replied", "lease": "6h" }
+{
+  "v": "1.1",
+  "type": "heartbeat",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": "the comment above where Jorge replied",
+  "claim": "github-comment:2451889302",
+  "lease": "6h"
+}

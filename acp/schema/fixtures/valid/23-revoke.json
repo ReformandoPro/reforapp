@@ -1,1 +1,10 @@
-{ "v": 1, "type": "revoke", "actor": "jorge", "after": 2451890170, "target": 2451890165, "reason": "Production incident in progress; no staging deploys until it is closed", "effective": "immediate" }
+{
+  "v": "1.1",
+  "type": "revoke",
+  "item": "RF-142",
+  "actor": "jorge",
+  "after": "github-comment:2451890170",
+  "target": "github-comment:2451890165",
+  "reason": "Production incident in progress; no staging deploys until it is closed",
+  "effective": "immediate"
+}

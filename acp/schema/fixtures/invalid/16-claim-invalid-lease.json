@@ -1,1 +1,12 @@
-{ "v": 1, "type": "claim", "item": "RF-142", "actor": "claude", "after": 2451889301, "lease": "6 hours", "touches": ["db/migrations/**"], "intent": "Idempotent grants" }
+{
+  "v": "1.1",
+  "type": "claim",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": "github-comment:2451889301",
+  "lease": "6 hours",
+  "touches": [
+    "db/migrations/**"
+  ],
+  "intent": "Idempotent grants"
+}

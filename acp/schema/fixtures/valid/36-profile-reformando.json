@@ -1,17 +1,25 @@
 {
-  "acp": 1,
-  "spec": "1.0.0-draft",
+  "acp": "1.1",
+  "spec": "1.1.0-draft",
+  "profile_version": "0.2.0",
   "program": "reforapp",
   "status": "proposed",
   "profile": "ACP-1",
+  "schema_compatibility": "none",
   "repos": {
     "coordination": "ReformandoPro/reforapp",
     "code": [
       "ReformandoPro/reforapp"
     ]
   },
+  "identity": {
+    "trust_level": 1,
+    "distinct_accounts": false,
+    "note": "Nivel 1: los handles siguen sin asignar, luego `actor` es autodeclarado y NO verificable. Consecuencia declarada en lugar de implícita: la separación de poderes de ACP-1.md 8.2 es honor system, y ningún gate que exija revisión independiente está realmente garantizado hasta llegar al nivel 3."
+  },
   "ids": {
     "work_item_prefix": "RF",
+    "work_item_pattern": "^RF-I?[1-9][0-9]{0,8}$",
     "initiative_prefix": "RF-I",
     "decision_prefix": "ACD",
     "risk_prefix": "RSK",
@@ -42,7 +50,7 @@
       "handle": "@TODO-lead",
       "capabilities_extra": [
         "shell",
-        "deploy:staging"
+        "deploy-staging"
       ]
     },
     {
@@ -65,20 +73,26 @@
   "roles": {
     "product-owner": {
       "capabilities": [
-        "specify",
+        "spec",
         "triage",
         "decide",
         "authorize",
-        "close",
-        "veto",
         "revoke",
-        "approve:scope",
-        "approve:release"
+        "question",
+        "answer",
+        "close",
+        "supersede",
+        "approve",
+        "veto"
+      ],
+      "approve_gates": [
+        "scope",
+        "release"
       ]
     },
     "coordinator": {
       "capabilities": [
-        "specify",
+        "spec",
         "triage",
         "decide",
         "checkpoint",
@@ -86,9 +100,18 @@
         "validate",
         "block",
         "unblock",
+        "question",
+        "answer",
+        "assume",
+        "risk",
+        "debt",
+        "violation",
         "supersede",
         "close",
-        "approve:scope"
+        "approve"
+      ],
+      "approve_gates": [
+        "scope"
       ]
     },
     "lead-engineer": {
@@ -96,14 +119,21 @@
         "claim",
         "heartbeat",
         "progress",
+        "release",
+        "handoff",
         "submit",
         "validate",
         "review",
-        "handoff",
+        "revalidate",
         "assume",
+        "question",
+        "risk",
         "checkpoint",
         "reconcile",
-        "approve:code"
+        "approve"
+      ],
+      "approve_gates": [
+        "code"
       ]
     },
     "engineer": {
@@ -111,21 +141,31 @@
         "claim",
         "heartbeat",
         "progress",
+        "release",
+        "handoff",
         "submit",
         "validate",
         "question",
         "assume",
-        "handoff"
+        "risk"
+      ],
+      "approve_gates": [
+
       ]
     },
     "reviewer": {
       "capabilities": [
         "review",
+        "revalidate",
         "validate",
         "block",
         "violation",
-        "veto",
-        "approve:code"
+        "risk",
+        "approve",
+        "veto"
+      ],
+      "approve_gates": [
+        "code"
       ]
     }
   },
@@ -141,20 +181,57 @@
       "engineer",
       "coordinator"
     ],
-    "merge_main": "authorization",
-    "force_push": "forbidden",
-    "rewrite_history": "forbidden",
-    "delete_branch_others": "forbidden",
-    "remote_db_write": "authorization",
-    "run_migration": "authorization",
+    "merge_main": {
+      "mode": "authorization",
+      "irreversible": false,
+      "reason": "Reversible con revert, pero cambia la base de todo el trabajo en vuelo"
+    },
+    "force_push": {
+      "mode": "forbidden",
+      "irreversible": true,
+      "reason": "Destruye historia; incompatible con un log append-only"
+    },
+    "rewrite_history": {
+      "mode": "forbidden",
+      "irreversible": true
+    },
+    "delete_branch_others": {
+      "mode": "forbidden",
+      "irreversible": true
+    },
+    "remote_db_write": {
+      "mode": "authorization",
+      "irreversible": true
+    },
+    "run_migration": {
+      "mode": "authorization",
+      "irreversible": true,
+      "reason": "Efecto en datos, no reversible con un revert"
+    },
     "deploy_staging": "authorization",
-    "deploy_production": "authorization",
-    "modify_workflows": "authorization",
-    "modify_secrets": "forbidden",
+    "deploy_production": {
+      "mode": "authorization",
+      "irreversible": true
+    },
+    "modify_workflows": {
+      "mode": "authorization",
+      "reason": "Cambiar un workflow es cambiar la definicion de la evidencia"
+    },
+    "modify_secrets": {
+      "mode": "forbidden",
+      "irreversible": true
+    },
     "manage_labels": "authorization",
     "manage_projects": "authorization",
     "manage_issue_templates": "authorization",
-    "create_release": "authorization",
+    "create_release": {
+      "mode": "authorization",
+      "irreversible": true
+    },
+    "delete_data": {
+      "mode": "forbidden",
+      "irreversible": true
+    },
     "post_secrets": "forbidden"
   },
   "gates": {
@@ -171,7 +248,7 @@
         }
       ]
     },
-    "merge": {
+    "code": {
       "requires": [
         {
           "review": {
@@ -180,6 +257,16 @@
             "count": 1,
             "fresh": true
           }
+        },
+        {
+          "self_approval": "forbidden"
+        }
+      ]
+    },
+    "merge": {
+      "requires": [
+        {
+          "gate": "code"
         },
         {
           "review": {
@@ -200,9 +287,16 @@
         },
         {
           "unverified_ack": true
-        },
+        }
+      ]
+    },
+    "scope": {
+      "requires": [
         {
-          "self_approval": "forbidden"
+          "authorization": {
+            "by_role": "coordinator",
+            "scope": "scope-change"
+          }
         }
       ]
     },
@@ -232,9 +326,10 @@
     "heartbeat": "24h",
     "review_lease": "12h",
     "on_expiry": "return_to_ready",
+    "require_claim_reference": true,
     "preempt_requires": [
-      "read_previous_work",
-      "preempts_field"
+      "previous_lease_expired",
+      "previous_work_read"
     ]
   },
   "invalidation": {
@@ -247,13 +342,18 @@
     "on_dependency_change": "suspect",
     "on_revoke": "void",
     "revalidate_allowed": true,
+    "revalidate_resets_ttl": false,
+    "revalidate_same_actor_only": true,
     "stale_counts_for_gates": false
   },
   "review": {
     "min_independent": 1,
     "self_review": "forbidden",
     "require_basis": true,
+    "require_full_sha": true,
     "require_unverified": true,
+    "allow_empty_unverified": true,
+    "require_adversarial_declaration": true,
     "require_falsified_if_adversarial": true,
     "require_would_change_my_mind_if_not_approve": true,
     "verdicts": [
@@ -267,7 +367,8 @@
     "veto_holders": [
       "jorge",
       "hermes"
-    ]
+    ],
+    "independence_guaranteed": false
   },
   "silence": {
     "require_default": true,
@@ -283,7 +384,19 @@
     "blocking_default": false,
     "never_default": [
       "authorize",
-      "approve:release"
+      "approve"
+    ],
+    "never_default_actions": [
+      "deploy",
+      "merge",
+      "migrate",
+      "release",
+      "remote-write",
+      "rotate-secret",
+      "delete-data",
+      "modify-workflow",
+      "modify-platform-config",
+      "spend"
     ]
   },
   "write_surfaces": {
@@ -360,6 +473,12 @@
           "AGENTS.md"
         ],
         "reason": "AGENTS.md de la raiz: instruccion vigente del repo. acp/AGENTS.md no lo sustituye"
+      },
+      {
+        "globs": [
+          "acp/schema/**"
+        ],
+        "reason": "Schema V2 en feat/acp-envelope-schema. Reconciliarlo con ACP-1.1 exige un schema V3 aparte"
       }
     ]
   },
@@ -368,7 +487,7 @@
       "total_tokens": 5000,
       "log_tokens": 2000,
       "resume_tokens": 500,
-      "agents_md_tokens": 700
+      "agents_md_tokens": 900
     },
     "checkpoint": {
       "every_events": 30,
@@ -421,8 +540,22 @@
       "projection_refresh"
     ]
   },
-  "x-reforapp": {
-    "parallel_proposals": [
+  "extensions": {
+    "x-reforapp-hitos": [
+      "A",
+      "A.5",
+      "B"
+    ],
+    "x-reforapp-bloques": [
+      "B17",
+      "B18",
+      "B19",
+      "B20",
+      "B21",
+      "B22",
+      "B23"
+    ],
+    "x-reforapp-parallel-proposals": [
       {
         "branch": "chore/agent-protocol-mvp",
         "path": "docs/agents/protocol.md",
@@ -436,9 +569,14 @@
         "branch": "feat/acp-1-protocol",
         "path": "acp/ACP-1.md",
         "author": "claude"
+      },
+      {
+        "branch": "feat/acp-envelope-schema",
+        "path": "acp/schema/",
+        "author": "claude"
       }
     ],
-    "out_of_scope_while_in_review": [
+    "x-reforapp-out-of-scope-while-in-review": [
       "R1",
       "R2",
       "R2.1",

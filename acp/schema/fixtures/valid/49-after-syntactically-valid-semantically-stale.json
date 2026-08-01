@@ -1,0 +1,5 @@
+{ "v": "1.1", "type": "review", "item": "RF-142", "actor": "hermes", "after": "github-comment:2451889301",
+  "adversarial": false,
+  "basis": { "ref": "acp/RF-142/x", "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b", "scope": ["db/migrations/**"] },
+  "verdict": "approve",
+  "unverified": ["El puntero causal apunta a un evento muy anterior: sintacticamente valido, semanticamente obsoleto. El schema no puede saberlo"] }

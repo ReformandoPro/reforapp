@@ -1,0 +1,3 @@
+{ "v": "1.1", "type": "risk", "item": "RF-142", "actor": "hermes", "root": true,
+  "risk": { "id": "RSK-020", "title": "Riesgo sin origen", "kind": "technical", "likelihood": "low",
+    "impact": "low", "owner": "openclaw", "trigger": "x", "signal": "y", "status": "open" } }

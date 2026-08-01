@@ -1,11 +1,14 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "heartbeat",
   "item": "RF-142",
   "actor": "claude",
-  "after": 2451890225,
+  "after": "github-comment:2451890225",
+  "claim": "github-comment:2451889302",
   "lease": "6h",
-  "x-github-pr": 141,
-  "x-a": "single character namespace is legal",
-  "x-0-numeric-start": "digits are legal after the prefix"
+  "extensions": {
+    "x-github-pr": 141,
+    "x-a": "single character namespace is legal",
+    "x-0-numeric-start": "digits are legal after the prefix"
+  }
 }

@@ -1,11 +1,17 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "review",
   "item": "RF-142",
   "actor": "hermes",
-  "after": 2451890115,
+  "after": "github-comment:2451890115",
   "adversarial": false,
-  "basis": { "repo": "ReformandoPro/reforapp", "ref": "acp/RF-142/x", "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b" },
+  "basis": {
+    "repo": "ReformandoPro/reforapp",
+    "ref": "acp/RF-142/x",
+    "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b"
+  },
   "verdict": "approve",
-  "unverified": ["binding shorthand is not a Core repository reference"]
+  "unverified": [
+    "binding shorthand is not a Core repository reference"
+  ]
 }

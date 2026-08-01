@@ -1,9 +1,9 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "block",
   "item": "RF-143",
   "actor": "chatgpt",
-  "after": 2451890175,
+  "after": "github-comment:2451890175",
   "on": "acp:example/item/RF-142",
   "kind": "dependency",
   "unblock_when": "RF-142 reaches INTEGRATED",

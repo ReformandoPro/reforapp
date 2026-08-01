@@ -1,11 +1,14 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "claim",
   "item": "RF-142",
   "actor": "claude",
   "role": "engineer",
-  "after": 2451889301,
+  "after": "github-comment:2451889301",
   "lease": "6h",
-  "touches": ["db/migrations/**", "src/security/rls/**"],
+  "touches": [
+    "db/migrations/**",
+    "src/security/rls/**"
+  ],
   "intent": "Idempotent grants migration plus a double-execution test"
 }

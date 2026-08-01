@@ -1,1 +1,10 @@
-{ "v": 1, "type": "answer", "actor": "jorge", "after": 2451890155, "target": 2451890110, "answer": "Pin the CI image to match production", "chose": "pin" }
+{
+  "v": "1.1",
+  "type": "answer",
+  "item": "RF-142",
+  "actor": "jorge",
+  "after": "github-comment:2451890155",
+  "target": "github-comment:2451890110",
+  "answer": "Pin the CI image to match production",
+  "chose": "pin"
+}

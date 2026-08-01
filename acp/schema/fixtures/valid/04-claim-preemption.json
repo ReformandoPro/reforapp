@@ -1,13 +1,15 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "claim",
   "item": "RF-142",
   "actor": "openclaw",
-  "after": 2451890100,
+  "after": "github-comment:2451890100",
   "lease": "6h",
-  "touches": ["db/migrations/**"],
+  "touches": [
+    "db/migrations/**"
+  ],
   "intent": "Take over after the previous lease expired",
-  "preempts": 2451889310,
+  "preempts": "github-comment:2451889310",
   "preempt_declaration": {
     "previous_lease_expired": true,
     "previous_work_read": true,

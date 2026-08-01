@@ -1,13 +1,32 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "revalidate",
   "item": "RF-142",
   "actor": "hermes",
-  "after": 2451890130,
-  "revalidates": 2451890120,
-  "old_basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263", "scope": ["db/migrations/**"] },
-  "new_basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4", "scope": ["db/migrations/**"] },
-  "scope_diff": { "outside_scope": true, "paths": ["README.md"] },
+  "after": "github-comment:2451890130",
+  "revalidates": "github-comment:2451890120",
+  "old_basis": {
+    "ref": "acp/RF-142/rls-grants-idempotent",
+    "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263",
+    "scope": [
+      "db/migrations/**"
+    ]
+  },
+  "new_basis": {
+    "ref": "acp/RF-142/rls-grants-idempotent",
+    "sha": "f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4",
+    "scope": [
+      "db/migrations/**"
+    ]
+  },
+  "scope_diff": {
+    "outside_scope": true,
+    "paths": [
+      "README.md"
+    ]
+  },
   "verdict": "approve",
-  "unverified": ["Tests were not re-run; the diff only touches README.md"]
+  "unverified": [
+    "Tests were not re-run; the diff only touches README.md"
+  ]
 }

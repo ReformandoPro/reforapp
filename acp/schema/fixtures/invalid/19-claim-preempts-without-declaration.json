@@ -1,1 +1,13 @@
-{ "v": 1, "type": "claim", "item": "RF-142", "actor": "openclaw", "after": 2451890100, "lease": "6h", "touches": ["db/migrations/**"], "intent": "Take over", "preempts": 2451889310 }
+{
+  "v": "1.1",
+  "type": "claim",
+  "item": "RF-142",
+  "actor": "openclaw",
+  "after": "github-comment:2451890100",
+  "lease": "6h",
+  "touches": [
+    "db/migrations/**"
+  ],
+  "intent": "Take over",
+  "preempts": "github-comment:2451889310"
+}

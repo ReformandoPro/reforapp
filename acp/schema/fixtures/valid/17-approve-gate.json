@@ -1,12 +1,15 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "approve",
   "item": "RF-142",
   "actor": "openclaw",
   "role": "lead-engineer",
-  "after": 2451890145,
+  "after": "github-comment:2451890145",
   "gate": "merge",
-  "basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263" },
+  "basis": {
+    "ref": "acp/RF-142/rls-grants-idempotent",
+    "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263"
+  },
   "ttl": "3d",
   "unverified_ack": true
 }

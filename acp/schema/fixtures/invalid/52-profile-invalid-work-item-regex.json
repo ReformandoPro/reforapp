@@ -1,5 +1,5 @@
 {
-  "acp": 1,
+  "acp": "1.1",
   "program": "example",
   "profile": "ACP-1",
   "agents": [
@@ -19,7 +19,11 @@
       "capabilities": [
         "authorize",
         "close",
-        "approve:release"
+        "approve",
+        "veto"
+      ],
+      "approve_gates": [
+        "release"
       ]
     },
     "engineer": {
@@ -27,7 +31,8 @@
         "claim",
         "submit",
         "validate"
-      ]
+      ],
+      "approve_gates": []
     }
   },
   "permissions": {
@@ -72,7 +77,14 @@
     "on_expiry": "apply_default",
     "never_default": [
       "authorize",
-      "approve:release"
+      "approve"
+    ],
+    "never_default_actions": [
+      "deploy",
+      "merge",
+      "migrate",
+      "release",
+      "delete-data"
     ]
   },
   "limits": {
@@ -89,5 +101,12 @@
   "ids": {
     "work_item_prefix": "EX",
     "work_item_pattern": "^[A-Z"
+  },
+  "identity": {
+    "trust_level": 3,
+    "distinct_accounts": true
+  },
+  "extensions": {
+    "x-example-note": "extensiones del perfil en contenedor unico (L1)"
   }
 }

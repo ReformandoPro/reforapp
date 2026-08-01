@@ -1,17 +1,22 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "spec",
   "item": "RF-142",
   "actor": "chatgpt",
   "role": "coordinator",
-  "after": 2451889301,
+  "after": "github-comment:2451889301",
   "accept": [
     "pytest tests/rls -q exits 0",
     "migration 0042 runs twice in a row without error",
     "audit/default_acl.sql returns 0 rows in CI and staging"
   ],
-  "touches": ["db/migrations/**", "src/security/rls/**"],
+  "touches": [
+    "db/migrations/**",
+    "src/security/rls/**"
+  ],
   "size": "m",
   "initiative": "RF-I3",
-  "decisions": ["ACD-0007@2"]
+  "decisions": [
+    "ACD-0007@2"
+  ]
 }

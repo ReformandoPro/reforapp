@@ -1,11 +1,15 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "spec",
   "item": "RF-160",
   "actor": "chatgpt",
   "root": true,
-  "after": 2451889301,
-  "accept": ["npm run typecheck exits 0"],
-  "touches": ["src/**"],
+  "after": "github-comment:2451889301",
+  "accept": [
+    "npm run typecheck exits 0"
+  ],
+  "touches": [
+    "src/**"
+  ],
   "size": "s"
 }

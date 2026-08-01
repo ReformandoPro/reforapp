@@ -1,15 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:acp:schema:profile:0.2.0",
-  "title": "ACP profile / programme configuration (ACP-1 amendment candidate)",
-  "description": "Machine-checkable contract for an ACP profile document (for example acp/acp.yml, parsed to JSON). Layer: Implementation. STATUS: amendment candidate, paired with envelope 0.2.0; see README, 'Required normative amendments before adoption'. A profile selects policy inside the space Core allows: it may tighten Core requirements but must never redefine Core meanings. This schema is generic: no organization, agent, repository or path is hardcoded. It validates shape and internal consistency of policy, not whether the policy is wise or whether the declared accounts exist. Note on repository references: the profile MAY use its binding's native repository form (for example owner/name) because a profile names its binding; the Core envelope may not, and uses a portable reference instead.",
+  "$id": "urn:acp:schema:profile:0.3.0",
+  "title": "ACP profile / programme configuration (ACP-1.1 amendment candidate implementation)",
+  "description": "Machine-checkable contract for an ACP profile document (for example acp/acp.yml, parsed to JSON). Layer: Implementation. STATUS: implements ACP-1.1 (feat/acp-1-1-normative-amendments@1bda3e99), paired with envelope 0.3.0. Conformance requires format-assertion enabled in the validator (M1); see README, 'Required normative amendments before adoption'. A profile selects policy inside the space Core allows: it may tighten Core requirements but must never redefine Core meanings. This schema is generic: no organization, agent, repository or path is hardcoded. It validates shape and internal consistency of policy, not whether the policy is wise or whether the declared accounts exist. Note on repository references: the profile MAY use its binding's native repository form (for example owner/name) because a profile names its binding; the Core envelope may not, and uses a portable reference instead.",
   "type": "object",
   "required": ["acp", "program", "agents", "roles", "permissions", "gates", "lease", "invalidation", "review", "silence", "limits", "automation"],
   "properties": {
     "acp": {
-      "description": "ACP Core major version this profile targets.",
-      "type": "integer",
-      "minimum": 1
+      "description": "ACP Core version this profile targets, as major.minor (ACP-1.1 section 16.1, amendment A20).",
+      "type": "string",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$"
     },
     "spec": {
       "description": "Version of the specification document the profile was written against.",
@@ -25,6 +25,11 @@
     },
     "schema_version": { "$ref": "#/$defs/semver" },
     "program_revision": { "type": "integer", "minimum": 1 },
+    "schema_compatibility": {
+      "description": "Which published schema, if any, the profile author believes implements the protocol version they target. `none` is an honest and common answer.",
+      "type": "string",
+      "minLength": 1
+    },
     "program": { "$ref": "#/$defs/programId" },
     "status": { "type": "string", "enum": ["proposed", "active", "superseded"] },
     "profile": {
@@ -63,7 +68,7 @@
       "properties": {
         "work_item_prefix": { "$ref": "#/$defs/idPrefix" },
         "work_item_pattern": {
-          "description": "Regular expression the programme's work item identifiers must match. Validated as a well-formed regular expression here; applying it to envelopes is a second-pass, profile-aware check.",
+          "description": "Regular expression the programme work item identifiers must match. Checked here for well-formedness via format: regex, WHICH IS ONLY ENFORCED IF THE VALIDATOR HAS FORMAT-ASSERTION ENABLED (M1). Conformance to this schema requires it; see README, Conformance requirements. Applying the pattern to envelopes is a separate profile-aware pass that does not exist yet.",
           "type": "string",
           "format": "regex",
           "minLength": 1
@@ -102,6 +107,12 @@
             "minItems": 1,
             "uniqueItems": true,
             "items": { "$ref": "#/$defs/capability" }
+          },
+          "approve_gates": {
+            "description": "Gates this role may consent to (A7). Replaces the approve:<gate> capability form. That these names correspond to declared gates is referential integrity: a profile linter checks it, this schema cannot (M4).",
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+            "uniqueItems": true
           },
           "description": { "type": "string", "minLength": 1 }
         },
@@ -144,6 +155,10 @@
         "heartbeat": { "$ref": "#/$defs/duration" },
         "review_lease": { "$ref": "#/$defs/duration" },
         "on_expiry": { "type": "string", "enum": ["return_to_ready", "notify_only"] },
+        "require_claim_reference": {
+          "description": "ACP-1.1 amendment A18: heartbeat and release must name the claim whose lease they act on.",
+          "type": "boolean"
+        },
         "preempt_requires": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
       },
       "required": ["default", "max", "heartbeat"],
@@ -162,6 +177,15 @@
         "on_dependency_change": { "type": "string", "enum": ["stale", "suspect", "ignore"] },
         "on_revoke": { "type": "string", "enum": ["void"] },
         "revalidate_allowed": { "type": "boolean" },
+        "revalidate_resets_ttl": {
+          "description": "ACP-1.1 section 6.3: revalidation carries the verdict to a new SHA but does NOT restart the review TTL. Chained revalidation would otherwise keep a three-week-old review alive forever, which is what rule R4 exists to prevent.",
+          "type": "boolean",
+          "const": false
+        },
+        "revalidate_same_actor_only": {
+          "description": "ACP-1.1 section 6.3: only the author of the original assertion may revalidate it. Anyone else is making a new assertion, which is a review.",
+          "type": "boolean"
+        },
         "stale_counts_for_gates": {
           "description": "Must be false to satisfy Core invariant 'stale evidence does not satisfy a gate'.",
           "type": "boolean",
@@ -181,7 +205,20 @@
           "const": "forbidden"
         },
         "require_basis": { "type": "boolean", "const": true },
+        "require_full_sha": { "type": "boolean", "const": true },
         "require_unverified": { "type": "boolean", "const": true },
+        "allow_empty_unverified": {
+          "description": "ACP-1.1 amendment A19: `unverified: []` is admissible and means 'nothing left to verify'. Omitting the key remains non-conformant.",
+          "type": "boolean"
+        },
+        "require_adversarial_declaration": {
+          "description": "ACP-1.1 section 5.3: every review states whether it is adversarial. Optional, the flag could simply be omitted to escape the falsified requirement.",
+          "type": "boolean"
+        },
+        "independence_guaranteed": {
+          "description": "Whether review independence is actually guaranteed. Must be false below identity.trust_level 3: with a shared account the binding cannot tell two agents apart, so 'nobody reviews what they delivered' is honour system. A profile that claims otherwise is overstating its guarantees.",
+          "type": "boolean"
+        },
         "require_falsified_if_adversarial": { "type": "boolean" },
         "require_would_change_my_mind_if_not_approve": { "type": "boolean" },
         "verdicts": {
@@ -342,6 +379,12 @@
         }
       ]
     },
+    "extensions": {
+      "description": "Single container for local extensions (L1, ACP-1.1 section 5.2.3). Same grammar as the envelope: ^x-[a-z0-9][a-z0-9-]*$. Loose x- members at the profile root are no longer accepted, so the rule is identical in both documents and a reader needs one habit, not two.",
+      "type": "object",
+      "propertyNames": { "pattern": "^x-[a-z0-9][a-z0-9-]*$" },
+      "minProperties": 1
+    },
     "automation": {
       "description": "Declared automation posture. Stating its absence explicitly is what makes the absence auditable.",
       "type": "object",
@@ -381,12 +424,6 @@
           "then": { "required": ["implementation"] }
         }
       ]
-    }
-  },
-  "patternProperties": {
-    "^x-": {
-      "description": "Local extension namespace. Ignored by conforming readers.",
-      "$comment": "Any value permitted."
     }
   },
   "additionalProperties": false,
@@ -464,22 +501,14 @@
     },
 
     "capability": {
-      "description": "A protocol capability: authority to emit a class of event, plus the authority capabilities veto and approve:<gate>. Note specify (capability) versus spec (event type): same concept, two namespaces, kept apart on purpose. Platform abilities such as running a shell are NOT capabilities; they belong in agent.capabilities_extra.",
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": [
-            "answer", "assume", "authorize", "block", "checkpoint", "claim", "close",
-            "debt", "decide", "handoff", "heartbeat", "progress", "question",
-            "reconcile", "release", "revalidate", "review", "revoke", "risk",
-            "specify", "submit", "supersede", "triage", "unblock", "validate",
-            "veto", "violation"
-          ]
-        },
-        {
-          "type": "string",
-          "pattern": "^approve:[a-z][a-z0-9-]{1,31}$"
-        }
+      "description": "A protocol capability. ACP-1.1 amendment A7: capability names ARE event type names, plus veto. There is no translation between the two registries, so they cannot diverge. The 0.2.0 capability `specify` is gone (it is `spec`), and the `approve:<gate>` form is gone: `approve` is a plain capability and which gates a role may consent to is declared in roles.<role>.approve_gates. Platform abilities such as running a shell are NOT capabilities; they belong in agent.capabilities_extra.",
+      "$comment": "CATALOGUE PARITY (C1, A16): this list is the event catalogue plus veto. catalogue-digest: sha256:046f7cadad317948c7a92a808bade47bbbdf61bdb467ce26a49891da730e0e91",
+      "type": "string",
+      "enum": [
+        "answer", "approve", "assume", "authorize", "block", "checkpoint", "claim",
+        "close", "debt", "decide", "handoff", "heartbeat", "progress", "question",
+        "reconcile", "release", "revalidate", "review", "revoke", "risk", "spec",
+        "submit", "supersede", "triage", "unblock", "validate", "veto", "violation"
       ]
     },
 

@@ -1,10 +1,10 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "submit",
   "item": "RF-142",
   "actor": "claude",
   "role": "engineer",
-  "after": 2451890115,
+  "after": "github-comment:2451890115",
   "basis": {
     "repo": {
       "system": "git",
@@ -47,8 +47,10 @@
     "Rollback of migration 0042 was not executed"
   ],
   "delivery": {
-    "kind": "pull-request",
+    "kind": "change-request",
     "id": 141
   },
-  "x-github-pr": 141
+  "extensions": {
+    "x-github-pr": 141
+  }
 }

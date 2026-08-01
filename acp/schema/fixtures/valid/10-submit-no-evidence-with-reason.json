@@ -1,12 +1,22 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "submit",
   "item": "RF-151",
   "actor": "claude",
-  "after": 2451890300,
-  "basis": { "ref": "acp/RF-151/readme-typo", "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263", "scope": ["README.md"] },
-  "touches": ["README.md"],
+  "after": "github-comment:2451890300",
+  "basis": {
+    "ref": "acp/RF-151/readme-typo",
+    "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263",
+    "scope": [
+      "README.md"
+    ]
+  },
+  "touches": [
+    "README.md"
+  ],
   "evidence": [],
   "no_evidence_reason": "Documentation-only change with no executable behaviour; no command can produce evidence.",
-  "unverified": ["Nothing was executed: this change has no runtime effect to verify"]
+  "unverified": [
+    "Nothing was executed: this change has no runtime effect to verify"
+  ]
 }

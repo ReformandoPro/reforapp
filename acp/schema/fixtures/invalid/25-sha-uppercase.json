@@ -1,9 +1,9 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "review",
   "item": "RF-142",
   "actor": "hermes",
-  "after": 2451890115,
+  "after": "github-comment:2451890115",
   "basis": {
     "ref": "acp/RF-142/x",
     "sha": "9011DD3F1C4E2B7A8F0D6C5E4A3B2C1D0E9F8A7B"

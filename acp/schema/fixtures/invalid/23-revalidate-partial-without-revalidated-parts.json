@@ -1,1 +1,22 @@
-{ "v": 1, "type": "revalidate", "item": "RF-142", "actor": "hermes", "after": 2451890135, "revalidates": 2451890120, "old_basis": { "ref": "acp/RF-142/x", "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263" }, "new_basis": { "ref": "acp/RF-142/x", "sha": "f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4" }, "scope_diff": { "outside_scope": false, "paths": ["db/migrations/0042.sql"] } }
+{
+  "v": "1.1",
+  "type": "revalidate",
+  "item": "RF-142",
+  "actor": "hermes",
+  "after": "github-comment:2451890135",
+  "revalidates": "github-comment:2451890120",
+  "old_basis": {
+    "ref": "acp/RF-142/x",
+    "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263"
+  },
+  "new_basis": {
+    "ref": "acp/RF-142/x",
+    "sha": "f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4"
+  },
+  "scope_diff": {
+    "outside_scope": false,
+    "paths": [
+      "db/migrations/0042.sql"
+    ]
+  }
+}

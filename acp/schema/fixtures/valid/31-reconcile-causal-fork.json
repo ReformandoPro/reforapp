@@ -1,10 +1,16 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "reconcile",
   "item": "RF-142",
   "actor": "chatgpt",
-  "after": 2451890200,
-  "after_multi": [2451890115, 2451890116],
-  "fixed": ["Resolved a causal fork: the submission was written without seeing the redefined spec", "Regenerated the projection"],
+  "after": "github-comment:2451890200",
+  "after_multi": [
+    "github-comment:2451890115",
+    "github-comment:2451890116"
+  ],
+  "fixed": [
+    "Resolved a causal fork: the submission was written without seeing the redefined spec",
+    "Regenerated the projection"
+  ],
   "checks_run": 14
 }

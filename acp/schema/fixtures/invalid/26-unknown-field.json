@@ -1,1 +1,9 @@
-{ "v": 1, "type": "heartbeat", "item": "RF-142", "actor": "claude", "after": 2451890110, "lease": "6h", "priority_level": "urgent" }
+{
+  "v": "1.1",
+  "type": "heartbeat",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": "github-comment:2451890110",
+  "lease": "6h",
+  "priority_level": "urgent"
+}

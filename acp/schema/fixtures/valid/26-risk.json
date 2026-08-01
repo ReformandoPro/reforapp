@@ -1,9 +1,9 @@
 {
-  "v": 1,
+  "v": "1.1",
   "type": "risk",
   "item": "RF-142",
   "actor": "hermes",
-  "after": 2451890120,
+  "after": "github-comment:2451890120",
   "risk": {
     "id": "RSK-014",
     "title": "CI Postgres image differs from production in default ACL",
@@ -15,7 +15,9 @@
     "signal": "CI green and production red at the same SHA",
     "mitigation": "Pin the CI image (pending)",
     "contingency": "Roll back the migration and verify grants manually",
-    "affects": ["RF-142"],
+    "affects": [
+      "RF-142"
+    ],
     "status": "open"
   }
 }
