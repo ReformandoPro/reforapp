@@ -1,0 +1,93 @@
+name: Agent work item
+description: Coordinate a technical work item across Openclaw, Hermes, Claude, ChatGPT, and Jorge.
+title: "[AGENT] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this Issue as the source of truth. Do not post secrets. The YAML work-item header below must remain current.
+  - type: textarea
+    id: work_item_header
+    attributes:
+      label: Work-item header
+      description: Fill every field. Use null when an implementation artifact does not exist yet.
+      value: |
+        ```yaml
+        work_item: REPLACE-ME
+        owner: openclaw
+        reviewer: hermes
+        validator: claude
+        status: specified
+        risk: medium
+        branch: null
+        sha: null
+        pr: null
+        remote_writes_allowed: false
+        deploy_allowed: false
+        requires_product_approval: true
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: Define one outcome, not a broad programme.
+      placeholder: What must be true when this work item is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and evidence
+      description: Link relevant Issues, PRs, SHAs, workflow runs, artifacts, decisions, and incidents.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope
+      placeholder: Exact files, systems, environments, and actions allowed.
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope and prohibited actions
+      placeholder: Explicitly state forbidden writes, deploys, migrations, branches, environments, and destructive actions.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use objective PASS/FAIL criteria tied to evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and stop conditions
+      placeholder: What must make an agent stop rather than continue?
+    validations:
+      required: true
+  - type: textarea
+    id: next_action
+    attributes:
+      label: Current next action
+      description: Name exactly one agent and one action.
+      placeholder: Hermes reviews SHA ... without modifying code.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety acknowledgement
+      options:
+        - label: No secrets or credentials are included in this Issue.
+          required: true
+        - label: Remote-write and deploy permissions are explicitly declared above.
+          required: true
+        - label: Reviews and validations will be tied to an exact SHA.
+          required: true
