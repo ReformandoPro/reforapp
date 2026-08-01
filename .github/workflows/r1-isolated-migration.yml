@@ -17,6 +17,10 @@ on:
         required: false
         default: ''
         type: string
+      confirm_workflow_sha:
+        description: 'SHA exacto de main autorizado para esta ejecución'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -26,7 +30,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  EXPECTED_WORKFLOW_SHA: 67a1a8769312ffe3ed0b7af1baa2c04cb3cfcb7c
   SOURCE_SHA: 1b0bd622123929409953584c2bad70a17a570190
   PROJECT_REF: hafljwojvblyfljddjcr
   R1_TIMESTAMP: 20260801130000
@@ -49,12 +52,20 @@ jobs:
           mkdir -p "$RUNNER_TEMP/r1-isolated"
           {
             echo 'status=started'
-            echo "workflow_sha=$GITHUB_SHA"
-            echo "expected_workflow_sha=$EXPECTED_WORKFLOW_SHA"
+            echo "github_ref=$GITHUB_REF"
+            echo "actual_workflow_sha=$GITHUB_SHA"
+            echo "confirm_workflow_sha=${{ inputs.confirm_workflow_sha }}"
             echo "source_sha=$SOURCE_SHA"
-            echo "expected_source_sha=$SOURCE_SHA"
+            workflow_file_sha256='unavailable'
+            r1_sha256='unavailable'
+            [ -f .github/workflows/r1-isolated-migration.yml ] && workflow_file_sha256=$(sha256sum .github/workflows/r1-isolated-migration.yml | awk '{print $1}')
+            [ -f supabase/migrations/$R1_NAME ] && r1_sha256=$(sha256sum supabase/migrations/$R1_NAME | awk '{print $1}')
+            echo "workflow_file_sha256=$workflow_file_sha256"
+            echo "r1_sha256=$r1_sha256"
             echo "project_ref=${{ inputs.confirm_project_ref }}"
             echo 'remote_access_started=false'
+            echo 'credentials_loaded=false'
+            echo 'cli_installed=false'
           } > "$RUNNER_TEMP/r1-isolated/evidence.txt"
 
       - name: Validate immutable identities and inputs
@@ -62,12 +73,14 @@ jobs:
           INPUT_PROJECT_REF: ${{ inputs.confirm_project_ref }}
           INPUT_MODE: ${{ inputs.mode }}
           INPUT_CONFIRM_APPLY: ${{ inputs.confirm_apply }}
+          INPUT_WORKFLOW_SHA: ${{ inputs.confirm_workflow_sha }}
         run: |
           set -Eeuo pipefail
           report="$RUNNER_TEMP/r1-isolated/evidence.txt"
           fail() { echo "status=failed" >> "$report"; echo "error=$1" >> "$report"; echo 'remote_access_started=false' >> "$report"; exit 1; }
           test "$GITHUB_REF" = 'refs/heads/main' || fail "workflow_ref=$GITHUB_REF expected=refs/heads/main"
-          test "$GITHUB_SHA" = "$EXPECTED_WORKFLOW_SHA" || fail "workflow_sha=$GITHUB_SHA expected=$EXPECTED_WORKFLOW_SHA"
+          printf '%s\n' "$INPUT_WORKFLOW_SHA" | grep -Eq '^[0-9a-fA-F]{40}$' || fail 'confirm_workflow_sha must be a complete 40-hex SHA-1'
+          test "$INPUT_WORKFLOW_SHA" = "$GITHUB_SHA" || fail "workflow_sha=$GITHUB_SHA confirm_workflow_sha=$INPUT_WORKFLOW_SHA"
           test "$INPUT_PROJECT_REF" = "$PROJECT_REF" || fail "project_ref=$INPUT_PROJECT_REF expected=$PROJECT_REF"
           case "$INPUT_MODE" in plan_r1|apply_r1) : ;; *) fail "invalid mode=$INPUT_MODE" ;; esac
           if [ "$INPUT_MODE" = apply_r1 ] && [ "$INPUT_CONFIRM_APPLY" != APPLY_R1_ONLY ]; then
@@ -100,6 +113,7 @@ jobs:
           npm i -g supabase@2
           supabase --version > "$RUNNER_TEMP/r1-isolated/cli-version.txt"
           cat "$RUNNER_TEMP/r1-isolated/cli-version.txt"
+          echo 'cli_installed=true' >> "$RUNNER_TEMP/r1-isolated/evidence.txt"
 
       - name: Plan and optionally apply only R1
         if: ${{ inputs.mode == 'plan_r1' || inputs.mode == 'apply_r1' }}
@@ -113,6 +127,7 @@ jobs:
           cleanup() { rm -rf "$WORK"; }
           trap cleanup EXIT
           test -n "$DATABASE_URL"
+          echo 'credentials_loaded=true' >> "$report"
           echo 'remote_access_started=true' >> "$report"
           supabase db push --help > "$RUNNER_TEMP/r1-isolated/db-push-help.txt" 2>&1
           grep -F -- '--dry-run' "$RUNNER_TEMP/r1-isolated/db-push-help.txt"
