@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "type": "claim",
+  "item": "RF-142",
+  "actor": "claude",
+  "root": true,
+  "lease": "6h",
+  "touches": ["db/migrations/**"],
+  "intent": "Idempotent grants"
+}

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:acp:schema:profile:0.1.0",
-  "title": "ACP profile / programme configuration",
-  "description": "Machine-checkable contract for an ACP profile document (for example acp/acp.yml, parsed to JSON). Layer: Implementation. A profile selects policy inside the space Core allows: it may tighten Core requirements but must never redefine Core meanings. This schema is generic: no organization, agent, repository or path is hardcoded. It validates shape and internal consistency of policy, not whether the policy is wise or whether the declared accounts exist.",
+  "$id": "urn:acp:schema:profile:0.2.0",
+  "title": "ACP profile / programme configuration (ACP-1 amendment candidate)",
+  "description": "Machine-checkable contract for an ACP profile document (for example acp/acp.yml, parsed to JSON). Layer: Implementation. STATUS: amendment candidate, paired with envelope 0.2.0; see README, 'Required normative amendments before adoption'. A profile selects policy inside the space Core allows: it may tighten Core requirements but must never redefine Core meanings. This schema is generic: no organization, agent, repository or path is hardcoded. It validates shape and internal consistency of policy, not whether the policy is wise or whether the declared accounts exist. Note on repository references: the profile MAY use its binding's native repository form (for example owner/name) because a profile names its binding; the Core envelope may not, and uses a portable reference instead.",
   "type": "object",
   "required": ["acp", "program", "agents", "roles", "permissions", "gates", "lease", "invalidation", "review", "silence", "limits", "automation"],
   "properties": {
@@ -59,8 +59,15 @@
     },
     "ids": {
       "type": "object",
+      "description": "Identifier policy. This is the ONLY place naming policy lives: Core accepts any stable opaque token (amendment A12). A validator that checks envelopes without also loading the active profile cannot enforce anything here.",
       "properties": {
         "work_item_prefix": { "$ref": "#/$defs/idPrefix" },
+        "work_item_pattern": {
+          "description": "Regular expression the programme's work item identifiers must match. Validated as a well-formed regular expression here; applying it to envelopes is a second-pass, profile-aware check.",
+          "type": "string",
+          "format": "regex",
+          "minLength": 1
+        },
         "initiative_prefix": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{0,7}-?I?$" },
         "decision_prefix": { "$ref": "#/$defs/idPrefix" },
         "risk_prefix": { "$ref": "#/$defs/idPrefix" },
@@ -212,6 +219,13 @@
           "minItems": 1,
           "uniqueItems": true,
           "contains": { "const": "authorize" }
+        },
+        "never_default_actions": {
+          "description": "Concrete actions that may never be the outcome of silence, whatever the question's declared kind (amendment A15). This list exists because the envelope schema can only refuse a silent default on a question EXPLICITLY classified as kind=authorization. A question that requests a deployment while declaring itself kind=decision is syntactically impeccable and semantically an authorization; no schema can tell the difference. This list gives a semantic validator the concrete vocabulary to catch it, and gives a human reviewer a short list to check by hand in the meantime.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/authorizationAction" },
+          "minItems": 1,
+          "uniqueItems": true
         }
       },
       "required": ["require_default", "default_expires", "on_expiry", "never_default"],
@@ -428,8 +442,18 @@
       ]
     },
 
+    "authorizationAction": {
+      "description": "Concrete externally-effective actions. Mirrors envelope.schema.json#/$defs/authorizationScope/action.",
+      "type": "string",
+      "enum": [
+        "delete-data", "deploy", "merge", "migrate", "modify-platform-config",
+        "modify-workflow", "publish", "release", "remote-write", "rotate-secret", "spend"
+      ]
+    },
+
     "eventType": {
-      "description": "Event type names. Deliberately duplicated from envelope.schema.json#/$defs/eventType rather than $ref'd across files: a cross-file reference would force every consumer of this schema to resolve and load the envelope schema too, and profile documents are often validated alone. The cost of that choice is that this list MUST be updated whenever the Core catalogue changes; see README, 'Open decisions'.",
+      "description": "Event type names. Deliberately duplicated from envelope.schema.json#/$defs/eventType rather than $ref'd across files: a cross-file reference would force every consumer of this schema to resolve and register the envelope schema, and profile documents are frequently validated alone.",
+      "$comment": "CATALOGUE PARITY (conformance requirement C1, amendment A16): this enumeration MUST be the same set as envelope.schema.json#/$defs/eventType, and both files MUST carry the identical digest below. The digest is the sha256 of the comma-joined sorted list with no spaces. Two digest strings can be compared at a glance; two 27-item lists cannot. A release in which the two digests differ is non-conforming and must not be adopted. catalogue-digest: sha256:046f7cadad317948c7a92a808bade47bbbdf61bdb467ce26a49891da730e0e91",
       "type": "string",
       "enum": [
         "answer", "approve", "assume", "authorize", "block", "checkpoint", "claim",

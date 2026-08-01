@@ -76,10 +76,7 @@
     ],
     "never_default_actions": [
       "deploy",
-      "merge",
-      "migrate",
-      "release",
-      "delete-data"
+      "make-coffee"
     ]
   },
   "limits": {
@@ -92,17 +89,5 @@
     "enabled": false,
     "workflows": "none",
     "rationale": "protocol phase"
-  },
-  "ids": {
-    "work_item_prefix": "EX",
-    "work_item_pattern": "^EX-[1-9][0-9]*$",
-    "reserved": [
-      "M1",
-      "M2"
-    ]
-  },
-  "identity": {
-    "trust_level": 3,
-    "distinct_accounts": true
   }
 }

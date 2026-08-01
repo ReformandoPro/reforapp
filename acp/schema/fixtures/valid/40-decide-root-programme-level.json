@@ -1,0 +1,11 @@
+{
+  "v": 1,
+  "type": "decide",
+  "actor": "jorge",
+  "role": "product-owner",
+  "root": true,
+  "decision": "ACD-0011",
+  "version": 1,
+  "scope": ["src/**"],
+  "status": "proposed"
+}

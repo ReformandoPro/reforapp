@@ -6,22 +6,49 @@
   "role": "engineer",
   "after": 2451890115,
   "basis": {
-    "repo": "example-org/example-repo",
+    "repo": {
+      "system": "git",
+      "id": "https://example.invalid/example-org/example-repo.git"
+    },
     "ref": "acp/RF-142/rls-grants-idempotent",
     "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b",
-    "base": { "ref": "main", "sha": "a71c0e94f1e2d3c4b5a6978869504132abcdef01" },
-    "scope": ["db/migrations/**", "src/security/rls/**"],
+    "base": {
+      "ref": "main",
+      "sha": "a71c0e94f1e2d3c4b5a6978869504132abcdef01"
+    },
+    "scope": [
+      "db/migrations/**",
+      "src/security/rls/**"
+    ],
     "environment": "python3.12 / postgres:16.2"
   },
-  "touches": ["db/migrations/**", "src/security/rls/**"],
+  "touches": [
+    "db/migrations/**",
+    "src/security/rls/**"
+  ],
   "evidence": [
-    { "id": "sha256:791adeb5e2e173d6cf2bdc532f8f08658c33fc5968c268773e330fca6033fa27", "kind": "test-run", "cmd": "pytest tests/rls -q", "env": "python3.12 / postgres:16.2", "result": "pass" },
-    { "id": "sha256:c50979e205a5aef2b1b2b73169c9986d957e8c1cb77f583175f32b84824ff217", "kind": "query", "cmd": "psql -f audit/default_acl.sql", "env": "postgres:16.2", "result": "0 rows" }
+    {
+      "id": "sha256:791adeb5e2e173d6cf2bdc532f8f08658c33fc5968c268773e330fca6033fa27",
+      "kind": "test-run",
+      "cmd": "pytest tests/rls -q",
+      "env": "python3.12 / postgres:16.2",
+      "result": "pass"
+    },
+    {
+      "id": "sha256:c50979e205a5aef2b1b2b73169c9986d957e8c1cb77f583175f32b84824ff217",
+      "kind": "query",
+      "cmd": "psql -f audit/default_acl.sql",
+      "env": "postgres:16.2",
+      "result": "0 rows"
+    }
   ],
   "unverified": [
     "Behaviour above one million rows in policy_check is untested",
     "Rollback of migration 0042 was not executed"
   ],
-  "delivery": { "kind": "pull-request", "id": 141 },
+  "delivery": {
+    "kind": "pull-request",
+    "id": 141
+  },
   "x-github-pr": 141
 }
