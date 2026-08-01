@@ -11,11 +11,20 @@ begin
   if (
     select count(*)
     from public.authenticated_operational_grant_baseline
-  ) <> 3
+  ) <> 8
   or exists (
     select 1
     from public.authenticated_operational_grant_baseline
-    where privilege_key not in ('project_phases_select', 'projects_update', 'project_tasks_update')
+    where privilege_key not in (
+      'project_phases_select',
+      'projects_update',
+      'project_tasks_update',
+      'project_phases_insert',
+      'project_phases_update',
+      'project_phases_delete',
+      'projects_delete',
+      'project_tasks_delete'
+    )
   ) then
     raise exception 'Operational grant rollback requires a coherent baseline snapshot';
   end if;

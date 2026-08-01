@@ -35,7 +35,16 @@ create table public.authenticated_operational_grant_baseline (
   privilege_name text not null,
   had_privilege boolean not null,
   constraint authenticated_operational_grant_baseline_key_check
-    check (privilege_key in ('project_phases_select', 'projects_update', 'project_tasks_update'))
+    check (privilege_key in (
+      'project_phases_select',
+      'projects_update',
+      'project_tasks_update',
+      'project_phases_insert',
+      'project_phases_update',
+      'project_phases_delete',
+      'projects_delete',
+      'project_tasks_delete'
+    ))
 );
 
 revoke all on table public.authenticated_operational_grant_baseline
@@ -98,6 +107,36 @@ values
     'public.project_tasks',
     'UPDATE',
     has_table_privilege('authenticated', 'public.project_tasks', 'UPDATE')
+  ),
+  (
+    'project_phases_insert',
+    'public.project_phases',
+    'INSERT',
+    has_table_privilege('authenticated', 'public.project_phases', 'INSERT')
+  ),
+  (
+    'project_phases_update',
+    'public.project_phases',
+    'UPDATE',
+    has_table_privilege('authenticated', 'public.project_phases', 'UPDATE')
+  ),
+  (
+    'project_phases_delete',
+    'public.project_phases',
+    'DELETE',
+    has_table_privilege('authenticated', 'public.project_phases', 'DELETE')
+  ),
+  (
+    'projects_delete',
+    'public.projects',
+    'DELETE',
+    has_table_privilege('authenticated', 'public.projects', 'DELETE')
+  ),
+  (
+    'project_tasks_delete',
+    'public.project_tasks',
+    'DELETE',
+    has_table_privilege('authenticated', 'public.project_tasks', 'DELETE')
   );
 
 grant select on table public.project_phases to authenticated;
@@ -112,12 +151,35 @@ begin
     raise exception 'Authenticated operational grants were not applied';
   end if;
 
-  if has_table_privilege('authenticated', 'public.project_phases', 'INSERT')
-     or has_table_privilege('authenticated', 'public.project_phases', 'UPDATE')
-     or has_table_privilege('authenticated', 'public.project_phases', 'DELETE')
-     or has_table_privilege('authenticated', 'public.projects', 'DELETE')
-     or has_table_privilege('authenticated', 'public.project_tasks', 'DELETE') then
-    raise exception 'Operational grant migration applied excessive privileges';
+  if exists (
+    select 1
+    from information_schema.role_table_grants
+    where grantee = 'authenticated'
+      and table_schema = 'public'
+      and is_grantable = 'YES'
+      and (
+        (table_name = 'project_phases' and privilege_type = 'SELECT')
+        or (table_name = 'projects' and privilege_type = 'UPDATE')
+        or (table_name = 'project_tasks' and privilege_type = 'UPDATE')
+      )
+  ) then
+    raise exception 'Operational grants must not include WITH GRANT OPTION';
+  end if;
+
+  if exists (
+    select 1
+    from public.authenticated_operational_grant_baseline b
+    where b.privilege_key in (
+      'project_phases_insert',
+      'project_phases_update',
+      'project_phases_delete',
+      'projects_delete',
+      'project_tasks_delete'
+    )
+    and not b.had_privilege
+    and has_table_privilege('authenticated', b.table_name, b.privilege_name)
+  ) then
+    raise exception 'Operational grant migration applied excessive new privilege';
   end if;
 end;
 $$;
