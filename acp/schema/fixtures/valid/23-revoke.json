@@ -1,0 +1,1 @@
+{ "v": 1, "type": "revoke", "actor": "jorge", "after": 2451890170, "target": 2451890165, "reason": "Production incident in progress; no staging deploys until it is closed", "effective": "immediate" }

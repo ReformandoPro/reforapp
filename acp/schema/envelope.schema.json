@@ -1,0 +1,924 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:acp:schema:envelope:0.1.0",
+  "title": "ACP event envelope",
+  "description": "Machine-checkable contract for a single ACP event envelope. Layer: Implementation. Scope: ACP Core semantics only. This schema MUST NOT contain organization handles, repository names, platform labels, paths, or deployment policy: those belong to profile.schema.json and to platform bindings. Syntactic conformance to this schema is necessary but NOT sufficient for protocol conformance; see README section 'What this schema cannot validate'.",
+  "type": "object",
+  "required": ["v", "type"],
+  "properties": {
+    "v": {
+      "description": "ACP Core major version. A different major version is out of scope for this schema revision and MUST be rejected rather than guessed.",
+      "type": "integer",
+      "const": 1
+    },
+    "type": { "$ref": "#/$defs/eventType" },
+    "item": { "$ref": "#/$defs/workItemId" },
+    "actor": { "$ref": "#/$defs/actorId" },
+    "role": { "$ref": "#/$defs/roleId" },
+    "after": { "$ref": "#/$defs/causalPointer" }
+  },
+  "patternProperties": {
+    "^x-": {
+      "description": "Local extension namespace. A conforming reader ignores unknown x- members. Binding-specific data (for example a GitHub pull request number) belongs here, not in Core fields.",
+      "$comment": "Any value is permitted; presence is recorded so unevaluatedProperties does not reject it."
+    }
+  },
+  "allOf": [
+    { "if": { "type": "object", "properties": { "type": { "const": "spec" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.spec" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "triage" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.triage" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "claim" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.claim" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "heartbeat" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.heartbeat" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "release" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.release" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "progress" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.progress" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "handoff" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.handoff" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "submit" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.submit" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "review" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.review" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "revalidate" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.revalidate" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "validate" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.validate" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "approve" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.approve" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "authorize" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.authorize" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "revoke" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.revoke" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "block" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.block" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "unblock" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.unblock" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "question" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.question" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "answer" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.answer" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "assume" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.assume" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "decide" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.decide" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "risk" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.risk" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "debt" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.debt" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "checkpoint" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.checkpoint" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "reconcile" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.reconcile" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "violation" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.violation" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "supersede" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.supersede" } },
+    { "if": { "type": "object", "properties": { "type": { "const": "close" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ev.close" } }
+  ],
+  "unevaluatedProperties": false,
+
+  "$defs": {
+
+    "eventType": {
+      "description": "Closed catalogue. 24 types are normative in ACP-1 section 5.3; risk, debt and revalidate are proposed additions reconciling section 5.3 with sections 6.3, 13.2, 13.3 and Appendix A (see README, 'Discrepancies found in ACP-1').",
+      "type": "string",
+      "enum": [
+        "answer", "approve", "assume", "authorize", "block", "checkpoint", "claim",
+        "close", "debt", "decide", "handoff", "heartbeat", "progress", "question",
+        "reconcile", "release", "revalidate", "review", "revoke", "risk", "spec",
+        "submit", "supersede", "triage", "unblock", "validate", "violation"
+      ]
+    },
+
+    "workItemId": {
+      "description": "Generic Core form: an uppercase program prefix, a hyphen, an optional initiative marker, and a positive integer. The hyphen is mandatory, which structurally excludes product milestone identifiers of the form R1 or R2.1. The concrete prefix is profile-normative (profile.schema.json, ids.work_item_prefix), never Core.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]{0,7}-I?[1-9][0-9]{0,8}$"
+    },
+
+    "actorId": {
+      "description": "Stable logical identifier of an agent or human. Core does not define the mapping from actorId to a platform account: that is binding-normative and is the weakest link in the trust model.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{1,31}$"
+    },
+
+    "roleId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}$"
+    },
+
+    "fullSha": {
+      "description": "Exactly 40 lowercase hexadecimal characters. Abbreviated SHAs are rejected: they are ambiguous across repositories and over time, and an anchor that can become ambiguous cannot support invalidation. This tightens the grammar in ACP-1 section 21, which permitted a 10-character prefix.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+
+    "digest": {
+      "description": "Content digest of evidence output, normalized before hashing.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+
+    "ref": {
+      "description": "Branch or tag name. Only a conservative character set is checked. Full git reference legality, and whether the ref exists, are semantic concerns.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$"
+    },
+
+    "repoRef": {
+      "description": "Optional repository coordinate, in the platform's own owner/name form. Present so a basis can be cross-repository; its syntax is deliberately loose because it is binding-shaped.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,64}/[A-Za-z0-9._-]{1,100}$"
+    },
+
+    "causalPointer": {
+      "description": "Reference to a platform-assigned event identifier. Two admissible forms: a positive integer (a monotonic comment identifier, as in the GitHub binding) or a namespaced opaque identifier for other bindings. Free text is rejected on purpose: a causal pointer that cannot be resolved mechanically is not a causal pointer.",
+      "oneOf": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "string", "pattern": "^[a-z][a-z0-9]{0,15}:[A-Za-z0-9._~-]{1,128}$" }
+      ]
+    },
+
+    "urn": {
+      "description": "ACP entity reference: acp:<program>/<kind>/<id>[@<version>].",
+      "type": "string",
+      "pattern": "^acp:[a-z0-9][a-z0-9-]{0,31}/(item|initiative|decision|event|evidence|risk|debt|gate)/[A-Za-z0-9._:-]{1,64}(@[A-Za-z0-9._-]{1,64})?$"
+    },
+
+    "eventRef": {
+      "description": "Something the protocol can point at exactly: an event or an entity.",
+      "oneOf": [
+        { "$ref": "#/$defs/causalPointer" },
+        { "$ref": "#/$defs/urn" }
+      ]
+    },
+
+    "duration": {
+      "description": "Relative duration. Permitted units: h (hours), d (days), w (weeks). Minutes and months are deliberately absent: minutes are below the granularity of an agent turn, and months are ambiguous in length. All ACP deadlines are relative because the authoritative clock is the platform's event timestamp, not the agent's (ACP-1 invariant I4).",
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,3}[hdw]$"
+    },
+
+    "timestamp": {
+      "description": "Absolute RFC 3339 instant. NOT admissible for expires, lease or ttl in any envelope: those are relative by invariant I4. Provided for entity records (for example a decision record's decided date) and for informative free text only.",
+      "type": "string",
+      "format": "date-time"
+    },
+
+    "basis": {
+      "description": "Content anchor of an assertion. sha is mandatory: an assertion without a full SHA cannot be invalidated, therefore ACP treats it as inadmissible for any gate.",
+      "type": "object",
+      "properties": {
+        "repo": { "$ref": "#/$defs/repoRef" },
+        "ref": { "$ref": "#/$defs/ref" },
+        "sha": { "$ref": "#/$defs/fullSha" },
+        "base": {
+          "description": "Structured base pointer. Replaces the ACP-1 string form main@a71c0e94, which cannot be validated as a pair.",
+          "type": "object",
+          "properties": {
+            "ref": { "$ref": "#/$defs/ref" },
+            "sha": { "$ref": "#/$defs/fullSha" }
+          },
+          "required": ["ref", "sha"],
+          "additionalProperties": false
+        },
+        "depends": {
+          "description": "Entity versions this assertion depends on. Movement of any of them makes the assertion SUSPECT (rule R3).",
+          "type": "array",
+          "items": { "$ref": "#/$defs/urn" },
+          "uniqueItems": true
+        },
+        "scope": {
+          "description": "Paths the assertion actually covers. Enables the revalidate shortcut when a later diff falls outside it.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/touchPattern" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "environment": {
+          "description": "Where the assertion was produced. Omitting it is how a correct observation becomes a false conclusion.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": ["ref", "sha"],
+      "additionalProperties": false
+    },
+
+    "touchPattern": {
+      "description": "A single declared write-surface pattern.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._*/-]{1,200}$"
+    },
+
+    "touches": {
+      "description": "Declared write surface. Non-empty and duplicate-free so that overlap between concurrent work items is a set intersection. A bare wildcard is not forbidden but cannot be silent: see the touches_rationale rule on spec and claim.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/touchPattern" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+
+    "wildcardOnlyTouches": {
+      "type": "object",
+      "description": "Helper predicate: true when the declared surface contains a pattern that claims everything.",
+      "properties": {
+        "touches": {
+          "type": "array",
+          "contains": { "enum": ["*", "**", "**/*", "./**", "/**"] }
+        }
+      },
+      "required": ["touches"]
+    },
+
+    "size": {
+      "type": "string",
+      "enum": ["xs", "s", "m", "l", "xl"]
+    },
+
+    "priority": {
+      "type": "string",
+      "enum": ["p0", "p1", "p2", "p3"]
+    },
+
+    "verdict": {
+      "type": "string",
+      "enum": ["approve", "changes", "reject"]
+    },
+
+    "uncertaintyDeclaration": {
+      "description": "Explicit statement of what the author did NOT verify (ACP-1 invariant I5). At least one entry is required. No minimum length is imposed on entries on purpose: a length threshold would be trivially satisfied by padding, and would convert a substantive obligation into a formatting one. Whether an entry is truthful and material is a semantic judgement, made by the adversarial reviewer, not by this schema.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+
+    "falsification": {
+      "description": "What the reviewer tried to break and what happened. Required of adversarial reviewers: absence of found defects is not evidence of absence unless someone states what they attacked.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "attempt": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "enum": ["blocking", "major", "minor", "none"] }
+        },
+        "required": ["attempt", "result"],
+        "additionalProperties": false
+      }
+    },
+
+    "evidenceReference": {
+      "description": "A reproducible observation. cmd and env are mandatory: without the command it cannot be repeated, and without the environment a true observation can support a false conclusion.",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/digest" },
+        "kind": { "type": "string", "enum": ["test-run", "static-analysis", "build", "manual-check", "query", "screenshot", "log", "other"] },
+        "cmd": { "type": "string", "minLength": 1 },
+        "env": { "type": "string", "minLength": 1 },
+        "result": { "type": "string", "minLength": 1 },
+        "location": { "type": "string", "minLength": 1 },
+        "retention": { "$ref": "#/$defs/duration" },
+        "reproducible": { "type": "boolean" },
+        "summary": { "type": "string", "minLength": 1 }
+      },
+      "required": ["cmd", "env", "result"],
+      "additionalProperties": false
+    },
+
+    "evidenceList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidenceReference" }
+    },
+
+    "phase": {
+      "type": "string",
+      "enum": [
+        "PROPOSED", "TRIAGED", "SPECIFIED", "READY", "CLAIMED", "IN_PROGRESS",
+        "SUBMITTED", "IN_REVIEW", "REWORK", "ACCEPTED", "INTEGRATED", "VERIFIED",
+        "DONE", "DROPPED", "SUPERSEDED"
+      ]
+    },
+
+    "freshness": {
+      "type": "string",
+      "enum": ["FRESH", "SUSPECT", "STALE", "VOID"]
+    },
+
+    "modifier": {
+      "description": "Orthogonal flag. Parameterized modifiers carry their target after a colon.",
+      "type": "string",
+      "pattern": "^((blocked|awaiting|at-risk|debt|violating|needs):[A-Za-z0-9._-]{1,64}|stale|contested|parked)$"
+    },
+
+    "state": {
+      "description": "Composite state. Phase advances, freshness is derived from the basis, modifiers are orthogonal and never move the phase.",
+      "type": "object",
+      "properties": {
+        "phase": { "$ref": "#/$defs/phase" },
+        "freshness": { "$ref": "#/$defs/freshness" },
+        "modifiers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/modifier" },
+          "uniqueItems": true
+        }
+      },
+      "required": ["phase", "freshness"],
+      "additionalProperties": false
+    },
+
+    "resume": {
+      "description": "Transferable context packet. Every key is mandatory; empty arrays are legal. Requiring the key while permitting emptiness forces an explicit answer without inviting invention: 'no traps' is information, a missing traps key is not.",
+      "type": "object",
+      "properties": {
+        "goal": { "type": "string", "minLength": 1 },
+        "done": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "remaining": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "traps": {
+          "description": "Negative memory: what has already been discovered not to work. The single most valuable field for an agent starting with no context.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "next_action": { "type": "string", "minLength": 1 },
+        "basis": { "$ref": "#/$defs/basis" },
+        "key_files": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "decisions_in_force": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "assumptions": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      },
+      "required": ["goal", "done", "remaining", "traps", "next_action"],
+      "additionalProperties": false
+    },
+
+    "authorizationScope": {
+      "description": "The concrete action being authorized, as structured data rather than a label. Replaces the ACP-1 string form deploy:staging: a string cannot be checked for having named an action at all.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "merge", "release", "deploy", "migrate", "remote-write", "rotate-secret",
+            "delete-data", "modify-workflow", "modify-platform-config", "publish", "spend"
+          ]
+        },
+        "environment": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+        "resource": { "type": "string", "minLength": 1, "maxLength": 200 }
+      },
+      "required": ["action"],
+      "additionalProperties": false
+    },
+
+    "authorizationLimits": {
+      "description": "Bounds on the worst case. At least one bound is required: an authorization with no limits is a blank cheque.",
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "environments": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+        "max_attempts": { "type": "integer", "minimum": 1 },
+        "reversible_only": { "type": "boolean" },
+        "data": { "type": "string", "minLength": 1 },
+        "resources": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+        "max_duration": { "$ref": "#/$defs/duration" }
+      },
+      "additionalProperties": false
+    },
+
+    "risk": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z]{2,6}-[0-9]{1,6}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "enum": ["technical", "operational", "product", "security", "dependency", "schedule"] },
+        "likelihood": { "type": "string", "enum": ["low", "medium", "high"] },
+        "impact": { "type": "string", "enum": ["low", "medium", "high"] },
+        "owner": { "$ref": "#/$defs/actorId" },
+        "trigger": { "type": "string", "minLength": 1 },
+        "signal": {
+          "description": "The observation that would indicate this risk is materializing now. Without it a risk register is a list of worries.",
+          "type": "string",
+          "minLength": 1
+        },
+        "mitigation": { "type": "string", "minLength": 1 },
+        "contingency": { "type": "string", "minLength": 1 },
+        "accepted_by": { "$ref": "#/$defs/actorId" },
+        "affects": { "type": "array", "items": { "$ref": "#/$defs/workItemId" }, "uniqueItems": true },
+        "status": { "type": "string", "enum": ["open", "mitigating", "accepted", "closed", "materialized"] }
+      },
+      "required": ["id", "title", "kind", "likelihood", "impact", "owner", "trigger", "signal", "status"],
+      "additionalProperties": false
+    },
+
+    "debt": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z]{2,6}-[0-9]{1,6}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "principal": { "type": "string", "minLength": 1 },
+        "interest": { "type": "string", "minLength": 1 },
+        "interest_period": { "type": "string", "enum": ["per-change", "per-week", "per-incident"] },
+        "authorized_by": {
+          "description": "Debt is a commitment of the programme's future capacity. An executor may propose it; only a role with scope authority may incur it.",
+          "$ref": "#/$defs/actorId"
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "payoff_trigger": { "type": "string", "minLength": 1 },
+        "payoff_item": { "$ref": "#/$defs/workItemId" },
+        "blast_radius": { "type": "array", "items": { "$ref": "#/$defs/touchPattern" }, "uniqueItems": true },
+        "status": { "type": "string", "enum": ["open", "scheduled", "paid", "forgiven", "defaulted"] }
+      },
+      "required": ["id", "title", "principal", "interest", "authorized_by", "payoff_trigger", "status"],
+      "additionalProperties": false
+    },
+
+    "questionOption": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+        "summary": { "type": "string", "minLength": 1 },
+        "cost": { "type": "string", "minLength": 1 },
+        "risk": { "type": "string", "minLength": 1 }
+      },
+      "required": ["id", "summary"],
+      "additionalProperties": false
+    },
+
+    "gateSummary": {
+      "description": "Human-readable gate status per gate name. Informative: the authoritative evaluation is a validate event.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+      "additionalProperties": { "type": "string", "minLength": 1 },
+      "minProperties": 1
+    },
+
+    "ev.spec": {
+      "type": "object",
+      "properties": {
+        "accept": {
+          "description": "Acceptance criteria another agent can execute without asking anything. Prose goals are not criteria.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "touches": { "$ref": "#/$defs/touches" },
+        "touches_rationale": { "type": "string", "minLength": 1 },
+        "size": { "$ref": "#/$defs/size" },
+        "priority": { "$ref": "#/$defs/priority" },
+        "initiative": { "$ref": "#/$defs/workItemId" },
+        "decisions": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "supersedes_spec": { "$ref": "#/$defs/causalPointer" }
+      },
+      "required": ["item", "accept", "touches", "size"],
+      "allOf": [
+        {
+          "$comment": "A surface that claims everything defeats overlap detection, so it must be justified in the same event.",
+          "if": { "type": "object", "$ref": "#/$defs/wildcardOnlyTouches" },
+          "then": { "required": ["touches_rationale"] }
+        }
+      ]
+    },
+
+    "ev.triage": {
+      "type": "object",
+      "properties": {
+        "priority": { "$ref": "#/$defs/priority" },
+        "initiative": { "$ref": "#/$defs/workItemId" },
+        "note": { "type": "string", "minLength": 1 }
+      },
+      "required": ["item", "priority", "initiative"]
+    },
+
+    "ev.claim": {
+      "type": "object",
+      "properties": {
+        "lease": { "$ref": "#/$defs/duration" },
+        "touches": { "$ref": "#/$defs/touches" },
+        "touches_rationale": { "type": "string", "minLength": 1 },
+        "intent": { "type": "string", "minLength": 1 },
+        "stack": {
+          "type": "object",
+          "properties": {
+            "base_item": { "$ref": "#/$defs/workItemId" },
+            "base_sha": { "$ref": "#/$defs/fullSha" }
+          },
+          "required": ["base_item", "base_sha"],
+          "additionalProperties": false
+        },
+        "preempts": { "$ref": "#/$defs/causalPointer" },
+        "preempt_declaration": {
+          "description": "Taking over another agent's work requires two explicit statements, not an assumption.",
+          "type": "object",
+          "properties": {
+            "previous_lease_expired": { "const": true },
+            "previous_work_read": { "const": true },
+            "note": { "type": "string", "minLength": 1 }
+          },
+          "required": ["previous_lease_expired", "previous_work_read"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["item", "lease", "touches", "intent"],
+      "dependentRequired": {
+        "preempts": ["preempt_declaration"],
+        "preempt_declaration": ["preempts"]
+      },
+      "allOf": [
+        {
+          "if": { "type": "object", "$ref": "#/$defs/wildcardOnlyTouches" },
+          "then": { "required": ["touches_rationale"] }
+        }
+      ]
+    },
+
+    "ev.heartbeat": {
+      "type": "object",
+      "properties": {
+        "lease": { "$ref": "#/$defs/duration" },
+        "note": { "type": "string", "minLength": 1 }
+      },
+      "required": ["item", "lease"]
+    },
+
+    "ev.release": {
+      "type": "object",
+      "properties": {
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "required": ["item", "reason"]
+    },
+
+    "ev.progress": {
+      "type": "object",
+      "properties": {
+        "done": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "remaining": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "basis": { "$ref": "#/$defs/basis" }
+      },
+      "required": ["item", "done", "remaining"]
+    },
+
+    "ev.handoff": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "description": "A specific actor, or any holder of a role. Handing back to a role pool is preferred: work addressed to a dead session is lost.",
+          "oneOf": [
+            { "$ref": "#/$defs/actorId" },
+            { "type": "string", "pattern": "^any:[a-z][a-z0-9-]{1,31}$" }
+          ]
+        },
+        "resume": { "$ref": "#/$defs/resume" },
+        "releases_lease": {
+          "description": "Explicit. A handoff that does not say so does not release the lease.",
+          "type": "boolean"
+        }
+      },
+      "required": ["item", "to", "resume", "releases_lease"]
+    },
+
+    "ev.submit": {
+      "type": "object",
+      "properties": {
+        "basis": { "$ref": "#/$defs/basis" },
+        "touches": { "$ref": "#/$defs/touches" },
+        "evidence": { "$ref": "#/$defs/evidenceList" },
+        "no_evidence_reason": { "type": "string", "minLength": 1 },
+        "unverified": { "$ref": "#/$defs/uncertaintyDeclaration" },
+        "delivery": {
+          "description": "Core-neutral delivery pointer. The GitHub binding's pull request number belongs in an x- member, not here.",
+          "type": "object",
+          "properties": {
+            "kind": { "type": "string", "enum": ["pull-request", "merge-request", "branch", "patch"] },
+            "id": { "type": ["string", "integer"] }
+          },
+          "required": ["kind", "id"],
+          "additionalProperties": false
+        },
+        "addresses": { "$ref": "#/$defs/causalPointer" },
+        "debt_proposed": { "$ref": "#/$defs/debt" },
+        "next": { "$ref": "#/$defs/eventType" }
+      },
+      "required": ["item", "basis", "touches", "evidence", "unverified"],
+      "allOf": [
+        {
+          "$comment": "Absence of evidence is admissible, but only as an explicit statement.",
+          "if": { "type": "object", "properties": { "evidence": { "type": "array", "maxItems": 0 } }, "required": ["evidence"] },
+          "then": { "required": ["no_evidence_reason"] }
+        }
+      ]
+    },
+
+    "ev.review": {
+      "type": "object",
+      "properties": {
+        "basis": { "$ref": "#/$defs/basis" },
+        "verdict": { "$ref": "#/$defs/verdict" },
+        "adversarial": {
+          "description": "Whether this review is adversarial under the active profile. Mandatory, and deliberately not optional: an optional flag could simply be omitted to escape the falsified requirement, whereas a mandatory one turns evasion into a signed false statement that the profile can contradict.",
+          "type": "boolean"
+        },
+        "falsified": { "$ref": "#/$defs/falsification" },
+        "would_change_my_mind": {
+          "description": "The exit condition. Turns 'I do not like it' into something the executor can act on.",
+          "type": "string",
+          "minLength": 1
+        },
+        "unverified": { "$ref": "#/$defs/uncertaintyDeclaration" },
+        "evidence": { "$ref": "#/$defs/evidenceList" },
+        "reviews_submission": { "$ref": "#/$defs/causalPointer" },
+        "findings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      },
+      "required": ["item", "basis", "verdict", "adversarial", "unverified"],
+      "allOf": [
+        {
+          "if": { "type": "object", "properties": { "adversarial": { "const": true } }, "required": ["adversarial"] },
+          "then": { "required": ["falsified"] }
+        },
+        {
+          "if": { "type": "object", "properties": { "verdict": { "enum": ["changes", "reject"] } }, "required": ["verdict"] },
+          "then": { "required": ["would_change_my_mind"] }
+        }
+      ]
+    },
+
+    "ev.revalidate": {
+      "type": "object",
+      "description": "Reaffirms an earlier assertion across a SHA change. Distinct event type rather than a review field, so that old_basis, new_basis and the scope claim are all mandatory and machine-comparable.",
+      "properties": {
+        "revalidates": { "$ref": "#/$defs/causalPointer" },
+        "old_basis": { "$ref": "#/$defs/basis" },
+        "new_basis": { "$ref": "#/$defs/basis" },
+        "scope_diff": {
+          "type": "object",
+          "properties": {
+            "outside_scope": {
+              "description": "True asserts the whole diff falls outside the reviewed scope. False requires naming what is being revalidated.",
+              "type": "boolean"
+            },
+            "paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "revalidated_parts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+          },
+          "required": ["outside_scope", "paths"],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": { "type": "object", "properties": { "outside_scope": { "const": false } }, "required": ["outside_scope"] },
+              "then": { "required": ["revalidated_parts"] }
+            }
+          ]
+        },
+        "verdict": { "$ref": "#/$defs/verdict" },
+        "unverified": { "$ref": "#/$defs/uncertaintyDeclaration" }
+      },
+      "required": ["item", "revalidates", "old_basis", "new_basis", "scope_diff"]
+    },
+
+    "ev.validate": {
+      "type": "object",
+      "properties": {
+        "check": { "type": "string", "minLength": 1 },
+        "result": { "type": "string", "enum": ["pass", "fail", "inconclusive"] },
+        "basis": { "$ref": "#/$defs/basis" },
+        "evidence": { "$ref": "#/$defs/evidenceList" },
+        "detail": { "type": "string", "minLength": 1 },
+        "unverified": { "$ref": "#/$defs/uncertaintyDeclaration" }
+      },
+      "required": ["item", "check", "result", "basis"]
+    },
+
+    "ev.approve": {
+      "type": "object",
+      "properties": {
+        "gate": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+        "basis": { "$ref": "#/$defs/basis" },
+        "ttl": { "$ref": "#/$defs/duration" },
+        "unverified_ack": { "type": "boolean" },
+        "note": { "type": "string", "minLength": 1 }
+      },
+      "required": ["item", "gate", "basis", "ttl"]
+    },
+
+    "ev.authorize": {
+      "type": "object",
+      "description": "Permission for an action with effects outside the repository. The strictest contract in the protocol.",
+      "properties": {
+        "target": { "$ref": "#/$defs/eventRef" },
+        "scope": { "$ref": "#/$defs/authorizationScope" },
+        "basis": { "$ref": "#/$defs/basis" },
+        "limits": { "$ref": "#/$defs/authorizationLimits" },
+        "expires": { "$ref": "#/$defs/duration" },
+        "conditions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "revocable": { "type": "boolean" }
+      },
+      "required": ["actor", "target", "scope", "basis", "limits", "expires"],
+      "not": {
+        "$comment": "Silence never authorizes. An authorization carrying a silent default would invert that rule.",
+        "anyOf": [
+          { "required": ["default_if_silent"] },
+          { "required": ["default_rationale"] }
+        ]
+      }
+    },
+
+    "ev.revoke": {
+      "type": "object",
+      "properties": {
+        "target": { "$ref": "#/$defs/eventRef" },
+        "reason": { "type": "string", "minLength": 1 },
+        "effective": { "type": "string", "enum": ["immediate"] }
+      },
+      "required": ["target", "reason"]
+    },
+
+    "ev.block": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "oneOf": [
+            { "$ref": "#/$defs/urn" },
+            { "$ref": "#/$defs/causalPointer" },
+            { "type": "string", "pattern": "^(external|question|decision):[A-Za-z0-9._/ -]{1,128}$" }
+          ]
+        },
+        "kind": { "type": "string", "enum": ["dependency", "decision", "authorization", "external", "resource"] },
+        "unblock_when": {
+          "description": "A verifiable condition, so that anyone who checks it may lift the block.",
+          "type": "string",
+          "minLength": 1
+        },
+        "verifiable_by": { "type": "string", "minLength": 1 },
+        "escalate_after": { "$ref": "#/$defs/duration" },
+        "escalate_to": { "$ref": "#/$defs/actorId" },
+        "workaround": {
+          "description": "Mandatory, and 'none' is a legitimate value. Forces the author to consider whether the block is real or merely tidier.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["item", "on", "kind", "unblock_when", "escalate_after", "workaround"]
+    },
+
+    "ev.unblock": {
+      "type": "object",
+      "properties": {
+        "target": { "$ref": "#/$defs/eventRef" },
+        "how": { "type": "string", "minLength": 1 }
+      },
+      "required": ["item", "target", "how"]
+    },
+
+    "ev.question": {
+      "type": "object",
+      "properties": {
+        "to": { "$ref": "#/$defs/actorId" },
+        "kind": { "type": "string", "enum": ["decision", "clarification", "authorization", "priority"] },
+        "question": { "type": "string", "minLength": 1 },
+        "options": { "type": "array", "items": { "$ref": "#/$defs/questionOption" }, "minItems": 2 },
+        "default_if_silent": { "type": "string", "minLength": 1 },
+        "default_rationale": { "type": "string", "minLength": 1 },
+        "expires": { "$ref": "#/$defs/duration" },
+        "blocking": { "type": "boolean" }
+      },
+      "required": ["item", "to", "question", "options", "default_if_silent", "expires"],
+      "allOf": [
+        {
+          "$comment": "Silence never authorizes. For an authorization question the only admissible default is denial.",
+          "if": { "type": "object", "properties": { "kind": { "const": "authorization" } }, "required": ["kind"] },
+          "then": { "properties": { "default_if_silent": { "const": "deny" } } }
+        }
+      ]
+    },
+
+    "ev.answer": {
+      "type": "object",
+      "properties": {
+        "target": { "$ref": "#/$defs/causalPointer" },
+        "answer": { "type": "string", "minLength": 1 },
+        "chose": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" }
+      },
+      "required": ["target", "answer"]
+    },
+
+    "ev.assume": {
+      "type": "object",
+      "properties": {
+        "premise": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "enum": ["default-on-timeout", "author-judgement", "delegated"] },
+        "source_question": { "$ref": "#/$defs/causalPointer" },
+        "verify_by": { "type": "string", "minLength": 1 },
+        "risk_if_wrong": {
+          "description": "A risk identifier or a description of the consequence.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["item", "premise", "verify_by", "risk_if_wrong"],
+      "allOf": [
+        {
+          "if": { "type": "object", "properties": { "authority": { "const": "default-on-timeout" } }, "required": ["authority"] },
+          "then": { "required": ["source_question"] }
+        }
+      ]
+    },
+
+    "ev.decide": {
+      "type": "object",
+      "properties": {
+        "decision": { "type": "string", "pattern": "^[A-Z]{2,6}-[0-9]{1,6}$" },
+        "version": { "type": "integer", "minimum": 1 },
+        "scope": { "type": "array", "items": { "$ref": "#/$defs/touchPattern" }, "minItems": 1, "uniqueItems": true },
+        "status": { "type": "string", "enum": ["proposed", "active", "superseded", "reverted"] },
+        "supersedes": { "type": "string", "pattern": "^[A-Z]{2,6}-[0-9]{1,6}$" },
+        "record": { "type": "string", "minLength": 1 },
+        "reversible": { "type": "boolean" },
+        "review_by": { "$ref": "#/$defs/timestamp" }
+      },
+      "required": ["decision", "version", "scope"]
+    },
+
+    "ev.risk": {
+      "type": "object",
+      "properties": {
+        "risk": { "$ref": "#/$defs/risk" }
+      },
+      "required": ["risk"]
+    },
+
+    "ev.debt": {
+      "type": "object",
+      "properties": {
+        "debt": { "$ref": "#/$defs/debt" }
+      },
+      "required": ["debt"]
+    },
+
+    "ev.checkpoint": {
+      "type": "object",
+      "description": "Bounds the reading obligation. Never removes history.",
+      "properties": {
+        "covers": {
+          "description": "Inclusive range of absorbed events: [first, last].",
+          "type": "array",
+          "prefixItems": [{ "$ref": "#/$defs/causalPointer" }, { "$ref": "#/$defs/causalPointer" }],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "state": { "$ref": "#/$defs/state" },
+        "resume": { "$ref": "#/$defs/resume" },
+        "open": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "gates": { "$ref": "#/$defs/gateSummary" },
+        "basis": { "$ref": "#/$defs/basis" },
+        "decisions_in_force": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "unverified_open": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "supersedes_checkpoint": { "$ref": "#/$defs/causalPointer" }
+      },
+      "required": ["item", "covers", "state", "resume", "open", "gates"]
+    },
+
+    "ev.reconcile": {
+      "type": "object",
+      "properties": {
+        "fixed": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "checks_run": { "type": "integer", "minimum": 1 },
+        "after_multi": {
+          "description": "A reconciliation resolving a causal fork points at every branch it merges.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/causalPointer" },
+          "minItems": 2,
+          "uniqueItems": true
+        }
+      },
+      "required": ["fixed"]
+    },
+
+    "ev.violation": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "type": "string",
+          "enum": [
+            "unauthorized-action", "unauthorized", "self-approval", "no-basis", "stale-gate",
+            "missing-unverified", "unauthorized-debt", "lease-conflict", "scope-creep",
+            "unlinked-decision", "incomplete-handoff", "drift", "dangling-link",
+            "orphan-event", "reserved-id"
+          ]
+        },
+        "target": { "$ref": "#/$defs/eventRef" },
+        "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "effect": {
+          "description": "void removes the denounced event's protocol effect; flag records it without disabling it.",
+          "type": "string",
+          "enum": ["void", "flag"]
+        },
+        "remedy": { "type": "string", "minLength": 1 }
+      },
+      "required": ["rule", "target", "severity", "effect"]
+    },
+
+    "ev.supersede": {
+      "type": "object",
+      "properties": {
+        "by": { "$ref": "#/$defs/workItemId" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "required": ["item", "by", "reason"]
+    },
+
+    "ev.close": {
+      "type": "object",
+      "properties": {
+        "resolution": { "type": "string", "enum": ["done", "dropped", "superseded", "rotated"] },
+        "into": { "$ref": "#/$defs/workItemId" },
+        "carries": {
+          "description": "Risks and debt the item leaves behind. Closing without listing them is how they disappear.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "required": ["item", "resolution"],
+      "allOf": [
+        {
+          "if": { "type": "object", "properties": { "resolution": { "enum": ["superseded", "rotated"] } }, "required": ["resolution"] },
+          "then": { "required": ["into"] }
+        }
+      ]
+    }
+  }
+}

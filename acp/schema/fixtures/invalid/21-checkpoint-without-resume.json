@@ -1,0 +1,1 @@
+{ "v": 1, "type": "checkpoint", "item": "RF-142", "actor": "chatgpt", "after": 2451890195, "covers": [2451889301, 2451890195], "state": { "phase": "IN_REVIEW", "freshness": "FRESH" }, "open": ["re-review pending"], "gates": { "merge": "2 of 4" } }

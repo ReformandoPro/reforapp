@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "type": "revalidate",
+  "item": "RF-142",
+  "actor": "hermes",
+  "after": 2451890135,
+  "revalidates": 2451890120,
+  "old_basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263", "scope": ["db/migrations/**"] },
+  "new_basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4", "scope": ["db/migrations/**"] },
+  "scope_diff": {
+    "outside_scope": false,
+    "paths": ["db/migrations/0042_rls_grants.sql"],
+    "revalidated_parts": ["Re-read 0042 and re-ran the double-execution test; the rest of the earlier review still stands"]
+  },
+  "verdict": "approve",
+  "unverified": ["Did not re-run the full suite, only the RLS tests"]
+}

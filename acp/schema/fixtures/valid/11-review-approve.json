@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "type": "review",
+  "item": "RF-142",
+  "actor": "hermes",
+  "role": "reviewer",
+  "after": 2451890120,
+  "basis": {
+    "ref": "acp/RF-142/rls-grants-idempotent",
+    "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263",
+    "scope": [
+      "db/migrations/**"
+    ]
+  },
+  "verdict": "approve",
+  "adversarial": false,
+  "unverified": [
+    "Not exercised against production data"
+  ],
+  "reviews_submission": 2451890115
+}

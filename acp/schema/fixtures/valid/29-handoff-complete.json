@@ -1,0 +1,20 @@
+{
+  "v": 1,
+  "type": "handoff",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": 2451890195,
+  "to": "any:engineer",
+  "releases_lease": true,
+  "resume": {
+    "goal": "Idempotent grants plus a double-execution test (acceptance criteria 2 and 3)",
+    "done": ["Migration 0042 rewritten with IF NOT EXISTS", "Double-execution test added, passes locally"],
+    "remaining": ["CI is red because of the Postgres image default ACL (RSK-014)"],
+    "traps": ["Do not run 0042 against production before the rollback for RSK-014 is written"],
+    "next_action": "Wait for the answer to the pinning question, or apply its default on expiry",
+    "basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263" },
+    "key_files": ["db/migrations/0042_rls_grants.sql"],
+    "decisions_in_force": ["ACD-0007@2"],
+    "assumptions": ["The app_rw role exists in every environment (unverified in staging)"]
+  }
+}

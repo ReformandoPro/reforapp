@@ -1,0 +1,1 @@
+{ "v": 1, "type": "question", "item": "RF-142", "actor": "claude", "after": 2451890110, "to": "jorge", "question": "Pin the CI image?", "options": [{ "id": "pin", "summary": "Pin it" }, { "id": "tolerant", "summary": "Tolerate both" }], "default_if_silent": "pin" }

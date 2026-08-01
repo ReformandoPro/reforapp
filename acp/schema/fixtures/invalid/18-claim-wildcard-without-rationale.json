@@ -1,0 +1,1 @@
+{ "v": 1, "type": "claim", "item": "RF-150", "actor": "openclaw", "after": 2451890200, "lease": "12h", "touches": ["**"], "intent": "Upgrade everything" }

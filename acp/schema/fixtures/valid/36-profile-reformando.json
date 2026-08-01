@@ -1,0 +1,450 @@
+{
+  "acp": 1,
+  "spec": "1.0.0-draft",
+  "program": "reforapp",
+  "status": "proposed",
+  "profile": "ACP-1",
+  "repos": {
+    "coordination": "ReformandoPro/reforapp",
+    "code": [
+      "ReformandoPro/reforapp"
+    ]
+  },
+  "ids": {
+    "work_item_prefix": "RF",
+    "initiative_prefix": "RF-I",
+    "decision_prefix": "ACD",
+    "risk_prefix": "RSK",
+    "debt_prefix": "DEBT",
+    "reserved": [
+      "R1",
+      "R2",
+      "R2.1"
+    ]
+  },
+  "agents": [
+    {
+      "id": "jorge",
+      "kind": "human",
+      "role": "product-owner",
+      "handle": "@TODO-po"
+    },
+    {
+      "id": "chatgpt",
+      "kind": "llm",
+      "role": "coordinator",
+      "handle": "@TODO-coordinator"
+    },
+    {
+      "id": "openclaw",
+      "kind": "llm",
+      "role": "lead-engineer",
+      "handle": "@TODO-lead",
+      "capabilities_extra": [
+        "shell",
+        "deploy:staging"
+      ]
+    },
+    {
+      "id": "claude",
+      "kind": "llm",
+      "role": "engineer",
+      "handle": "@TODO-engineer",
+      "capabilities_extra": [
+        "shell"
+      ]
+    },
+    {
+      "id": "hermes",
+      "kind": "llm",
+      "role": "reviewer",
+      "handle": "@TODO-reviewer",
+      "adversarial": true
+    }
+  ],
+  "roles": {
+    "product-owner": {
+      "capabilities": [
+        "specify",
+        "triage",
+        "decide",
+        "authorize",
+        "close",
+        "veto",
+        "revoke",
+        "approve:scope",
+        "approve:release"
+      ]
+    },
+    "coordinator": {
+      "capabilities": [
+        "specify",
+        "triage",
+        "decide",
+        "checkpoint",
+        "reconcile",
+        "validate",
+        "block",
+        "unblock",
+        "supersede",
+        "close",
+        "approve:scope"
+      ]
+    },
+    "lead-engineer": {
+      "capabilities": [
+        "claim",
+        "heartbeat",
+        "progress",
+        "submit",
+        "validate",
+        "review",
+        "handoff",
+        "assume",
+        "checkpoint",
+        "reconcile",
+        "approve:code"
+      ]
+    },
+    "engineer": {
+      "capabilities": [
+        "claim",
+        "heartbeat",
+        "progress",
+        "submit",
+        "validate",
+        "question",
+        "assume",
+        "handoff"
+      ]
+    },
+    "reviewer": {
+      "capabilities": [
+        "review",
+        "validate",
+        "block",
+        "violation",
+        "veto",
+        "approve:code"
+      ]
+    }
+  },
+  "permissions": {
+    "default": "deny",
+    "push_branch": [
+      "lead-engineer",
+      "engineer",
+      "coordinator"
+    ],
+    "open_pr": [
+      "lead-engineer",
+      "engineer",
+      "coordinator"
+    ],
+    "merge_main": "authorization",
+    "force_push": "forbidden",
+    "rewrite_history": "forbidden",
+    "delete_branch_others": "forbidden",
+    "remote_db_write": "authorization",
+    "run_migration": "authorization",
+    "deploy_staging": "authorization",
+    "deploy_production": "authorization",
+    "modify_workflows": "authorization",
+    "modify_secrets": "forbidden",
+    "manage_labels": "authorization",
+    "manage_projects": "authorization",
+    "manage_issue_templates": "authorization",
+    "create_release": "authorization",
+    "post_secrets": "forbidden"
+  },
+  "gates": {
+    "ready": {
+      "requires": [
+        {
+          "spec": {
+            "accept": "required",
+            "touches": "required"
+          }
+        },
+        {
+          "blockers": "none"
+        }
+      ]
+    },
+    "merge": {
+      "requires": [
+        {
+          "review": {
+            "verdict": "approve",
+            "by_role": "reviewer",
+            "count": 1,
+            "fresh": true
+          }
+        },
+        {
+          "review": {
+            "verdict": "!reject",
+            "by_capability": "veto",
+            "all": true
+          }
+        },
+        {
+          "validation": [
+            "tests",
+            "lint",
+            "types"
+          ]
+        },
+        {
+          "blockers": "none"
+        },
+        {
+          "unverified_ack": true
+        },
+        {
+          "self_approval": "forbidden"
+        }
+      ]
+    },
+    "release": {
+      "requires": [
+        {
+          "gate": "merge"
+        },
+        {
+          "authorization": {
+            "by_role": "product-owner",
+            "scope": "release"
+          }
+        },
+        {
+          "validation": [
+            "migration-dry-run",
+            "rollback-plan"
+          ]
+        }
+      ]
+    }
+  },
+  "lease": {
+    "default": "6h",
+    "max": "48h",
+    "heartbeat": "24h",
+    "review_lease": "12h",
+    "on_expiry": "return_to_ready",
+    "preempt_requires": [
+      "read_previous_work",
+      "preempts_field"
+    ]
+  },
+  "invalidation": {
+    "review_ttl": "7d",
+    "approval_ttl": "3d",
+    "authorization_ttl": "24h",
+    "drift_max_commits": 50,
+    "drift_max_days": 10,
+    "on_sha_change": "stale",
+    "on_dependency_change": "suspect",
+    "on_revoke": "void",
+    "revalidate_allowed": true,
+    "stale_counts_for_gates": false
+  },
+  "review": {
+    "min_independent": 1,
+    "self_review": "forbidden",
+    "require_basis": true,
+    "require_unverified": true,
+    "require_falsified_if_adversarial": true,
+    "require_would_change_my_mind_if_not_approve": true,
+    "verdicts": [
+      "approve",
+      "changes",
+      "reject"
+    ],
+    "adversarial_reviewers": [
+      "hermes"
+    ],
+    "veto_holders": [
+      "jorge",
+      "hermes"
+    ]
+  },
+  "silence": {
+    "require_default": true,
+    "require_expires": true,
+    "require_options": true,
+    "default_expires": "24h",
+    "max_expires": "72h",
+    "on_expiry": "apply_default",
+    "on_expiry_emits": [
+      "assume",
+      "risk"
+    ],
+    "blocking_default": false,
+    "never_default": [
+      "authorize",
+      "approve:release"
+    ]
+  },
+  "write_surfaces": {
+    "require_touches_in": [
+      "spec",
+      "claim"
+    ],
+    "enforce_scope": true,
+    "surfaces": {
+      "app": {
+        "globs": [
+          "src/**"
+        ],
+        "owner_role": "engineer"
+      },
+      "database": {
+        "globs": [
+          "supabase/**"
+        ],
+        "owner_role": "lead-engineer",
+        "risk": "high"
+      },
+      "tests": {
+        "globs": [
+          "tests/**"
+        ],
+        "owner_role": "engineer"
+      },
+      "tooling": {
+        "globs": [
+          "scripts/**",
+          "package.json"
+        ],
+        "owner_role": "lead-engineer"
+      },
+      "docs": {
+        "globs": [
+          "docs/**",
+          "README.md"
+        ],
+        "owner_role": "coordinator"
+      },
+      "protocol": {
+        "globs": [
+          "acp/**"
+        ],
+        "owner_role": "coordinator"
+      }
+    },
+    "protected": [
+      {
+        "globs": [
+          ".github/workflows/**"
+        ],
+        "reason": "CI/CD: cambiar un workflow es cambiar la definicion de la evidencia"
+      },
+      {
+        "globs": [
+          "supabase/migrations/**"
+        ],
+        "reason": "Efecto en datos, no reversible con un revert"
+      }
+    ],
+    "do_not_touch": [
+      {
+        "globs": [
+          "docs/agents/**",
+          ".github/ISSUE_TEMPLATE/agent-task.yml"
+        ],
+        "reason": "Propuesta paralela en chore/agent-protocol-mvp. No modificar, no mergear, no cherry-pick"
+      },
+      {
+        "globs": [
+          "AGENTS.md"
+        ],
+        "reason": "AGENTS.md de la raiz: instruccion vigente del repo. acp/AGENTS.md no lo sustituye"
+      }
+    ]
+  },
+  "limits": {
+    "context_budget": {
+      "total_tokens": 5000,
+      "log_tokens": 2000,
+      "resume_tokens": 500,
+      "agents_md_tokens": 700
+    },
+    "checkpoint": {
+      "every_events": 30,
+      "every_days": 7,
+      "on_phase": [
+        "ACCEPTED",
+        "INTEGRATED"
+      ]
+    },
+    "rotation": {
+      "max_events_per_item": 300,
+      "max_rotations_warn": 1
+    },
+    "scale": {
+      "max_active_items_manual": 50,
+      "warn_active_items": 30
+    },
+    "branches": {
+      "pattern": "acp/{item}/{slug}",
+      "integration": "main",
+      "one_to_one": true,
+      "max_stack_depth": 3
+    },
+    "debt": {
+      "require_authorization": true,
+      "require_payoff_trigger": true
+    }
+  },
+  "reconcile": {
+    "mode": "manual",
+    "cadence": "weekly",
+    "owners": [
+      "chatgpt",
+      "openclaw"
+    ],
+    "checklist_items": 14,
+    "publishes": "program-checkpoint"
+  },
+  "automation": {
+    "enabled": false,
+    "workflows": "none",
+    "bots": "none",
+    "webhooks": "none",
+    "apps": "none",
+    "scripts": "none",
+    "rationale": "Fase de protocolo. Ver ACP-1.md 17.4",
+    "eligible_when_adopted": [
+      "validation",
+      "reconcile",
+      "projection_refresh"
+    ]
+  },
+  "x-reforapp": {
+    "parallel_proposals": [
+      {
+        "branch": "chore/agent-protocol-mvp",
+        "path": "docs/agents/protocol.md",
+        "author": "chatgpt"
+      },
+      {
+        "branch": "openclaw/agent-operating-protocol",
+        "author": "openclaw"
+      },
+      {
+        "branch": "feat/acp-1-protocol",
+        "path": "acp/ACP-1.md",
+        "author": "claude"
+      }
+    ],
+    "out_of_scope_while_in_review": [
+      "R1",
+      "R2",
+      "R2.1",
+      "workflows",
+      "deploys",
+      "migrations"
+    ]
+  }
+}

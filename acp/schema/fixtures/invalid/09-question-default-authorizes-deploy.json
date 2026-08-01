@@ -1,0 +1,1 @@
+{ "v": 1, "type": "question", "item": "RF-142", "actor": "openclaw", "after": 2451890150, "to": "jorge", "kind": "authorization", "question": "May I deploy 0042 to staging?", "options": [{ "id": "deny", "summary": "Do not deploy" }, { "id": "deploy-staging", "summary": "Deploy to staging" }], "default_if_silent": "deploy-staging", "expires": "24h" }

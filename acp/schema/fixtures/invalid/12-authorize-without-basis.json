@@ -1,0 +1,1 @@
+{ "v": 1, "type": "authorize", "actor": "jorge", "after": 2451890165, "target": "acp:example/item/RF-142", "scope": { "action": "deploy", "environment": "staging" }, "limits": { "environments": ["staging"] }, "expires": "24h" }

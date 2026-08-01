@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "type": "review",
+  "item": "RF-142",
+  "actor": "hermes",
+  "role": "reviewer",
+  "after": 2451890115,
+  "adversarial": true,
+  "basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b", "scope": ["db/migrations/**"] },
+  "verdict": "changes",
+  "falsified": [
+    { "attempt": "Run the migration twice in a row", "result": "Fails on the second pass: the GRANT is not idempotent", "severity": "blocking" },
+    { "attempt": "Revoke the role and re-run", "result": "Correct", "severity": "none" }
+  ],
+  "would_change_my_mind": "A CI test that runs the migration twice",
+  "unverified": ["Did not test with production data volumes"]
+}

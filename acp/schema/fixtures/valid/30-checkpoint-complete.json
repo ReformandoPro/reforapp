@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "type": "checkpoint",
+  "item": "RF-142",
+  "actor": "chatgpt",
+  "after": 2451890195,
+  "covers": [2451889301, 2451890195],
+  "state": { "phase": "IN_REVIEW", "freshness": "FRESH", "modifiers": ["at-risk:RSK-014"] },
+  "basis": { "ref": "acp/RF-142/rls-grants-idempotent", "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263" },
+  "resume": {
+    "goal": "Idempotent grants plus a double-execution test",
+    "done": ["Migration rewritten", "Double-execution test added"],
+    "remaining": ["Re-review pending on the new SHA"],
+    "traps": ["CI and production run different Postgres images"],
+    "next_action": "Await the adversarial re-review"
+  },
+  "open": ["Question 2451890110 expires in 18h", "Re-review pending"],
+  "gates": { "merge": "2 of 4 satisfied: fresh review and validation:tests missing" },
+  "decisions_in_force": ["ACD-0007@2"],
+  "unverified_open": ["Behaviour above one million rows", "Rollback of 0042"]
+}

@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "type": "heartbeat",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": 2451890220,
+  "lease": "6h",
+  "x-github-comment-url": "https://example.invalid/issues/142#issuecomment-2451890220",
+  "x-local-note": { "any": "shape", "is": ["permitted", "inside", "x-"] }
+}
