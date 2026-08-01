@@ -41,13 +41,17 @@ begin
   end if;
 
   if (select md5(coalesce(string_agg(
-        format('%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s', function_key, existed,
+        format('%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s', function_key, existed,
                coalesce(definition, ''), coalesce(owner_name, ''),
                coalesce(is_security_definer::text, ''), coalesce(proconfig, ''),
                coalesce(execute_public::text, ''), coalesce(execute_anon::text, ''),
                coalesce(execute_authenticated::text, ''), coalesce(execute_service_role::text, ''),
-               coalesce(execute_service_role_direct::text, ''), coalesce(execute_service_role_grantable::text, ''),
-               coalesce(function_acl, '')),
+               coalesce(acl_literal, ''),
+               coalesce(direct_public::text, ''), coalesce(direct_public_grant_option::text, ''),
+               coalesce(direct_anon::text, ''), coalesce(direct_anon_grant_option::text, ''),
+               coalesce(direct_authenticated::text, ''), coalesce(direct_authenticated_grant_option::text, ''),
+               coalesce(direct_service_role::text, ''), coalesce(direct_service_role_grant_option::text, ''),
+               coalesce(execute_service_role_grant_option::text, '')),
         E'\n' order by function_key), ''))
       from public.r2_function_baseline) <> v_expected.function_digest then
     raise exception 'R2 rollback function baseline digest mismatch';
@@ -75,24 +79,28 @@ begin
   for v_row in select * from public.r2_function_baseline order by function_key loop
     if v_row.existed then
       execute v_row.definition;
+      -- The literal ACL is restored from the DIRECT grants captured per grantee,
+      -- not from effective access: a role whose access came only through PUBLIC
+      -- must not end up with a grant of its own. The four cases are covered —
+      -- only-through-PUBLIC, direct grant, direct grant WITH GRANT OPTION, and no
+      -- access at all — because each grantee is re-granted if and only if it held
+      -- a direct grant, with its own grant option.
       execute format('revoke all on function %s from public, anon, authenticated, service_role', v_row.function_key);
-      if v_row.execute_public then
-        execute format('grant execute on function %s to public', v_row.function_key);
+      if v_row.direct_public then
+        execute format('grant execute on function %s to public%s', v_row.function_key,
+          case when v_row.direct_public_grant_option then ' with grant option' else '' end);
       end if;
-      if v_row.execute_anon then
-        execute format('grant execute on function %s to anon', v_row.function_key);
+      if v_row.direct_anon then
+        execute format('grant execute on function %s to anon%s', v_row.function_key,
+          case when v_row.direct_anon_grant_option then ' with grant option' else '' end);
       end if;
-      if v_row.execute_authenticated then
-        execute format('grant execute on function %s to authenticated', v_row.function_key);
+      if v_row.direct_authenticated then
+        execute format('grant execute on function %s to authenticated%s', v_row.function_key,
+          case when v_row.direct_authenticated_grant_option then ' with grant option' else '' end);
       end if;
-      if v_row.execute_service_role_direct then
-        if v_row.execute_service_role_grantable then
-          execute format('grant execute on function %s to service_role with grant option', v_row.function_key);
-        else
-          execute format('grant execute on function %s to service_role', v_row.function_key);
-        end if;
-      else
-        execute format('revoke execute on function %s from service_role', v_row.function_key);
+      if v_row.direct_service_role then
+        execute format('grant execute on function %s to service_role%s', v_row.function_key,
+          case when v_row.direct_service_role_grant_option then ' with grant option' else '' end);
       end if;
     else
       execute format('drop function if exists %s', v_row.function_key);
@@ -134,22 +142,38 @@ begin
       if has_function_privilege('public', v_row.function_key::regprocedure, 'EXECUTE') is distinct from v_row.execute_public
          or has_function_privilege('anon', v_row.function_key::regprocedure, 'EXECUTE') is distinct from v_row.execute_anon
          or has_function_privilege('authenticated', v_row.function_key::regprocedure, 'EXECUTE') is distinct from v_row.execute_authenticated
-         or has_function_privilege('service_role', v_row.function_key::regprocedure, 'EXECUTE') is distinct from v_row.execute_service_role then
+         or has_function_privilege('service_role', v_row.function_key::regprocedure, 'EXECUTE') is distinct from v_row.execute_service_role
+         or has_function_privilege('service_role', v_row.function_key::regprocedure, 'EXECUTE WITH GRANT OPTION')
+            is distinct from v_row.execute_service_role_grant_option then
         raise exception 'R2 rollback EXECUTE verification failed for %', v_row.function_key;
       end if;
-      if (select exists (
-            select 1 from aclexplode(p.proacl) a
-            join pg_catalog.pg_roles sr on sr.oid = a.grantee
-            where sr.rolname = 'service_role' and a.privilege_type = 'EXECUTE'
-          ) from pg_catalog.pg_proc p where p.oid = v_row.function_key::regprocedure)
-         is distinct from v_row.execute_service_role_direct
-         or (select coalesce((select a.is_grantable from aclexplode(p.proacl) a
-                              join pg_catalog.pg_roles sr on sr.oid = a.grantee
-                              where sr.rolname = 'service_role' and a.privilege_type = 'EXECUTE'
-                              limit 1), false)
-             from pg_catalog.pg_proc p where p.oid = v_row.function_key::regprocedure)
-         is distinct from v_row.execute_service_role_grantable then
-        raise exception 'R2 rollback service_role direct ACL verification failed for %', v_row.function_key;
+
+      -- Literal ACL: compare the restored grant set against the captured one,
+      -- as a set of (grantee, privilege, grantable). A NULL proacl materialises
+      -- into its default when granted, so the sets must match even though the
+      -- stored text may order entries differently.
+      if exists (
+        select 1
+        from (
+          select case when a.grantee = 0 then 'public'
+                      else pg_catalog.pg_get_userbyid(a.grantee) end as grantee_name,
+                 a.privilege_type, a.is_grantable
+          from pg_catalog.pg_proc p
+          cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+          where p.oid = v_row.function_key::regprocedure
+        ) current_acl
+        full join (
+          select case when a.grantee = 0 then 'public'
+                      else pg_catalog.pg_get_userbyid(a.grantee) end as grantee_name,
+                 a.privilege_type, a.is_grantable
+          from aclexplode(v_row.acl_literal::aclitem[]) a
+        ) captured_acl
+          on current_acl.grantee_name = captured_acl.grantee_name
+         and current_acl.privilege_type = captured_acl.privilege_type
+         and current_acl.is_grantable = captured_acl.is_grantable
+        where current_acl.grantee_name is null or captured_acl.grantee_name is null
+      ) then
+        raise exception 'R2 rollback literal ACL verification failed for %', v_row.function_key;
       end if;
     else
       if to_regprocedure(v_row.function_key) is not null then

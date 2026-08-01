@@ -1,6 +1,7 @@
 // R2 smoke: helper hardening and memberships bootstrap policy.
 //
-//   --acl        EXECUTE contract of the five helpers
+//   --acl          EXECUTE contract of the five helpers
+//   --service-role service_role keeps exactly the effective access it had
 //   --helpers    behaviour per role, including the anti-oracle guarantees
 //   --bootstrap  the insert policy end to end through PostgREST
 //   --exception  row_security is restored when a helper raises
@@ -27,7 +28,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 const dbUrl = process.env.SUPABASE_DB_URL?.trim();
 const password = process.env.CI_FIXTURE_PASSWORD?.trim() || "R2-only-password-123456789!";
 const mode = new Set(process.argv.slice(2));
-if (mode.size === 0) ["--acl", "--helpers", "--bootstrap", "--exception"].forEach((m) => mode.add(m));
+if (mode.size === 0) ["--acl", "--service-role", "--helpers", "--bootstrap", "--exception"].forEach((m) => mode.add(m));
 if (!url || !anonKey || !serviceRoleKey) {
   throw new Error("SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are required");
 }
@@ -138,6 +139,34 @@ async function main() {
       if (secdef !== "true") throw new Error(`${helper} is not SECURITY DEFINER`);
       if (!config.startsWith("search_path=pg_catalog")) throw new Error(`${helper} has search_path ${config}`);
       pass(`acl ${helper}`, "public=false anon=false authenticated=true secdef=true search_path=pg_catalog, public");
+    }
+  }
+
+  if (mode.has("--service-role")) {
+    // Guards the regression that turned the B18 check red: revoking PUBLIC also
+    // removes the effective EXECUTE of any role that held it only through
+    // PUBLIC. R2 must end with service_role exactly where it started, and a
+    // helper R2 created must not hand it anything. Read from the baseline the
+    // migration captured, so this needs no ACL mutation.
+    const present = psql("select to_regclass('public.r2_function_baseline') is not null").rows[0] === "t";
+    if (!present) throw new Error("r2_function_baseline is absent: apply the R2 migration first");
+    const rows = psql(`
+      select b.function_key, b.existed,
+             coalesce(b.execute_service_role::text,'null'),
+             coalesce(b.execute_service_role_grant_option::text,'null'),
+             has_function_privilege('service_role', b.function_key::regprocedure, 'EXECUTE')::text,
+             has_function_privilege('service_role', b.function_key::regprocedure, 'EXECUTE WITH GRANT OPTION')::text
+      from public.r2_function_baseline b order by b.function_key`).rows;
+    for (const row of rows) {
+      const [key, existed, wasExec, wasGo, isExec, isGo] = row.split("\t");
+      if (existed === "t") {
+        if (isExec !== wasExec) throw new Error(`service_role EXECUTE on ${key} changed: was ${wasExec}, now ${isExec}`);
+        if (isGo !== wasGo) throw new Error(`service_role grant option on ${key} changed: was ${wasGo}, now ${isGo}`);
+        pass(`service_role preserved ${key}`, `execute=${isExec} grant_option=${isGo}`);
+      } else {
+        if (isExec !== "false") throw new Error(`service_role gained EXECUTE on newly created ${key}`);
+        pass(`service_role absent on newly created ${key}`, "execute=false");
+      }
     }
   }
 
