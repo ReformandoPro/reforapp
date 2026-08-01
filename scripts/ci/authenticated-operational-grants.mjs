@@ -213,14 +213,24 @@ if (process.argv.includes("--privileges")) {
     "projects:SELECT", "projects:INSERT",
     "project_tasks:SELECT", "project_tasks:INSERT",
   ]);
+  const baselinePrivilegeMap = {
+    project_phases_select: ["project_phases", "SELECT"],
+    projects_update: ["projects", "UPDATE"],
+    project_tasks_update: ["project_tasks", "UPDATE"],
+    project_phases_insert: ["project_phases", "INSERT"],
+    project_phases_update: ["project_phases", "UPDATE"],
+    project_phases_delete: ["project_phases", "DELETE"],
+    projects_delete: ["projects", "DELETE"],
+    project_tasks_delete: ["project_tasks", "DELETE"],
+  };
   const baselineDml = new Set(knownPreexisting);
   for (const [key, hadPrivilege] of baselineByKey) {
-    const [table, privilege] = key === "project_phases_select"
-      ? ["project_phases", "SELECT"]
-      : key === "projects_update" ? ["projects", "UPDATE"] : ["project_tasks", "UPDATE"];
+    const mapping = baselinePrivilegeMap[key];
+    if (!mapping) throw new Error(`Unmapped baseline privilege_key: ${key}`);
+    const [table, privilege] = mapping;
     const privilegeKey = `${table}:${privilege}`;
     if (hadPrivilege) baselineDml.add(privilegeKey);
-    log(`baseline ${key}`, hadPrivilege ? "preexisting" : "granted_by_migration");
+    log(`baseline ${key}`, hadPrivilege ? "preexisting" : "absent_before_migration");
   }
   const postDml = new Set(current.map(([table, privilege]) => `${table}:${privilege}`));
   const deltaAdded = new Set([...postDml].filter((privilege) => !baselineDml.has(privilege)));
