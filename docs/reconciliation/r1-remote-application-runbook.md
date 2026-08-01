@@ -48,23 +48,58 @@ Antes de escribir:
 No ejecutar la aplicación si el verificador no termina con evidencia válida y
 exit 0, o si el backup no coincide exactamente.
 
-## 4. Aplicación controlada
+## 4. Mecanismo de aislamiento elegido
 
-La única operación autorizable, tras aprobación explícita, sería:
+`supabase db push` no acepta un nombre de fichero para seleccionar una migración:
+aplica todas las migraciones locales pendientes en orden. Nunca se debe pasar el
+nombre de R1 a `db push` esperando que seleccione solo ese fichero.
+
+La opción elegida es **A/C: workspace temporal mínimo dentro de un workflow
+dedicado**, con `--dry-run` obligatorio. No se modifica el árbol versionado ni se
+falsea `schema_migrations`.
+
+El runner debe demostrar primero que la CLI ofrece el mecanismo:
 
 ```bash
-gh workflow run supabase-staging-ops.yml \
-  --repo ReformandoPro/reforapp \
-  --ref main \
-  -f mode=db_push \
-  -f confirm_project_ref=hafljwojvblyfljddjcr \
-  -f backup_confirmed=I_HAVE_DOWNLOADED_BACKUP
+supabase db push --help | tee "$RUNNER_TEMP/db-push-help.txt"
+grep -F -- '--dry-run' "$RUNNER_TEMP/db-push-help.txt"
 ```
 
-El workflow debe comprobar que el proyecto coincide y aplicar únicamente la
-migración R1 pendiente. Está expresamente prohibido usar `--include-all`,
-`migration repair`, `seed`, DDL/DML adicional o cualquier deploy. Si el workflow
-no puede demostrar que solo aplica R1, detenerse.
+Si `--dry-run` no aparece, se aborta. El workflow hará checkout exacto de `main`,
+obtendrá mediante `supabase migration list` la lista read-only ya registrada y
+creará un directorio temporal nuevo. Copiará allí únicamente las migraciones ya
+registradas y `20260801130000_r1_acl_orphan_tables_hardening.sql`.
+
+Cada nombre debe terminar en `.sql`, existir localmente y copiarse sin modificar.
+R1 se compara byte a byte con `main` y no se permite ningún fichero adicional.
+
+En ese workspace se ejecuta:
+
+```bash
+supabase db push --dry-run --db-url "$SUPABASE_STAGING_DB_URL" \
+  > "$RUNNER_TEMP/r1-dry-run.txt" 2>&1
+```
+
+El plan se guarda como artifact y se parsea a nombres. Debe contener exactamente:
+
+```text
+count=1
+name=20260801130000_r1_acl_orphan_tables_hardening.sql
+timestamp=20260801130000
+```
+
+Se aborta con cero, dos o más entradas, nombre o timestamp distinto, cualquier
+M1/M2/M3/M4 u otra migración, error del dry-run o plan no verificable.
+
+Solo tras una aprobación separada podría ejecutarse `supabase db push` desde ese
+workspace; no se pasa ningún nombre de fichero.
+
+La opción B — aplicar SQL directo y registrar manualmente
+`supabase_migrations.schema_migrations` — queda descartada y no se implementa:
+sería una reparación manual del historial y exige aprobación específica.
+
+Está prohibido `--include-all`, `migration repair`, `seed`, SQL directo, DDL/DML
+adicional y cualquier deploy.
 
 ## 5. Verificación posterior inmediata
 
