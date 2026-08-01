@@ -27,12 +27,17 @@ jobs:
         run: |
           set -euo pipefail
           OUT="$RUNNER_TEMP/app-beta-503"
-          RAW_INSPECT="$RUNNER_TEMP/container-inspect.raw.json"
           INSPECT_ERRORS="$RUNNER_TEMP/container-inspect-errors.txt"
           APP_LOG_ERRORS="$RUNNER_TEMP/app-logs-stderr.txt"
           HEADERS="$RUNNER_TEMP/http-headers.tmp"
-          trap 'rm -f "$RAW_INSPECT" "$INSPECT_ERRORS" "$APP_LOG_ERRORS" "$HEADERS" "$RUNNER_TEMP/app-beta-503-sanitizer.sh"' EXIT
           mkdir -p "$OUT"
+          {
+            printf 'RAW_INSPECT=%s\n' "$RUNNER_TEMP/container-inspect.raw.json"
+            printf 'INSPECT_ERRORS=%s\n' "$INSPECT_ERRORS"
+            printf 'APP_LOG_ERRORS=%s\n' "$APP_LOG_ERRORS"
+            printf 'HEADERS=%s\n' "$HEADERS"
+            printf 'SANITIZER_SCRIPT=%s\n' "$RUNNER_TEMP/app-beta-503-sanitizer.sh"
+          } >> "$GITHUB_ENV"
           for file in report.txt guard-report.txt command-manifest.txt container-inventory.txt container-inspect-sanitized.txt container-health-sanitized.txt container-env-names.txt container-stats.txt host-metrics.txt app-logs-sanitized.txt app-error-summary.txt traefik-identification.txt traefik-logs-sanitized.txt http-probes.txt correlation.csv sanitization-report.txt; do
             printf 'status=not_verified\nreason=collection_not_started\n' > "$OUT/$file"
           done
@@ -122,6 +127,10 @@ jobs:
           set +x
           set -euo pipefail
           OUT="$RUNNER_TEMP/app-beta-503"
+          cleanup_runtime_temporaries() {
+            rm -f -- "$RAW_INSPECT" "$INSPECT_ERRORS" "$APP_LOG_ERRORS" "$HEADERS"
+          }
+          trap cleanup_runtime_temporaries EXIT
           SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -i "$RUNNER_TEMP/ssh/key" -p "$APP_BETA_SSH_PORT" "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST")
           remote() { "${SSH[@]}" "$@"; }
           export TARGET_CONTAINER FORBIDDEN_CONTAINER APP_BETA_HOST
@@ -158,7 +167,7 @@ jobs:
           remote 'set -o pipefail; { free -m; uptime; df -h; (cat /proc/pressure/memory || true); (journalctl -k --since "6 hours ago" --no-pager 2>/dev/null || true) | grep -Ei "oom|out of memory|killed process|reforming-app-beta" || true; }' \
             > "$OUT/host-metrics.txt" 2>&1
 
-          source "$RUNNER_TEMP/app-beta-503-sanitizer.sh"
+          source "$SANITIZER_SCRIPT"
           remote 'docker logs --since 6h --tail 5000 --timestamps "$TARGET_CONTAINER" 2>/dev/null' \
             | sanitize_stream \
             > "$OUT/app-logs-sanitized.txt" 2> "$APP_LOG_ERRORS"
@@ -216,6 +225,20 @@ jobs:
         run: |
           set -euo pipefail
           OUT="$RUNNER_TEMP/app-beta-503"
+          if [ -z "${RAW_INSPECT:-}" ] || [ -z "${INSPECT_ERRORS:-}" ] || [ -z "${APP_LOG_ERRORS:-}" ] || [ -z "${HEADERS:-}" ] || [ -z "${SANITIZER_SCRIPT:-}" ]; then
+            printf 'temporary_cleanup_verified=false\nreason=temporary_paths_not_exported\n' >> "$OUT/report.txt"
+            exit 1
+          fi
+          for temporary in "$RAW_INSPECT" "$INSPECT_ERRORS" "$APP_LOG_ERRORS" "$HEADERS"; do
+            if [ -e "$temporary" ]; then
+              printf 'temporary_cleanup_verified=false\nremaining_temp=%s\n' "$(basename -- "$temporary")" >> "$OUT/report.txt"
+              printf 'temporary_cleanup_verified=false\nremaining_temp=%s\n' "$(basename -- "$temporary")" >> "$OUT/sanitization-report.txt"
+              exit 1
+            fi
+          done
+          printf 'temporary_cleanup_verified=true\n' >> "$OUT/report.txt"
+          printf 'temporary_cleanup_verified=true\nchecked_external_temporaries=4\n' >> "$OUT/sanitization-report.txt"
+          trap 'rm -f -- "$SANITIZER_SCRIPT"' EXIT
           test -s "$OUT/report.txt"
           test -s "$OUT/command-manifest.txt"
           test -s "$OUT/container-inventory.txt"
@@ -233,7 +256,7 @@ jobs:
               if 'docker stats' in line:
                   assert '"$TARGET_CONTAINER"' in line and '--no-stream' in line, line
           PY
-          source "$RUNNER_TEMP/app-beta-503-sanitizer.sh"
+          source "$SANITIZER_SCRIPT"
           fixture='Authorization: Bearer abc; Basic YWJj; Cookie: sid=xyz; Set-Cookie: sid=xyz; jwt=abc; eyJabc.def.ghi; password=hunter2; postgres://u:p@db/x; anon key=abc; service_role=abc; api_key=abc; a@b.example; ?token=abc'
           sanitized=$(printf '%s\n' "$fixture" | sanitize_stream)
           printf '%s\n' "$sanitized" > "$OUT/sanitization-report.txt"
