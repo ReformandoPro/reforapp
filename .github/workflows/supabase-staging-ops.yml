@@ -154,10 +154,21 @@ jobs:
           ORDER BY indexname;
 
           SELECT '## RLS and policies';
-          SELECT schemaname, tablename, rowsecurity, forcerowsecurity
-          FROM pg_tables
-          WHERE schemaname = 'public'
-            AND tablename IN ('project_task_issues', 'memberships', 'project_tasks');
+          SELECT
+            n.nspname AS schemaname,
+            c.relname AS tablename,
+            c.relrowsecurity AS rowsecurity,
+            c.relforcerowsecurity AS forcerowsecurity
+          FROM pg_catalog.pg_class c
+          JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public'
+            AND c.relkind IN ('r', 'p')
+            AND c.relname IN (
+              'project_task_issues',
+              'memberships',
+              'project_tasks'
+            )
+          ORDER BY c.relname;
           SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
           FROM pg_policies
           WHERE schemaname = 'public'
