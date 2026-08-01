@@ -241,7 +241,11 @@ begin
     execute format('revoke all on table public.%I from public, anon', v_table);
     -- authenticated keeps its existing DML on purpose (see header) but must not
     -- be able to truncate or run maintenance operations.
-    execute format('revoke truncate, maintain on table public.%I from authenticated', v_table);
+    if v_maintain_supported then
+      execute format('revoke truncate, maintain on table public.%I from authenticated', v_table);
+    else
+      execute format('revoke truncate on table public.%I from authenticated', v_table);
+    end if;
     -- service_role is reduced to the derived contract.
     execute format('revoke all on table public.%I from service_role', v_table);
   end loop;
