@@ -29,7 +29,15 @@ jobs:
       - name: Verify public table security (read-only)
         env:
           SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
-        run: node scripts/ci/verify-public-table-security.mjs | tee "$RUNNER_TEMP/public-table-security.txt"
+        run: |
+          set -euo pipefail
+          REPORT="$RUNNER_TEMP/public-table-security.txt"
+          set +e
+          node scripts/ci/verify-public-table-security.mjs 2>&1 | tee "$REPORT"
+          status=${PIPESTATUS[0]}
+          set -e
+          test -s "$REPORT"
+          exit "$status"
       - name: Upload read-only evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -37,3 +45,4 @@ jobs:
           name: public-table-security-evidence
           path: ${{ runner.temp }}/public-table-security.txt
           retention-days: 7
+          if-no-files-found: error
