@@ -21,9 +21,23 @@ Cada función debe usar `SECURITY DEFINER`, `SET search_path = pg_catalog, publi
 - Verificar owner, `prosecdef`, `proconfig`, argumentos y cuerpos después del cambio.
 - No conceder privilegios a `service_role` salvo evidencia independiente y aprobación explícita.
 
+## Orden atómico
+
+Una futura migración R2 debe ejecutar, dentro de una única transacción y en este orden:
+
+1. `CREATE OR REPLACE` de los cinco helpers;
+2. ajustes exactos de ACL;
+3. `DROP POLICY` de la policy de bootstrap conocida;
+4. `CREATE POLICY` con la definición nueva;
+5. verificaciones de firmas, cuerpos, grants y policy antes del `COMMIT`.
+
+No se permite observar un estado intermedio desde otra operación de aplicación.
+
 ## Bootstrap
 
 Reemplazar atómicamente la policy de inserción de `memberships` para que el primer owner solo pueda insertarse cuando el usuario autenticado coincide con `user_id`, el rol es `owner` y `org_is_empty_for_bootstrap(organization_id)` es verdadero. Un usuario no autenticado, un segundo owner o una organización con cualquier membership deben ser rechazados.
+
+`is_client_in_org(NULL, org_id)` debe devolver `false` sin consultar una fila de cliente. La condición member/admin debe simplificarse: los helpers de lectura autorizan la pertenencia; las policies de escritura usan exclusivamente `is_org_admin` cuando requieren owner/admin. No se repite una comprobación de pertenencia que no amplíe seguridad ni cambie el resultado.
 
 ## Pruebas obligatorias
 
