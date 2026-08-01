@@ -364,7 +364,7 @@ jobs:
             | sort -u || true
 
           echo '## Runtime references (filenames only)'
-          service_role_references_found=0
+          declare -A service_role_reference_files=()
           SEARCH_ROOTS="/docker/reformando-app-beta"
           while IFS= read -r mount; do
             [ -n "$mount" ] && SEARCH_ROOTS="$SEARCH_ROOTS"$'\n'"$mount"
@@ -376,23 +376,28 @@ jobs:
               echo "root=$root files=(sin archivos candidatos)"
               continue
             fi
-            set +e
-            matches="$(grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|createClient|supabase-js' "${candidate_files[@]}" 2>/dev/null)"
-            grep_status=$?
-            set -e
-            if [ "$grep_status" -gt 1 ]; then
-              echo "ERROR file scan failed root=$root status=$grep_status" >&2
-              exit "$grep_status"
-            fi
-            if [ -n "$matches" ]; then
-              printf '%s\n' "$matches" | sed -n '1,200p'
-              service_role_references_found=$((service_role_references_found + $(printf '%s\n' "$matches" | sed '/^$/d' | wc -l)))
-            else
-              echo "root=$root files=(sin coincidencias)"
-            fi
+            root_matches=0
+            for pattern in SUPABASE_SERVICE_ROLE_KEY SERVICE_ROLE service_role createClient supabase-js; do
+              set +e
+              matches="$(grep -IlF "$pattern" "${candidate_files[@]}" 2>/dev/null)"
+              grep_status=$?
+              set -e
+              if [ "$grep_status" -gt 1 ]; then
+                echo "ERROR file scan failed root=$root pattern=$pattern status=$grep_status" >&2
+                exit "$grep_status"
+              fi
+              if [ -n "$matches" ]; then
+                root_matches=1
+                while IFS= read -r matched_file; do
+                  [ -n "$matched_file" ] && service_role_reference_files["$matched_file"]=1
+                done <<< "$matches"
+                printf '%s\n' "$matches"
+              fi
+            done
+            [ "$root_matches" -eq 1 ] || echo "root=$root files=(sin coincidencias)"
           done <<< "$SEARCH_ROOTS"
           echo "file_scan_status=completed"
-          echo "service_role_references_found=$service_role_references_found"
+          echo "service_role_references_found=${#service_role_reference_files[@]}"
 
           echo '## Inferred tables and operations (metadata patterns only)'
           while IFS= read -r root; do
@@ -400,14 +405,20 @@ jobs:
             mapfile -d '' candidate_files < <(timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null)
             [ "${#candidate_files[@]}" -gt 0 ] || continue
             set +e
-            matches="$(grep -IhoE '(from|into|update|delete[[:space:]]+from)[[:space:]]+public\\.[a-z_][a-z0-9_]*|\\.from\\([[:space:]]*["'"'"'][a-z_][a-z0-9_]*' "${candidate_files[@]}" 2>/dev/null)"
-            grep_status=$?
+            public_lines="$(grep -IhF 'public.' "${candidate_files[@]}" 2>/dev/null)"
+            public_status=$?
+            from_lines="$(grep -IhF '.from(' "${candidate_files[@]}" 2>/dev/null)"
+            from_status=$?
             set -e
-            if [ "$grep_status" -gt 1 ]; then
-              echo "ERROR metadata scan failed root=$root status=$grep_status" >&2
-              exit "$grep_status"
+            if [ "$public_status" -gt 1 ]; then
+              echo "ERROR metadata scan failed root=$root pattern=public. status=$public_status" >&2
+              exit "$public_status"
             fi
-            [ -n "$matches" ] && printf '%s\n' "$matches"
+            if [ "$from_status" -gt 1 ]; then
+              echo "ERROR metadata scan failed root=$root pattern=.from( status=$from_status" >&2
+              exit "$from_status"
+            fi
+            printf '%s\n%s\n' "$public_lines" "$from_lines"
           done <<< "$SEARCH_ROOTS" | awk '
             {
               line = $0
