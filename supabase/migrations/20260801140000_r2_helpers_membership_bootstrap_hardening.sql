@@ -47,7 +47,10 @@ create table public.r2_function_baseline (
   execute_public boolean,
   execute_anon boolean,
   execute_authenticated boolean,
-  execute_service_role boolean
+  execute_service_role boolean,
+  execute_service_role_direct boolean,
+  execute_service_role_grantable boolean,
+  function_acl text
 );
 
 create table public.r2_policy_baseline (
@@ -124,7 +127,8 @@ begin
       insert into public.r2_function_baseline (
         function_key, schema_name, function_name, identity_arguments, existed,
         definition, owner_name, is_security_definer, proconfig,
-        execute_public, execute_anon, execute_authenticated, execute_service_role
+        execute_public, execute_anon, execute_authenticated, execute_service_role,
+        execute_service_role_direct, execute_service_role_grantable, function_acl
       )
       select v_target, n.nspname, p.proname,
              pg_catalog.pg_get_function_identity_arguments(p.oid),
@@ -136,7 +140,17 @@ begin
              has_function_privilege('public', p.oid, 'EXECUTE'),
              has_function_privilege('anon', p.oid, 'EXECUTE'),
              has_function_privilege('authenticated', p.oid, 'EXECUTE'),
-             has_function_privilege('service_role', p.oid, 'EXECUTE')
+             has_function_privilege('service_role', p.oid, 'EXECUTE'),
+             exists (
+               select 1 from aclexplode(p.proacl) a
+               join pg_catalog.pg_roles sr on sr.oid = a.grantee
+               where sr.rolname = 'service_role' and a.privilege_type = 'EXECUTE'
+             ),
+             coalesce((select a.is_grantable from aclexplode(p.proacl) a
+                       join pg_catalog.pg_roles sr on sr.oid = a.grantee
+                       where sr.rolname = 'service_role' and a.privilege_type = 'EXECUTE'
+                       limit 1), false),
+             coalesce(array_to_string(p.proacl, ','), '')
       from pg_catalog.pg_proc p
       join pg_catalog.pg_namespace n on n.oid = p.pronamespace
       where p.oid = v_oid;
@@ -210,11 +224,13 @@ begin
     (select count(*) from public.r2_function_baseline),
     (select count(*) from public.r2_policy_baseline),
     (select md5(coalesce(string_agg(
-        format('%s|%s|%s|%s|%s|%s|%s|%s|%s|%s', function_key, existed,
+        format('%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s', function_key, existed,
                coalesce(definition, ''), coalesce(owner_name, ''),
                coalesce(is_security_definer::text, ''), coalesce(proconfig, ''),
                coalesce(execute_public::text, ''), coalesce(execute_anon::text, ''),
-               coalesce(execute_authenticated::text, ''), coalesce(execute_service_role::text, '')),
+               coalesce(execute_authenticated::text, ''), coalesce(execute_service_role::text, ''),
+               coalesce(execute_service_role_direct::text, ''), coalesce(execute_service_role_grantable::text, ''),
+               coalesce(function_acl, '')),
         E'\n' order by function_key), ''))
      from public.r2_function_baseline),
     (select md5(coalesce(string_agg(
@@ -452,6 +468,25 @@ grant execute on function public.org_has_any_membership(uuid) to authenticated;
 grant execute on function public.is_client_in_org(uuid, uuid) to authenticated;
 grant execute on function public.org_is_empty_for_bootstrap(uuid) to authenticated;
 
+do $r2_service_role$
+declare
+  v_row record;
+begin
+  -- Preserve service_role's effective access, but never grant it unconditionally.
+  for v_row in select * from public.r2_function_baseline where existed order by function_key loop
+    if v_row.execute_service_role then
+      if v_row.execute_service_role_grantable then
+        execute format('grant execute on function %s to service_role with grant option', v_row.function_key);
+      else
+        execute format('grant execute on function %s to service_role', v_row.function_key);
+      end if;
+    else
+      execute format('revoke execute on function %s from service_role', v_row.function_key);
+    end if;
+  end loop;
+end;
+$r2_service_role$;
+
 -- ---------------------------------------------------------------------------
 -- Steps 3 and 4: replace the bootstrap policy in the same transaction.
 -- The owner/admin branch is exactly is_org_admin: no redundant membership check
@@ -533,18 +568,30 @@ begin
     if not has_function_privilege('authenticated', v_oid, 'EXECUTE') then
       raise exception 'R2 verification failed: authenticated lacks EXECUTE on %', v_target;
     end if;
-    -- The specification mandates revoking PUBLIC and anon and granting
-    -- authenticated. It does not authorise touching service_role, which holds
-    -- EXECUTE through the function default ACL of schema public. R2 therefore
-    -- asserts that service_role is unchanged rather than absent: granting it
-    -- would need independent evidence, and revoking it is out of scope.
+    -- Preserve the effective pre-R2 service_role privilege. If it was inherited
+    -- through PUBLIC, the PUBLIC revoke requires an explicit replacement grant.
     if has_function_privilege('service_role', v_oid, 'EXECUTE')
-       is distinct from coalesce(
-         (select b.execute_service_role from public.r2_function_baseline b
-          where b.function_key = v_target and b.existed),
-         has_function_privilege('service_role', v_oid, 'EXECUTE'))
+       is distinct from (select b.execute_service_role from public.r2_function_baseline b where b.function_key = v_target)
     then
       raise exception 'R2 verification failed: service_role EXECUTE on % changed', v_target;
+    end if;
+    if (select exists (
+          select 1 from aclexplode(p.proacl) a
+          join pg_catalog.pg_roles sr on sr.oid = a.grantee
+          where sr.rolname = 'service_role' and a.privilege_type = 'EXECUTE'
+        ) from pg_catalog.pg_proc p where p.oid = v_oid)
+       is distinct from (select b.execute_service_role from public.r2_function_baseline b where b.function_key = v_target)
+    then
+      raise exception 'R2 verification failed: service_role direct EXECUTE ACL on % changed', v_target;
+    end if;
+    if (select coalesce((select a.is_grantable from aclexplode(p.proacl) a
+                         join pg_catalog.pg_roles sr on sr.oid = a.grantee
+                         where sr.rolname = 'service_role' and a.privilege_type = 'EXECUTE'
+                         limit 1), false)
+        from pg_catalog.pg_proc p where p.oid = v_oid)
+       is distinct from (select b.execute_service_role_grantable from public.r2_function_baseline b where b.function_key = v_target)
+    then
+      raise exception 'R2 verification failed: service_role EXECUTE grant option on % changed', v_target;
     end if;
   end loop;
 
