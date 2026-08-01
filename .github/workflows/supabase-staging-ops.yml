@@ -114,7 +114,13 @@ jobs:
           BEGIN TRANSACTION READ ONLY;
           SHOW transaction_read_only;
           SELECT current_setting('transaction_read_only') AS transaction_read_only;
-          SELECT CASE WHEN current_setting('transaction_read_only') = 'on' THEN 1 ELSE 1 / 0 END AS read_only_guard;
+          SELECT (current_setting('transaction_read_only') = 'on') AS read_only_ok \gset
+          \if :read_only_ok
+            SELECT 'transaction_read_only=on' AS read_only_guard;
+          \else
+            \echo 'ERROR: transaction_read_only is not on'
+            \quit 1
+          \endif
 
           SELECT '# Supabase migration history diagnostic';
           SELECT '## Migration history';
