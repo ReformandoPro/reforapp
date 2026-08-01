@@ -254,6 +254,156 @@ jobs:
             AND grantee.rolname IN ('anon', 'authenticated', 'service_role')
           ORDER BY grantor, grantee, acl.privilege_type;
 
+          SELECT '## Public type and constraint model';
+          SELECT table_name,
+                 column_name,
+                 data_type,
+                 udt_name,
+                 is_nullable
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND (
+              (table_name = 'organizations' AND column_name = 'id')
+              OR (table_name = 'projects' AND column_name = 'id')
+              OR (
+                table_name = 'project_tasks'
+                AND column_name IN ('id', 'project_id', 'phase_id')
+              )
+              OR (table_name = 'profiles' AND column_name = 'user_id')
+            )
+          ORDER BY table_name, column_name;
+
+          SELECT conrelid::regclass AS table_name,
+                 conname,
+                 contype,
+                 pg_get_constraintdef(oid) AS constraint_definition
+          FROM pg_catalog.pg_constraint
+          WHERE conrelid IN (
+            'public.organizations'::regclass,
+            'public.projects'::regclass,
+            'public.project_tasks'::regclass,
+            'public.profiles'::regclass
+          )
+            AND contype IN ('p', 'u', 'f')
+          ORDER BY conrelid::regclass::text, conname;
+
+          SELECT '## Project phases reconciliation evidence';
+          SELECT
+            to_regclass('public.project_phases') IS NOT NULL AS phases_table,
+            EXISTS (
+              SELECT 1
+              FROM information_schema.columns
+              WHERE table_schema = 'public'
+                AND table_name = 'project_tasks'
+                AND column_name = 'phase_id'
+            ) AS phase_id_column,
+            EXISTS (
+              SELECT 1
+              FROM pg_catalog.pg_constraint
+              WHERE conname = 'project_tasks_phase_fk'
+            ) AS phase_fk,
+            EXISTS (
+              SELECT 1
+              FROM pg_catalog.pg_indexes
+              WHERE schemaname = 'public'
+                AND indexname = 'project_tasks_phase_id_idx'
+            ) AS phase_index;
+
+          SELECT '## B18 helper signatures and attributes';
+          SELECT p.proname,
+                 pg_get_function_arguments(p.oid) AS arguments_with_names,
+                 p.proargnames,
+                 l.lanname AS language,
+                 p.provolatile,
+                 p.prosecdef,
+                 p.proconfig,
+                 pg_get_userbyid(p.proowner) AS owner
+          FROM pg_catalog.pg_proc p
+          JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+          JOIN pg_catalog.pg_language l ON l.oid = p.prolang
+          WHERE n.nspname = 'public'
+            AND p.proname IN (
+              'is_org_member',
+              'is_org_admin',
+              'org_has_any_membership',
+              'is_client_in_org',
+              'org_is_empty_for_bootstrap'
+            )
+          ORDER BY p.proname, pg_get_function_identity_arguments(p.oid);
+
+          SELECT '## B18 helper bodies';
+          SELECT p.proname,
+                 pg_get_function_identity_arguments(p.oid) AS identity_arguments,
+                 pg_get_functiondef(p.oid) AS function_definition
+          FROM pg_catalog.pg_proc p
+          JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname = 'public'
+            AND p.proname IN (
+              'is_org_member',
+              'is_org_admin',
+              'org_has_any_membership',
+              'is_client_in_org',
+              'org_is_empty_for_bootstrap'
+            )
+          ORDER BY p.proname, pg_get_function_identity_arguments(p.oid);
+
+          SELECT '## Membership policies';
+          SELECT policyname,
+                 permissive,
+                 roles,
+                 cmd,
+                 qual,
+                 with_check
+          FROM pg_catalog.pg_policies
+          WHERE schemaname = 'public'
+            AND tablename = 'memberships'
+          ORDER BY policyname;
+
+          SELECT '## Anon/public policies using B18 helpers';
+          SELECT tablename,
+                 policyname,
+                 roles,
+                 cmd,
+                 qual,
+                 with_check
+          FROM pg_catalog.pg_policies
+          WHERE schemaname = 'public'
+            AND roles && ARRAY['anon', 'public']::name[]
+            AND (
+              COALESCE(qual, '') || COALESCE(with_check, '')
+            ) ~ '(is_org_member|is_org_admin|org_has_any_membership|is_client_in_org|org_is_empty_for_bootstrap)'
+          ORDER BY tablename, policyname;
+
+          SELECT '## Legacy-safe module presence';
+          SELECT modules.expected_table,
+                 to_regclass('public.' || modules.expected_table) IS NOT NULL AS present
+          FROM (
+            VALUES
+              ('project_task_comments'),
+              ('project_documents'),
+              ('project_progress_updates'),
+              ('project_budgets'),
+              ('project_costs'),
+              ('project_purchases')
+          ) AS modules(expected_table)
+          ORDER BY modules.expected_table;
+
+          SELECT '## Public tables without RLS';
+          SELECT c.relname AS table_name,
+                 c.relrowsecurity AS rowsecurity,
+                 c.relforcerowsecurity AS forcerowsecurity,
+                 (
+                   SELECT COUNT(*)
+                   FROM pg_catalog.pg_policies p
+                   WHERE p.schemaname = 'public'
+                     AND p.tablename = c.relname
+                 ) AS policy_count
+          FROM pg_catalog.pg_class c
+          JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public'
+            AND c.relkind IN ('r', 'p')
+          ORDER BY c.relrowsecurity, c.relname;
+
           SELECT '## Baselines';
           SELECT to_regclass('public.b18_grant_baseline') IS NOT NULL AS b18_baseline_present \gset
           \if :b18_baseline_present
@@ -278,6 +428,10 @@ jobs:
           sed -E 's#(postgres(ql)?://)[^@[:space:]]+@#\1[REDACTED]@#g' "$REPORT" > "$REPORT.sanitized"
           mv "$REPORT.sanitized" "$REPORT"
           test -s "$REPORT"
+          {
+            echo '## Supabase migration history diagnostic'
+            cat "$REPORT"
+          } >> "${GITHUB_STEP_SUMMARY:?}"
 
       - name: Upload migration diagnostic artifact
         if: ${{ inputs.mode == 'diagnose_migration_history' }}
