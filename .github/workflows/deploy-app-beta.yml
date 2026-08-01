@@ -298,39 +298,56 @@ jobs:
             "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST" 'bash -s' > "$REPORT" <<'REMOTE'
           set -Eeuo pipefail
           echo '## Runtime service_role diagnostic (read-only)'
+          TARGET_CONTAINER='reformando-app-beta'
+          INSPECTED_CONTAINERS=()
           echo '## Guard'
-          if docker ps -a --format '{{.Names}}' | grep -qx 'reformando-beta'; then
-            echo 'ERROR forbidden container reference detected; refusing inspection'
+          forbidden_container_present=false
+          if docker ps -a --format '{{.Names}}' | grep -Fxq 'reformando-beta'; then
+            forbidden_container_present=true
+          fi
+          target_matches="$(docker ps --format '{{.Names}}' | grep -Fx "$TARGET_CONTAINER" || true)"
+          target_count="$(printf '%s\n' "$target_matches" | sed '/^$/d' | wc -l | tr -d ' ')"
+          if [ "$target_count" -ne 1 ]; then
+            echo "ERROR target container count=$target_count expected=1"
             exit 1
           fi
-          echo 'forbidden_container_guard=passed'
+          echo "target_container=$TARGET_CONTAINER"
+          echo "forbidden_container_present=$forbidden_container_present"
+          echo 'forbidden_container_inspected=false'
           echo 'inspection_scope=reformando-app-beta plus operational metadata'
 
           echo '## Target container'
-          docker ps --filter 'name=^reformando-app-beta$' --format 'name={{.Names}} image={{.Image}} status={{.Status}}'
-          docker inspect --format 'name={{.Name}} image={{.Config.Image}} status={{.State.Status}}' reformando-app-beta 2>/dev/null || echo 'target_container=absent'
-          docker inspect --format '{{range .Mounts}}{{println "mount" .Source "->" .Destination}}{{end}}' reformando-app-beta 2>/dev/null || true
+          echo "$target_matches" | sed -E 's/^(.*)$/name=\1/'
+          docker inspect --format 'name={{.Name}} image={{.Config.Image}} status={{.State.Status}}' "$TARGET_CONTAINER"
+          INSPECTED_CONTAINERS+=("$TARGET_CONTAINER")
+          TARGET_MOUNTS="$(docker inspect --format '{{range .Mounts}}{{println .Source}}{{end}}' "$TARGET_CONTAINER")"
+          INSPECTED_CONTAINERS+=("$TARGET_CONTAINER")
+          docker inspect --format '{{range .Mounts}}{{println "mount" .Source "->" .Destination}}{{end}}' "$TARGET_CONTAINER"
 
           echo '## Target environment variable names (values redacted)'
-          docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' reformando-app-beta 2>/dev/null \
+          docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$TARGET_CONTAINER" \
             | sed -E 's/=.*$/=[REDACTED]/' \
             | grep -Ei 'SUPABASE|SERVICE_ROLE|DATABASE|APP_|NODE_ENV' \
             | sort -u || true
 
           echo '## Runtime references (filenames only)'
-          for root in /docker /opt /srv /app /etc; do
+          SEARCH_ROOTS="/docker/reformando-app-beta"
+          while IFS= read -r mount; do
+            [ -n "$mount" ] && SEARCH_ROOTS="$SEARCH_ROOTS"$'\n'"$mount"
+          done <<< "$TARGET_MOUNTS"
+          while IFS= read -r root; do
             [ -d "$root" ] || continue
             timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null \
               | xargs -0 -r grep -IlE 'SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|createClient|supabase-js' 2>/dev/null \
               | sed -n '1,200p'
-          done | sort -u
+          done <<< "$SEARCH_ROOTS" | sort -u
 
           echo '## Inferred tables and operations (metadata patterns only)'
-          for root in /docker /opt /srv /app /etc; do
+          while IFS= read -r root; do
             [ -d "$root" ] || continue
             timeout 20 find "$root" -type f -readable -size -2M -print0 2>/dev/null \
               | xargs -0 -r grep -IhoE '(from|into|update|delete[[:space:]]+from)[[:space:]]+public\\.[a-z_][a-z0-9_]*|\\.from\\([[:space:]]*["'"'"'][a-z_][a-z0-9_]*' 2>/dev/null
-          done | sed -E 's/.*(from|into|update|delete[[:space:]]+from)[[:space:]]+//; s/.*\\.from\\([[:space:]]*["'"'"']//; s/[^a-z0-9_].*$//' | sort -u | sed -n '1,200p'
+          done <<< "$SEARCH_ROOTS" | sed -E 's/.*(from|into|update|delete[[:space:]]+from)[[:space:]]+//; s/.*\\.from\\([[:space:]]*["'"'"']//; s/[^a-z0-9_].*$//' | sort -u | sed -n '1,200p'
 
           echo '## Cron and systemd references (paths only)'
           find /etc/cron* /var/spool/cron /etc/systemd/system /usr/lib/systemd/system \
@@ -340,8 +357,19 @@ jobs:
           systemctl list-unit-files --no-legend 2>/dev/null | grep -Ei 'supabase|reformando|beta' | sed -E 's/[[:space:]]+/ /g' || true
 
           echo '## Compose/configuration filenames'
-          find /docker /opt /srv /app -type f \( -iname '*compose*.yml' -o -iname '*compose*.yaml' -o -iname '*.env' -o -iname '*.service' \) \
+          find /docker/reformando-app-beta -type f \( -iname '*compose*.yml' -o -iname '*compose*.yaml' -o -iname '*.env' -o -iname '*.service' \) \
             -readable -print 2>/dev/null | sort -u | sed -n '1,200p'
+          echo '## General operational filenames'
+          find /opt /srv /app /etc -maxdepth 4 -type f \( -iname '*service*role*' -o -iname '*supabase*' -o -iname '*reformando*' -o -iname '*.service' \) \
+            -readable -print 2>/dev/null | sort -u | sed -n '1,200p'
+
+          echo '## Inspection guard'
+          unique_inspected="$(printf '%s\n' "${INSPECTED_CONTAINERS[@]}" | sort -u)"
+          if [ "$(printf '%s\n' "$unique_inspected" | sed '/^$/d' | wc -l | tr -d ' ')" -ne 1 ] || [ "$unique_inspected" != "$TARGET_CONTAINER" ]; then
+            echo "ERROR inspected container set is not exactly $TARGET_CONTAINER"
+            exit 1
+          fi
+          echo "inspected_containers=$unique_inspected"
           REMOTE
           sed -E 's#(postgres(ql)?://)[^@[:space:]]+@#\1[REDACTED]@#g; s/(key|token|password|secret|authorization)=?[^[:space:]]+/\1=[REDACTED]/gi' "$REPORT" > "$REPORT.sanitized"
           mv "$REPORT.sanitized" "$REPORT"
