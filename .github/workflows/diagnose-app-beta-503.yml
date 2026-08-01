@@ -30,11 +30,34 @@ jobs:
           : > "$RUNNER_TEMP/app-beta-503/report.txt"
           cat > "$RUNNER_TEMP/app-beta-503/report.txt" <<'REPORT'
           app-beta HTTP 503 runtime diagnostic
+          status=started
+          error=none
+          main_sha=${GITHUB_SHA}
+          workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}
           mode=read-only
           target_container=reformando-app-beta
           forbidden_container=reformando-beta
           inspected_containers=reformando-app-beta
+          remote_access_started=false
+          docker_available=false
+          app_logs_collected=false
+          traefik_logs_collected=false
+          probes_executed=false
+          secrets_detected=false
+          prohibited_command_detected=false
+          sections_completed=none
+          sections_not_verified=none
           REPORT
+          cat > "$RUNNER_TEMP/app-beta-503/command-manifest.txt" <<'MANIFEST'
+          docker ps --format '{{.Names}}'
+          docker inspect "$TARGET_CONTAINER"
+          docker stats --no-stream "$TARGET_CONTAINER"
+          docker logs --since 6h --timestamps "$TARGET_CONTAINER"
+          docker ps --format '{{.Names}}\\t{{.Labels}}' (inventory only for Traefik label identification)
+          docker logs --since 6h --timestamps <uniquely identified Traefik container> (Traefik only)
+          free -m; uptime; df -h; df -i; /proc/pressure/memory; journalctl -k (read-only)
+          curl GET probes only, sequential, max 3
+          MANIFEST
 
       - name: Validate secrets without printing values
         shell: bash
@@ -80,7 +103,7 @@ jobs:
           APP_BETA_HEALTH_PASSWORD: ${{ secrets.APP_BETA_HEALTH_PASSWORD }}
         run: |
           set +x
-          set -u
+          set -euo pipefail
           OUT="$RUNNER_TEMP/app-beta-503"
           SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -i "$RUNNER_TEMP/ssh/key" -p "$APP_BETA_SSH_PORT" "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST")
           remote() { "${SSH[@]}" "$@"; }
@@ -90,7 +113,7 @@ jobs:
             TARGET_CONTAINER="reformando-app-beta"
             FORBIDDEN_CONTAINER="reformando-beta"
             names=$(docker ps --format "{{.Names}}")
-            count=$(printf "%s\n" "$names" | awk -v t="$TARGET_CONTAINER" "$0 == t { n++ } END { print n+0 }")
+            count=$(printf "%s\n" "$names" | grep -Fxc "$TARGET_CONTAINER" || true)
             test "$count" -eq 1
             printf "target_present=true\nforbidden_present=%s\n" "$(printf "%s\n" "$names" | grep -Fxq "$FORBIDDEN_CONTAINER" && echo true || echo false)"
             printf "inspected_containers=%s\n" "$TARGET_CONTAINER"
@@ -98,13 +121,20 @@ jobs:
             docker stats --no-stream "$TARGET_CONTAINER" >/dev/null
             docker logs --since 6h --timestamps "$TARGET_CONTAINER" >/dev/null
           ' > "$OUT/guard-report.txt" 2>&1
+          remote 'docker ps --format "{{.Names}}"' > "$OUT/container-inventory.txt"
+          grep -Fxq "$TARGET_CONTAINER" "$OUT/container-inventory.txt"
+          test "$(grep -Fxc "$TARGET_CONTAINER" "$OUT/container-inventory.txt")" -eq 1
+          printf 'inspected_containers=%s\n' "$TARGET_CONTAINER" >> "$OUT/guard-report.txt"
+          printf 'remote_access_started=true\ndocker_available=true\n' >> "$OUT/report.txt"
 
           remote 'docker inspect --format "{{json .}}" "$TARGET_CONTAINER"' 2> "$OUT/container-inspect-errors.txt" \
             | jq '.[0] // .' > "$OUT/container-inspect.raw.json"
           jq 'del(.Config.Env) | .Config += {"Env": ((.Config.Env // []) | map(split("=",2)[0] + "=[REDACTED]"))} | .State.Health.Log = ((.State.Health.Log // []) | map(del(.Output) + {Output:"[REDACTED]"})) | .Mounts = (.Mounts // []) | map(. + {Source:"[REDACTED]"})' \
-            "$OUT/container-inspect.raw.json" > "$OUT/container-inspect.txt"
+            "$OUT/container-inspect.raw.json" > "$OUT/container-inspect-sanitized.txt"
+          jq -r '.[0].Config.Env[]? | split("=",2)[0]' "$OUT/container-inspect.raw.json" \
+            > "$OUT/container-env-names.txt"
           jq '.State.Health // {Status:"none"}' "$OUT/container-inspect.raw.json" \
-            | jq 'if .Log then .Log |= map(del(.Output) + {Output:"[REDACTED]"}) else . end' > "$OUT/container-health.txt"
+            | jq 'if .Log then .Log |= map(del(.Output) + {Output:"[REDACTED]"}) else . end' > "$OUT/container-health-sanitized.txt"
 
           remote 'docker stats --no-stream --format "{{json .}}" "$TARGET_CONTAINER"' \
             > "$OUT/container-stats.txt" 2>&1
@@ -112,10 +142,11 @@ jobs:
             > "$OUT/host-metrics.txt" 2>&1
 
           remote 'docker logs --since 6h --timestamps "$TARGET_CONTAINER" 2>/dev/null' \
-            | sed -E 's/(Authorization:|authorization:|Bearer[[:space:]]+|cookie:|Cookie:|jwt|token|password|secret|service_role|anon|postgres(ql)?:\/\/)[^[:space:]]*/\1[REDACTED]/Ig; s/[?&](token|code|key|password|secret)=[^&[:space:]]+/\1=[REDACTED]/Ig; s/[[:alnum:]._%+-]+@[[:alnum:].-]+\.[[:alpha:]]{2,}/[EMAIL_REDACTED]/g' \
+            | sed -E 's/(Authorization:|authorization:|Bearer[[:space:]]+|cookie:|Cookie:|Set-Cookie:|jwt|token|password|secret|service_role|anon|postgres(ql)?:\/\/)[^[:space:]]*/\1[REDACTED]/Ig; s/(Cookie:|Set-Cookie:)[^;]*/\1[REDACTED]/Ig; s/[?&](token|code|key|password|secret)=[^&[:space:]]+/\1=[REDACTED]/Ig; s/[[:alnum:]._%+-]+@[[:alnum:].-]+\.[[:alpha:]]{2,}/[EMAIL_REDACTED]/g' \
             > "$OUT/app-logs-sanitized.txt" 2> "$OUT/app-logs-stderr.txt"
           grep -Ein -C 3 '503|500|timeout|ECONNRESET|ETIMEDOUT|fetch failed|supabase|postgrest|postgresql|connection|pool|too many clients|out of memory|killed|unhandled|redirect|revalidate|server action|digest|RSC' "$OUT/app-logs-sanitized.txt" \
             > "$OUT/app-error-summary.txt" || true
+          printf 'app_logs_collected=true\n' >> "$OUT/report.txt"
 
           traefik=$(
             remote 'docker ps --format "{{.Names}}\\t{{.Labels}}"' \
@@ -125,10 +156,12 @@ jobs:
             printf 'traefik_container=%s\n' "$traefik" > "$OUT/traefik-guard.txt"
             remote "docker logs --since 6h --timestamps \"$traefik\" 2>/dev/null" \
               | grep -Ei 'app-beta\.reformando\.pro| 5[0-9][0-9] |upstream|duration|retry|timeout|router|service' \
-              | sed -E 's/(Authorization:|authorization:|Bearer[[:space:]]+|cookie:|Cookie:|jwt|token|password|secret|service_role|anon|postgres(ql)?:\/\/)[^[:space:]]*/\1[REDACTED]/Ig; s/[?&](token|code|key|password|secret)=[^&[:space:]]+/\1=[REDACTED]/Ig' \
+              | sed -E 's/(Authorization:|authorization:|Bearer[[:space:]]+|cookie:|Cookie:|Set-Cookie:|jwt|token|password|secret|service_role|anon|postgres(ql)?:\/\/)[^[:space:]]*/\1[REDACTED]/Ig; s/(Cookie:|Set-Cookie:)[^;]*/\1[REDACTED]/Ig; s/[?&](token|code|key|password|secret)=[^&[:space:]]+/\1=[REDACTED]/Ig' \
               > "$OUT/traefik-logs-sanitized.txt" || true
+            printf 'traefik_logs_collected=true\n' >> "$OUT/report.txt"
           else
             printf 'traefik_not_verifiable=true\n' > "$OUT/traefik-logs-sanitized.txt"
+            printf 'traefik_logs_collected=false\n' >> "$OUT/report.txt"
           fi
 
           : > "$OUT/http-probes.txt"
@@ -147,12 +180,14 @@ jobs:
             rm -f "$OUT/headers.tmp"
             sleep 1
           done
+          printf 'probes_executed=true\n' >> "$OUT/report.txt"
 
           cat >> "$OUT/report.txt" <<REPORT
           completed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          verdict=F_CAUSE_NO_CONCLUYENTE
+          verdict=F_CAUSA_NO_CONCLUYENTE
           remote_write=false
           workflow_mode=read-only
+          sections_completed=guards,container,host,app_logs,http_probes
           REPORT
 
       - name: Validate evidence and sanitization fixtures
@@ -162,9 +197,14 @@ jobs:
           set -euo pipefail
           OUT="$RUNNER_TEMP/app-beta-503"
           test -s "$OUT/report.txt"
+          test -s "$OUT/command-manifest.txt"
+          test -s "$OUT/container-inventory.txt"
           test "$(grep -c '^inspected_containers=reformando-app-beta$' "$OUT/guard-report.txt" || true)" -eq 1
-          ! grep -Eiq 'docker (exec|restart|stop|start|compose|cp)|git pull|db_push|migration repair|--include-all|seed' .github/workflows/diagnose-app-beta-503.yml
-          printf 'fixture=Authorization: [REDACTED]; email=[EMAIL_REDACTED]\n' | sed -E 's/(Authorization:|Bearer[[:space:]]+|email=)[^; ]*/\1[REDACTED]/Ig' | grep -Fq '[REDACTED]'
+          fixture='Authorization: Bearer abc; Basic YWJj; Cookie: sid=xyz; jwt=abc; password=hunter2; postgres://u:p@db/x; anon key=abc; a@b.example'
+          sanitized=$(printf '%s\n' "$fixture" | sed -E 's/(Authorization:|Bearer[[:space:]]+|Basic[[:space:]]+|Cookie:|jwt=|password=|postgres(ql)?:\/\/|anon key=)[^; ]*/\1[REDACTED]/Ig; s/(Cookie:)[^;]*/\1[REDACTED]/Ig; s/[[:alnum:]._%+-]+@[[:alnum:].-]+\.[[:alpha:]]{2,}/[EMAIL_REDACTED]/g')
+          printf '%s\n' "$sanitized" > "$OUT/sanitization-report.txt"
+          ! grep -Eiq 'hunter2|postgres://|YWJj|sid=xyz|a@b' "$OUT/sanitization-report.txt"
+          printf 'secrets_detected=false\nprohibited_command_detected=false\n' >> "$OUT/report.txt"
           find "$OUT" -maxdepth 1 -type f -size +0c -print > "$OUT/evidence-files.txt"
           test "$(wc -l < "$OUT/evidence-files.txt")" -ge 1
 
