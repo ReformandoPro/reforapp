@@ -195,6 +195,65 @@ jobs:
                               'org_is_empty_for_bootstrap', 'is_client_in_org')
           ORDER BY p.proname, pg_get_function_identity_arguments(p.oid);
 
+          SELECT '## B18 helper function definitions and privileges';
+          SELECT n.nspname AS schema_name,
+                 p.proname AS function_name,
+                 pg_get_function_identity_arguments(p.oid) AS identity_arguments,
+                 pg_get_userbyid(p.proowner) AS owner,
+                 p.prosecdef,
+                 p.proconfig,
+                 pg_get_functiondef(p.oid) AS function_definition,
+                 has_function_privilege('public', p.oid, 'EXECUTE') AS public_execute,
+                 has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_execute,
+                 has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_execute
+          FROM pg_catalog.pg_proc p
+          JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname = 'public'
+            AND (p.proname, pg_get_function_identity_arguments(p.oid)) IN (
+              ('is_org_member', 'org_id uuid'),
+              ('is_org_admin', 'org_id uuid'),
+              ('org_has_any_membership', 'org_id uuid'),
+              ('is_client_in_org', 'client_id uuid, org_id uuid'),
+              ('org_is_empty_for_bootstrap', 'org_id uuid')
+            )
+          ORDER BY p.proname, pg_get_function_identity_arguments(p.oid);
+
+          SELECT '## PostgreSQL version';
+          SELECT version();
+
+          SELECT '## Complete RLS state';
+          SELECT n.nspname AS schemaname,
+                 c.relname AS tablename,
+                 c.relrowsecurity AS rowsecurity,
+                 c.relforcerowsecurity AS forcerowsecurity
+          FROM pg_catalog.pg_class c
+          JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public'
+            AND c.relkind IN ('r', 'p')
+            AND c.relname IN (
+              'memberships',
+              'projects',
+              'project_phases',
+              'project_tasks',
+              'project_task_issues'
+            )
+          ORDER BY c.relname;
+
+          SELECT '## Public table default ACLs';
+          SELECT n.nspname AS schema_name,
+                 pg_get_userbyid(d.defaclrole) AS grantor,
+                 grantee.rolname AS grantee,
+                 acl.privilege_type,
+                 acl.is_grantable
+          FROM pg_catalog.pg_default_acl d
+          JOIN pg_catalog.pg_namespace n ON n.oid = d.defaclnamespace
+          CROSS JOIN LATERAL aclexplode(d.defaclacl) AS acl
+          JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
+          WHERE n.nspname = 'public'
+            AND d.defaclobjtype = 'r'
+            AND grantee.rolname IN ('anon', 'authenticated', 'service_role')
+          ORDER BY grantor, grantee, acl.privilege_type;
+
           SELECT '## Baselines';
           SELECT to_regclass('public.b18_grant_baseline') IS NOT NULL AS b18_baseline_present \gset
           \if :b18_baseline_present
