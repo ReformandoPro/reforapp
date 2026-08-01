@@ -13,6 +13,7 @@ on:
           - db_push
           - seed
           - verify
+          - diagnose_migration_history
       confirm_project_ref:
         description: 'Must equal hafljwojvblyfljddjcr (staging project ref)'
         type: string
@@ -89,6 +90,134 @@ jobs:
           set +x
           npm i -g supabase@2
           supabase --version
+
+      - name: Diagnose migration history (read-only)
+        if: ${{ inputs.mode == 'diagnose_migration_history' }}
+        shell: bash
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set -Eeuo pipefail
+          set +x
+
+          if [ -z "${SUPABASE_STAGING_DB_URL:-}" ]; then
+            echo "ERROR: Missing secret SUPABASE_STAGING_DB_URL" >&2
+            exit 1
+          fi
+
+          REPORT="$RUNNER_TEMP/supabase-migration-history-diagnostic.txt"
+          export PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=30000 -c lock_timeout=5000'
+
+          psql_ro() {
+            psql --dbname "$SUPABASE_STAGING_DB_URL" \
+              --no-psqlrc --no-align --tuples-only --quiet \
+              --set=ON_ERROR_STOP=1 "$@"
+          }
+
+          mode="$(psql_ro --command='show transaction_read_only;' | tr -d '[:space:]')"
+          if [ "$mode" != "on" ]; then
+            echo "ERROR: transaction_read_only=$mode" >&2
+            exit 1
+          fi
+
+          {
+            echo "# Supabase migration history diagnostic"
+            echo "transaction_read_only=$mode"
+            echo "## Migration history"
+            psql_ro --command="select version from supabase_migrations.schema_migrations order by version;"
+            echo "## Target migration presence"
+            psql_ro --command="
+              select v.version,
+                exists (select 1 from supabase_migrations.schema_migrations h where h.version = v.version) as present
+              from (values ('20260706100000'), ('20260728090000'), ('20260728090100'), ('20260801100000')) v(version)
+              order by v.version;
+            "
+            echo "## project_task_issues columns"
+            psql_ro --command="
+              select column_name, data_type, udt_name, is_nullable, column_default
+              from information_schema.columns
+              where table_schema = 'public' and table_name = 'project_task_issues'
+              order by ordinal_position;
+            "
+            echo "## project_task_issues constraints and indexes"
+            psql_ro --command="
+              select tc.constraint_name, tc.constraint_type, kcu.column_name,
+                     ccu.table_name as foreign_table, ccu.column_name as foreign_column
+              from information_schema.table_constraints tc
+              left join information_schema.key_column_usage kcu
+                on kcu.constraint_schema = tc.constraint_schema
+               and kcu.constraint_name = tc.constraint_name
+               and kcu.table_name = tc.table_name
+              left join information_schema.constraint_column_usage ccu
+                on ccu.constraint_schema = tc.constraint_schema
+               and ccu.constraint_name = tc.constraint_name
+              where tc.table_schema = 'public' and tc.table_name = 'project_task_issues'
+              order by tc.constraint_name, kcu.ordinal_position;
+            "
+            psql_ro --command="
+              select indexname, indexdef from pg_indexes
+              where schemaname = 'public' and tablename = 'project_task_issues'
+              order by indexname;
+            "
+            echo "## RLS and policies"
+            psql_ro --command="
+              select schemaname, tablename, rowsecurity, forcerowsecurity
+              from pg_tables
+              where schemaname = 'public'
+                and tablename in ('project_task_issues', 'memberships', 'project_tasks');
+            "
+            psql_ro --command="
+              select schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+              from pg_policies
+              where schemaname = 'public'
+                and tablename in ('project_task_issues', 'memberships', 'project_tasks')
+              order by tablename, policyname;
+            "
+            echo "## DML grants"
+            psql_ro --command="
+              select table_name, grantee, privilege_type, is_grantable
+              from information_schema.role_table_grants
+              where table_schema = 'public'
+                and table_name in ('memberships', 'projects', 'project_tasks', 'project_phases', 'project_task_issues')
+                and grantee in ('public', 'anon', 'authenticated', 'service_role')
+              order by table_name, grantee, privilege_type;
+            "
+            echo "## B18 helper functions"
+            psql_ro --command="
+              select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid),
+                     pg_get_userbyid(p.proowner), p.prosecdef, p.proconfig,
+                     has_function_privilege('public', p.oid, 'EXECUTE'),
+                     has_function_privilege('anon', p.oid, 'EXECUTE'),
+                     has_function_privilege('authenticated', p.oid, 'EXECUTE')
+              from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public'
+                and p.proname in ('is_org_member', 'is_org_admin', 'org_has_any_membership',
+                                  'org_is_empty_for_bootstrap', 'is_client_in_org')
+              order by p.proname, pg_get_function_identity_arguments(p.oid);
+            "
+            echo "## Baselines"
+            psql_ro --command="select privilege_key, had_privilege from public.b18_grant_baseline order by privilege_key;" 2>/dev/null || echo "b18_grant_baseline=absent_or_inaccessible"
+            psql_ro --command="select privilege_key, had_privilege from public.authenticated_operational_grant_baseline order by privilege_key;" 2>/dev/null || echo "authenticated_operational_grant_baseline=absent_or_inaccessible"
+            echo "## Operational baseline object"
+            psql_ro --command="
+              select n.nspname, c.relname, c.relkind
+              from pg_class c join pg_namespace n on n.oid = c.relnamespace
+              where n.nspname = 'public' and c.relname = 'authenticated_operational_grant_baseline';
+            "
+          } > "$REPORT"
+
+          sed -E 's#(postgres(ql)?://)[^@[:space:]]+@#\1[REDACTED]@#g' "$REPORT" > "$REPORT.sanitized"
+          mv "$REPORT.sanitized" "$REPORT"
+          test -s "$REPORT"
+
+      - name: Upload migration diagnostic artifact
+        if: ${{ inputs.mode == 'diagnose_migration_history' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-migration-history-diagnostic
+          path: ${{ runner.temp }}/supabase-migration-history-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 7
 
       # -----------------------
       # backup_only
