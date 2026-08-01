@@ -268,6 +268,39 @@ jobs:
           set -Eeuo pipefail
           test "${{ inputs.mode }}" = "diagnose_service_role"
 
+      - name: Validate metadata sanitizer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sanitize_metadata() {
+            awk '
+              {
+                line = $0
+                if (line ~ /public\./) {
+                  sub(/^.*public\./, "public.", line)
+                  sub(/[^[:alnum:]_.].*$/, "", line)
+                  print line
+                } else if (line ~ /\.from\(/) {
+                  sub(/^.*\.from\(/, "", line)
+                  gsub(/[[:space:]]/, "", line)
+                  gsub(/"/, "", line)
+                  gsub(/\047/, "", line)
+                  sub(/[^[:alnum:]_].*$/, "", line)
+                  if (line != "") print line
+                }
+              }
+            '
+          }
+          cases=$'plain text\nPASSWORD=abc\nTOKEN=abc\npostgresql://user:pass@host/db\n/path/with (parentheses)\n/path/with spaces\nno matches here'
+          result="$(printf '%s\n' "$cases" | sanitize_metadata)"
+          test -z "$result"
+          report_sample=$'plain text\nPASSWORD=abc\nTOKEN=abc\npostgresql://user:pass@host/db\n/path/with (parentheses)\n/path/with spaces\nno matches here'
+          sanitized="$(printf '%s\n' "$report_sample" | sed -E 's#(postgres(ql)?://)[^@[:space:]]+@#\1[REDACTED]@#g; s/(key|token|password|secret|authorization)=?[^[:space:]]+/\1=[REDACTED]/gi')"
+          ! grep -qE 'abc|user:pass' <<< "$sanitized"
+          grep -Fq '/path/with (parentheses)' <<< "$sanitized"
+          grep -Fq '/path/with spaces' <<< "$sanitized"
+          printf '%s\n' 'metadata_sanitizer_cases=PASS'
+
       - name: Configure read-only SSH
         shell: bash
         env:
@@ -375,7 +408,23 @@ jobs:
               exit "$grep_status"
             fi
             [ -n "$matches" ] && printf '%s\n' "$matches"
-          done <<< "$SEARCH_ROOTS" | sed -E 's/.*(from|into|update|delete[[:space:]]+from)[[:space:]]+//; s/.*\\.from\\([[:space:]]*["'"'"']//; s/[^a-z0-9_].*$//' | sort -u | sed -n '1,200p'
+          done <<< "$SEARCH_ROOTS" | awk '
+            {
+              line = $0
+              if (line ~ /public\./) {
+                sub(/^.*public\./, "public.", line)
+                sub(/[^[:alnum:]_.].*$/, "", line)
+                print line
+              } else if (line ~ /\.from\(/) {
+                sub(/^.*\.from\(/, "", line)
+                gsub(/[[:space:]]/, "", line)
+                gsub(/"/, "", line)
+                gsub(/\047/, "", line)
+                sub(/[^[:alnum:]_].*$/, "", line)
+                if (line != "") print line
+              }
+            }
+          ' | sort -u | sed -n '1,200p'
 
           echo '## Cron and systemd references (paths only)'
           mapfile -t operational_files < <(find /etc/cron* /var/spool/cron /etc/systemd/system /usr/lib/systemd/system \
