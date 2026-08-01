@@ -14,6 +14,11 @@ on:
         description: 'Must equal hafljwojvblyfljddjcr'
         required: true
         type: string
+      confirm_apply:
+        description: 'Confirmación adicional para apply_r1'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -49,6 +54,21 @@ jobs:
           test "$GITHUB_SHA" = "$APPROVED_SHA"
           test "$INPUT_PROJECT_REF" = "$PROJECT_REF"
           case "$INPUT_MODE" in plan_r1|apply_r1) ;; *) exit 1 ;; esac
+
+      - name: Guard apply confirmation before credentials
+        env:
+          INPUT_MODE: ${{ inputs.mode }}
+          INPUT_CONFIRM_APPLY: ${{ inputs.confirm_apply }}
+          INPUT_PROJECT_REF: ${{ inputs.confirm_project_ref }}
+        run: |
+          set -euo pipefail
+          test "$INPUT_PROJECT_REF" = "hafljwojvblyfljddjcr"
+          if [ "$INPUT_MODE" = "apply_r1" ]; then
+            if [ "$INPUT_CONFIRM_APPLY" != "APPLY_R1_ONLY" ]; then
+              echo "ERROR: apply_r1 requires confirm_apply=APPLY_R1_ONLY" >&2
+              exit 1
+            fi
+          fi
 
       - name: Install Supabase CLI
         run: |
