@@ -15,13 +15,17 @@ do $$
 declare
   v_roles text[] := array['public', 'anon', 'authenticated', 'service_role'];
   v_privileges text[] := array[
-    'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'
+    'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'
   ];
+  v_maintain_supported boolean := current_setting('server_version_num')::integer >= 170000;
   v_row record;
   v_expected public.r1_integrity;
   v_grantee_sql text;
   v_mismatch text;
 begin
+  if v_maintain_supported then
+    v_privileges := array_append(v_privileges, 'MAINTAIN');
+  end if;
   if to_regclass('public.r1_integrity') is null
      or to_regclass('public.r1_table_manifest') is null
      or to_regclass('public.r1_acl_baseline') is null

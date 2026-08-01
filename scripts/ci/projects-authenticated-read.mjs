@@ -147,14 +147,22 @@ if (mode.has("--authenticated")) {
 if (mode.has("--anonymous")) {
   const anonymous = createClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data, error } = await anonymous.from("projects").select("id");
-  if (error) throw new Error(`Anonymous read returned unexpected error: ${error.code ?? "unknown"}`);
-  if (!Array.isArray(data)) throw new Error("Anonymous read did not return an array");
-  if (data.length !== 0) throw new Error(`Anonymous user received ${data.length} project row(s)`);
-  log("anonymous: no project access passed");
+  if (error) {
+    if (error.code !== "42501") throw new Error(`Anonymous read returned unexpected error: ${error.code ?? "unknown"}`);
+    log("anonymous: no project access passed denial_layer=acl code=42501");
+  } else {
+    if (!Array.isArray(data)) throw new Error("Anonymous read did not return an array");
+    if (data.length !== 0) throw new Error(`Anonymous user received ${data.length} project row(s)`);
+    log("anonymous: no project access passed denial_layer=rls rows=0");
+  }
   const { data: taskData, error: taskError } = await anonymous.from("project_tasks").select("id");
-  if (taskError) throw new Error(`Anonymous task read returned unexpected error: ${taskError.code ?? "unknown"}`);
-  if (!Array.isArray(taskData)) throw new Error("Anonymous task read did not return an array");
-  if (taskData.length !== 0) throw new Error(`Anonymous user received ${taskData.length} project task row(s)`);
-  log("anonymous: no project task access passed");
+  if (taskError) {
+    if (taskError.code !== "42501") throw new Error(`Anonymous task read returned unexpected error: ${taskError.code ?? "unknown"}`);
+    log("anonymous: no project task access passed denial_layer=acl code=42501");
+  } else {
+    if (!Array.isArray(taskData)) throw new Error("Anonymous task read did not return an array");
+    if (taskData.length !== 0) throw new Error(`Anonymous user received ${taskData.length} project task row(s)`);
+    log("anonymous: no project task access passed denial_layer=rls rows=0");
+  }
 }
 if (mode.has("--isolation")) log("isolation: sequential clients use independent sessions");

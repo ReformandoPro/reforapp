@@ -16,7 +16,7 @@ const SERVICE_TABLES = ["organizations", "memberships", "clients", "projects", "
 const SERVICE_PRIVILEGES = ["SELECT", "INSERT", "UPDATE", "DELETE"];
 // R1 deliberately preserves authenticated DML (see the migration header), so the
 // authenticated contract is expressed as an invariant rather than an exact set.
-const AUTHENTICATED_FORBIDDEN = ["TRUNCATE", "MAINTAIN"];
+const AUTHENTICATED_FORBIDDEN = ["TRUNCATE"];
 const CLIENT_ROLES_WITHOUT_ACCESS = ["PUBLIC", "anon"];
 const AUDITED_ROLES = ["PUBLIC", "anon", "authenticated", "service_role"];
 
@@ -47,6 +47,8 @@ function psql(sql) {
   if (result.status !== 0) throw new Error(`psql harness failed: ${safe(result.stderr)}`);
   return result.stdout.trim().split("\n").filter(Boolean);
 }
+const maintainSupported = Number(psql("select current_setting('server_version_num')")[0]) >= 170000;
+if (maintainSupported) AUTHENTICATED_FORBIDDEN.push("MAINTAIN");
 
 function manifestTables() {
   const rows = psql(`
@@ -86,6 +88,7 @@ function aclRows() {
       and c.relname not like 'r1\\_%'
       and (case when a.grantee = 0 then 'PUBLIC' else pg_catalog.pg_get_userbyid(a.grantee) end)
           = any (array['PUBLIC','anon','authenticated','service_role'])
+      and (a.privilege_type <> 'MAINTAIN' or current_setting('server_version_num')::integer >= 170000)
     order by 1`);
 }
 
@@ -133,6 +136,7 @@ function assertPrivilegeContract() {
 async function main() {
   if (mode.has("--privileges")) {
     const summary = assertPrivilegeContract();
+    console.log(`maintain_supported=${maintainSupported}`);
     console.log(`privileges: exact ACL contract holds over ${summary.tables} tables and ${summary.audited} roles (${summary.rows} grants)`);
   }
 

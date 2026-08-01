@@ -77,8 +77,9 @@ do $$
 declare
   v_roles text[] := array['public', 'anon', 'authenticated', 'service_role'];
   v_privileges text[] := array[
-    'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'
+    'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'
   ];
+  v_maintain_supported boolean := current_setting('server_version_num')::integer >= 170000;
   -- Own bookkeeping tables are never targets.
   v_self text[] := array[
     'r1_table_manifest', 'r1_acl_baseline', 'r1_rls_baseline',
@@ -101,6 +102,10 @@ declare
   v_owner text;
   v_grantor text;
 begin
+  if v_maintain_supported then
+    v_privileges := array_append(v_privileges, 'MAINTAIN');
+  end if;
+  raise notice 'maintain_supported=%', v_maintain_supported;
   -- 1. Manifest: every existing table of the public schema, discovered from the
   -- catalog rather than hardcoded, so no exposed table can be omitted.
   insert into public.r1_table_manifest (table_name)
