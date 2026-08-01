@@ -1,10 +1,17 @@
-# ACP/1 — Agent Coordination Protocol
+# ACP/1.1 — Agent Coordination Protocol
+
+> ### Estado: **candidata a enmienda normativa (ACP-1.1)**
+>
+> Este documento es ACP-1 revisado para incorporar veintitrés enmiendas (**A1–A23**) surgidas de implementar el schema ejecutable y de las revisiones de arquitectura. **No está aprobado.** La resolución razonada de cada enmienda —con `ACCEPT` / `MODIFY` / `REJECT` / `DEFER`— está en [`decisions/ACP-1.1-amendments.md`](decisions/ACP-1.1-amendments.md); los cambios visibles, en [`CHANGELOG.md`](CHANGELOG.md).
+>
+> **Once enmiendas son breaking.** El schema V2 publicado en `feat/acp-envelope-schema@9d073e3` **no** implementa esta versión: implementa una propuesta anterior con la que ACP-1.1 discrepa en ocho puntos (§0.5). Reconciliarlos exige un schema V3, que **no** forma parte de esta entrega.
 
 **Un protocolo de coordinación para equipos mixtos humano–IA que usan un forge (GitHub) como único source of truth.**
 
 | | |
 |---|---|
-| Versión | `1.0.0-draft` |
+| Versión | `1.1.0-draft` (candidata) |
+| Sustituye a | `1.0.0-draft` en `feat/acp-1-protocol@0b714a9a` |
 | Estado | Borrador de diseño **publicado para revisión comparativa**. No implementado, no adoptado |
 | Capa semántica | ACP/1 Core (independiente de plataforma) |
 | Binding definido aquí | `github` |
@@ -42,7 +49,7 @@ Cuatro cosas que **no** ocurren al publicar esto:
 13. [Los seis registros: decisiones, riesgos, deuda, bloqueos, autorizaciones, evidencias](#13)
 14. [Binding GitHub: mapeo concreto](#14)
 15. [Auditoría, violaciones y reconciliación](#15)
-16. [Versionado y evolución del protocolo](#16)
+16. [Versionado, compatibilidad y tiempo](#16)
 17. [Autocrítica: tres iteraciones y qué rompí](#17)
 18. [Debilidades que siguen abiertas](#18)
 19. [Adopción: de cero a ACP-2 en una semana](#19)
@@ -89,6 +96,25 @@ Un estándar que solo funciona completo no se adopta. ACP define cuatro niveles 
 | **ACP-3 · Governance** | Gates, autorizaciones con caducidad, quorum de revisión, reconciliación periódica. | +1 pasada/semana | Coordinación sin humano en el bucle |
 
 > **Recomendación para el equipo actual (5 agentes, 1 programa): empezar en ACP-1, subir a ACP-2 en la segunda semana, ACP-3 solo cuando haya >10 items simultáneos.** Ver §19.
+
+---
+
+### 0.5 Discrepancias abiertas con el schema V2
+
+El schema ejecutable de `feat/acp-envelope-schema@9d073e3c` se escribió **antes** que esta revisión. ACP-1.1 se aparta de él en ocho puntos, todos deliberados y argumentados en el fichero de decisiones. Se listan aquí para que nadie asuma conformidad:
+
+| # | Schema V2 | ACP-1.1 | Enmienda |
+|---|---|---|---|
+| 1 | `v` entero `1` | cadena `"1.1"` (mayor.menor) | A20 |
+| 2 | `after` acepta entero pelado | solo forma namespaced `binding-clase:id` | A21 |
+| 3 | extensiones `x-*` en la raíz | contenedor único `extensions` | A14-mod |
+| 4 | `item` opcional en 6 tipos | exactamente uno de `item` o `program` | A17 |
+| 5 | raíz permitida en 6 tipos | solo `spec`, `reconcile`, `decide` de programa | A11-mod |
+| 6 | `unverified` con `minItems: 1` | `[]` admisible como «ninguna declarada» | A19 |
+| 7 | `heartbeat`/`release` sin referencia al claim | ambos exigen `claim` | A18 |
+| 8 | sin `on_behalf_of` | delegación explícita | A22 |
+
+**Hasta que exista un schema V3, ningún fixture de V2 debe tomarse como prueba de conformidad con ACP-1.1.**
 
 ---
 
@@ -235,9 +261,9 @@ acp:<program>/<kind>/<id>[@<version>]
 | Ejemplo | Significa |
 |---|---|
 | `acp:reforapp/item/RF-142` | WorkItem RF-142 |
-| `acp:reforapp/item/RF-142@2451889301` | Estado de RF-142 tal como estaba tras el evento 2451889301 |
+| `acp:reforapp/item/RF-142@github-comment:2451889301` | Estado de RF-142 tal como estaba tras el evento github-comment:2451889301 |
 | `acp:reforapp/decision/ACD-0007@2` | Versión 2 de la decisión ACD-0007 |
-| `acp:reforapp/event/2451889301` | Un evento concreto |
+| `acp:reforapp/event/github-comment:2451889301` | Un evento concreto |
 | `acp:reforapp/evidence/sha256:9f2a...` | Una evidencia por contenido |
 | `acp:reforapp/risk/RSK-014` | Un riesgo |
 
@@ -247,7 +273,7 @@ Regla: **una URN nunca se reutiliza ni se recicla.** Los items cancelados no lib
 
 | Tipo | Prefijo | Asignador |
 |---|---|---|
-| WorkItem | `<PROG>-<n>` (`RF-142`) | Número de issue de GitHub. Cero ambigüedad, cero contadores propios |
+| WorkItem | token opaco del perfil; en Reformando `<PROG>-<n>` = `RF-142` | Número de issue de la plataforma. Cero ambigüedad, cero contadores propios |
 | Initiative | `<PROG>-I<n>` | Número de issue padre |
 | Decision | `ACD-<nnnn>` | Siguiente libre en `decisions/` (colisión detectable en el PR) |
 | Risk | `RSK-<nnn>` | Número de issue en el registro |
@@ -257,7 +283,17 @@ Regla: **una URN nunca se reutiliza ni se recicla.** Los items cancelados no lib
 
 Nadie inventa identificadores secuenciales de memoria (invariante **I4**). Los LLM son malos contadores; GitHub es bueno.
 
-**Espacio de nombres reservado.** Para el programa `reforapp`, `<PROG>` es `RF` (`RF-142` = work item del issue #142). Los identificadores `R1`, `R2`, `R2.1` y cualquier otro de la forma `R<dígito>` pertenecen al **roadmap de producto** y no son direccionables como work items ACP. Un evento que use un ID de producto como `item:` es no conforme (`violation:reserved-id`): el roadmap y el protocolo cuentan cosas distintas y confundirlos rompe la trazabilidad de ambos. La relación correcta entre ambos espacios es `initiative` (§3.1 E2), no el reciclaje de identificadores.
+**Norma ACP-1.1 (A12): la política de identificadores no vive en Core.**
+
+**Core** exige únicamente que un identificador de work item sea un token **estable, portable y opaco**: no vacío, de 1 a 64 caracteres imprimibles ASCII, sin espacios ni caracteres de control, y que **nunca se reutiliza**. Core no impone prefijo, ni forma, ni longitud mínima significativa. Un identificador es una etiqueta, no una descripción.
+
+**El perfil** posee toda la política y **debe** declararla: `ids.work_item_prefix`, `ids.work_item_pattern` (expresión regular), `ids.reserved`, y los prefijos de decisión, riesgo y deuda.
+
+`RF-<n>` es del **perfil Reformando**, no del protocolo. Ningún documento Core menciona `RF-`.
+
+**Identificadores históricos reservados.** `R1`, `R2` y `R2.1` son nombres del **roadmap de producto**, anteriores a ACP y ajenos a él. No son work items ACP, no son direccionables como `acp:…/item/…` y no pueden aparecer como `item:` de ningún evento. Se declaran en `ids.reserved` del perfil.
+
+**Coste que hay que aceptar y no disimular:** al sacar el patrón de Core, **el formato por sí solo ya no puede rechazar `R2.1` como `item`**. Esa comprobación pasa a ser una segunda pasada contra el perfil activo. Es el precio de no meter la nomenclatura de una organización dentro de un protocolo universal, y es el precio correcto; pero es un cheque que antes cobraba el validador y ahora cobra el perfil, y si nadie construye esa pasada, nadie lo cobra.
 
 ### 4.3 Program
 
@@ -335,7 +371,8 @@ silence:                        # §13.6
   require_default: true
   default_expires: 24h
   on_expiry: apply_default
-  never_default: ["authorize", "approve:release"]
+  never_default: ["authorize", "approve"]
+  never_default_actions: ["deploy", "merge", "migrate", "release", "remote-write", "delete-data"]
 
 limits:
   context_budget: {total_tokens: 5000, log_tokens: 2000, resume_tokens: 500}
@@ -364,30 +401,37 @@ Cada evento es un comentario con **dos partes**: un bloque de máquina y prosa h
 
 ````markdown
 ```acp
-v: 1
+v: "1.1"
 type: submit
 item: RF-142
 actor: claude
 role: engineer
-after: 2451889301
+after: "github-comment:2451889301"
 basis:
-  repo: ReformandoPro/reforapp
+  repo: {system: git, id: "https://github.com/ReformandoPro/reforapp.git"}
   ref: feat/RF-142-rls-grants
-  sha: 9011dd3f1c
-  base: main@a71c0e94
+  sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b
+  base: {ref: main, sha: a71c0e94f1e2d3c4b5a6978869504132abcdef01}
+  scope: ["db/migrations/**", "src/security/rls/**"]
+  environment: "python3.12 / postgres:16.2"
 touches:
   - db/migrations/**
   - src/security/rls/**
 evidence:
-  - id: sha256:9f2ab41c
+  - id: sha256:791adeb5e2e173d6cf2bdc532f8f08658c33fc5968c268773e330fca6033fa27
     cmd: "pytest tests/rls -q"
+    env: "python3.12 / postgres:16.2"
     result: pass
-  - id: sha256:41de88a0
+  - id: sha256:c50979e205a5aef2b1b2b73169c9986d957e8c1cb77f583175f32b84824ff217
     cmd: "psql -f audit/default_acl.sql"
+    env: "postgres:16.2"
     result: "0 rows"
 unverified:
   - "Comportamiento con >1M filas en policy_check (no probado)"
   - "Rollback de la migración 0042 (no ejecutado)"
+delivery: {kind: pull-request, id: 141}
+extensions:
+  x-github-pr: 141
 next: review
 ```
 
@@ -399,38 +443,123 @@ porque **no** lo he resuelto aquí, solo aislado.
 
 **Por qué YAML dentro de una valla de código:** renderiza limpio en GitHub, se parsea con una línea de código cuando llegue L3, sobrevive al copy-paste humano y no obliga a nadie a escribir JSON a mano. El tag `acp` es el discriminador: un comentario sin bloque ` ```acp ` es **conversación**, no evento, y no tiene efecto en el protocolo. Esa distinción es importante: deja espacio para que los humanos hablen sin ensuciar el log.
 
-### 5.3 Tipos de evento
+#### 5.2.1 Miembros comunes (normativo, ACP-1.1)
 
-Veinte tipos. Cerrado, extensible solo por versión de protocolo (§16).
+| Miembro | Obligatoriedad | Quién lo produce |
+|---|---|---|
+| `v` | siempre | autor. Cadena `"mayor.menor"` (§16) |
+| `type` | siempre | autor |
+| `actor` | **siempre** (A10) | autor. Identidad **declarada**, no probada (§8.6) |
+| `item` | si el evento es de item | autor |
+| `program` | si el evento es de programa | autor |
+| `after` | siempre salvo raíz (A11) | **la plataforma** lo asignó; el autor lo *copia* |
+| `root` | solo en eventos raíz | autor |
+| `role` | opcional | autor |
+| `on_behalf_of` | opcional | autor (§8.6) |
+| `extensions` | opcional | autor |
 
-| Tipo | Emite | Efecto | Campos obligatorios extra |
+**Exactamente uno de `item` o `program`.** Todo evento declara de qué habla. Un evento sin sujeto no se puede encolar, proyectar ni auditar, y hasta ACP-1 permitía que `authorize`, `decide`, `reconcile`, `answer`, `revoke` y `violation` flotaran sin él. Los eventos de programa llevan `program: <id>`; los demás, `item`. Declarar ambos, o ninguno, es `violation:unscoped-event`.
+
+#### 5.2.2 Forma plana: decisión normativa (A23)
+
+ACP-1.1 **adopta la forma plana** y rechaza la forma `metadata + payload`. La comparación completa está en [`decisions/ACP-1.1-amendments.md`](decisions/ACP-1.1-amendments.md) §A23. Resumen de la razón decisiva: el aislamiento de campos por tipo —el argumento principal a favor de `payload`— ya lo consigue la forma plana mediante `unevaluatedProperties` en la implementación, y el formato de cable es YAML escrito a mano, donde cada nivel de indentación es un error esperando ocurrir. **No se afirma que la forma plana produzca menos errores de LLM: no se ha medido**, y el experimento que lo zanjaría está descrito en el fichero de decisiones.
+
+Consecuencia que la forma plana obliga a asumir: **los nombres de campo son un espacio de nombres único y global.** Política de colisión, normativa:
+
+1. Un nombre de campo tiene **un solo significado** en todo el protocolo. `basis` significa lo mismo en `review` que en `submit`.
+2. Un tipo de evento nuevo **no puede reutilizar** un nombre existente con otra semántica. Si necesita otro significado, necesita otro nombre.
+3. Añadir un campo Core a un tipo existente es un cambio **menor**; añadirlo como obligatorio es **mayor** (§16).
+4. Los campos de binding y de programa **nunca** entran en el espacio global: van en `extensions` (§5.2.3).
+
+#### 5.2.3 Extensiones (A14, modificada)
+
+Las extensiones viven en **un único contenedor** `extensions`, no dispersas en la raíz:
+
+```yaml
+extensions:
+  x-github-pr: 141
+  x-reforapp-hito: "B"
+```
+
+Normativo:
+
+- **Gramática de clave:** `^x-[a-z0-9][a-z0-9-]*$`. `X-Foo`, `x-`, `x_foo` **no son extensiones** y hacen el evento no conforme.
+- **Dónde:** solo en `extensions`, en la raíz del envelope, y en la raíz del perfil. No dentro de objetos normativos anidados.
+- **Valor:** cualquier JSON. Obligar a que sea objeto no aporta nada y encarece el caso común (`x-github-pr: 141`).
+- **No pueden sustituir campos normativos.** Poner en `extensions` algo que el protocolo ya nombra es `violation:shadowed-field`. Al estar en un contenedor propio, la sustitución es visible en lugar de mimetizarse con la raíz.
+- **Lector tolerante:** *debe* preservar `extensions` que no entiende al reescribir o proyectar (§16.2).
+- **Escritor estricto:** *debe* validar la gramática antes de publicar.
+- **Colisiones:** el segmento inmediatamente posterior a `x-` es el espacio de nombres del propietario (`x-github-…`, `x-reforapp-…`). Dos propietarios distintos no comparten prefijo. No hay registro central; el prefijo es la disciplina.
+
+### 5.3 Catálogo de eventos (normativo y cerrado, ACP-1.1)
+
+**Veintisiete tipos.** El catálogo es **cerrado**: un tipo nuevo requiere una versión mayor de protocolo. Un perfil puede *restringir* qué tipos usa; **no puede añadir tipos** — lo específico de un programa va en `extensions` (§5.2.3). No existen «eventos de Profile».
+
+`answer` · `approve` · `assume` · `authorize` · `block` · `checkpoint` · `claim` · `close` · `debt` · `decide` · `handoff` · `heartbeat` · `progress` · `question` · `reconcile` · `release` · `revalidate` · `review` · `revoke` · `risk` · `spec` · `submit` · `supersede` · `triage` · `unblock` · `validate` · `violation`
+
+Digest del catálogo (lista ordenada, unida por comas, sin espacios):
+`sha256:046f7cadad317948c7a92a808bade47bbbdf61bdb467ce26a49891da730e0e91`
+
+**Alias prohibidos.** Usar cualquiera de estos hace el evento no conforme (`violation:alias-type`). Se listan porque todos han aparecido en documentos de trabajo:
+
+| Alias visto | Tipo normativo |
+|---|---|
+| `decision` | `decide` |
+| `validation` | `validate` |
+| `approval` | `approve` |
+| `authorization` | `authorize` |
+| `specify` (como tipo) | `spec` — `specify` era el nombre de la *capacidad*, ver §8.1 |
+| `blocked`, `unblocked` | `block`, `unblock` |
+| `comment`, `note`, `update`, `status` | ninguno: es conversación, no evento (§5.2) |
+
+**Solapamientos resueltos.** Cuatro pares se confunden con frecuencia; la distinción es normativa:
+
+| Par | Distinción |
+|---|---|
+| `review` vs `validate` | Juicio experto vs medición reproducible (§3.2). Es la frontera de automatización: toda `validate` es automatizable, ninguna `review` lo es |
+| `approve` vs `validate` | `validate` con `check: gate:<x>` **computa** el estado de un gate; `approve` **consiente** cruzarlo. Cálculo frente a autoridad. Un gate satisfecho por cómputo pero sin consentimiento no está cruzado |
+| `answer` vs `decide` | `answer` resuelve una pregunta concreta; `decide` publica una decisión con ámbito. **Norma:** si una respuesta fija política más allá del item, *debe* ir seguida de `decide`; si no, la decisión queda enterrada en un hilo |
+| `risk` vs `debt` vs `block` | `risk` = coste futuro incierto; `debt` = coste presente aceptado con condición de pago; `block` = impedimento actual con condición de desbloqueo verificable. Un riesgo materializado **no** se convierte en `block`: genera un work item con `caused_by` |
+
+**Paridad capacidad↔evento (A7, resuelta).** Los nombres de capacidad **son** los nombres de tipo de evento, más `veto`. No hay traducción, luego no puede haber divergencia. La antigua capacidad `specify` desaparece: se llama `spec`. La autoridad por gate deja de escribirse `approve:<gate>` y pasa a `roles.<rol>.approve_gates` en el perfil (§8.1).
+
+Campos obligatorios **además** de los comunes de §5.2.1 (`v`, `type`, `actor`, sujeto, y `after` salvo raíz):
+
+| Tipo | Grupo | Emite | Campos obligatorios extra |
 |---|---|---|---|
-| `spec` | coordinador, PO | Define/redefine el item | `accept`, `touches`, `size` |
-| `triage` | coordinador | Prioriza, encola, asigna initiative | `priority`, `initiative` |
-| `claim` | ejecutor | Toma lease exclusivo | `lease` |
-| `heartbeat` | ejecutor | Renueva lease, señala vida | `lease` |
-| `release` | ejecutor | Suelta lease voluntariamente | `reason` |
-| `progress` | ejecutor | Avance parcial (opcional pero recomendado) | `done`, `remaining` |
-| `handoff` | cualquiera | Pasa el trabajo con paquete de contexto | `to`, `resume` |
-| `submit` | ejecutor | Entrega para revisión | `basis`, `evidence`, `unverified` |
-| `review` | revisor | Veredicto experto | `verdict`, `basis`, `falsified`, `unverified` |
-| `validate` | cualquiera | Resultado de comprobación mecánica | `check`, `result`, `evidence` |
-| `approve` | rol con capacidad | Consiente cruzar un gate | `gate`, `basis`, `ttl` |
-| `authorize` | PO | Permite acción de efecto externo | `scope`, `limits`, `expires` |
-| `revoke` | emisor original, PO | Anula approve/authorize previo | `target`, `reason` |
-| `block` | cualquiera | Declara bloqueo | `on`, `unblock_when` |
-| `unblock` | quien bloqueó, coordinador | Levanta bloqueo | `target`, `how` |
-| `question` | cualquiera | Pregunta que requiere humano | `to`, `default_if_silent`, `expires` |
-| `answer` | destinatario | Responde | `target`, `answer` |
-| `assume` | cualquiera | Registra premisa no verificada | `premise`, `verify_by`, `risk_if_wrong` |
-| `decide` | coordinador, PO | Publica/actualiza decisión | `decision`, `version`, `scope` |
-| `checkpoint` | coordinador | Resume y trunca la necesidad de leer atrás | `covers`, `state`, `open` |
-| `reconcile` | coordinador | Corrige drift proyección↔log | `fixed` |
-| `violation` | cualquiera | Denuncia incumplimiento de protocolo | `rule`, `target` |
-| `supersede` | coordinador, PO | Este item queda sustituido por otro | `by`, `reason` |
-| `close` | PO, coordinador | Cierra: done / dropped / superseded | `resolution` |
+| `spec` | ciclo de vida | coordinador, PO | `accept`, `touches`, `size` |
+| `triage` | ciclo de vida | coordinador | `priority`, `initiative` |
+| `claim` | ciclo de vida | ejecutor | `lease`, `touches`, `intent` |
+| `heartbeat` | ciclo de vida | ejecutor | `claim`, `lease` |
+| `release` | ciclo de vida | ejecutor | `claim`, `reason` |
+| `progress` | ciclo de vida | ejecutor | `done`, `remaining` |
+| `handoff` | ciclo de vida | cualquiera | `to`, `resume`, `releases_lease` |
+| `submit` | ciclo de vida | ejecutor | `basis`, `touches`, `evidence`, `unverified` |
+| `supersede` | ciclo de vida | coordinador, PO | `by`, `reason` |
+| `close` | ciclo de vida | PO, coordinador | `resolution` |
+| `review` | aseguramiento | revisor | `basis`, `verdict`, `adversarial`, `unverified` |
+| `revalidate` | aseguramiento | autor de la afirmación original | `revalidates`, `old_basis`, `new_basis`, `scope_diff` |
+| `validate` | aseguramiento | cualquiera | `check`, `result`, `basis` |
+| `approve` | aseguramiento | rol con `approve_gates` | `gate`, `basis`, `ttl` |
+| `violation` | aseguramiento | cualquiera | `rule`, `target`, `severity`, `effect` |
+| `reconcile` | aseguramiento | coordinador | `fixed` |
+| `question` | autoridad | cualquiera | `to`, `question`, `options`, `default_if_silent`, `expires` |
+| `answer` | autoridad | destinatario | `target`, `answer` |
+| `assume` | autoridad | cualquiera | `premise`, `verify_by`, `risk_if_wrong` |
+| `authorize` | autoridad | PO | `target`, `scope`, `basis`, `limits`, `expires` |
+| `revoke` | autoridad | emisor original, PO | `target`, `reason` |
+| `decide` | autoridad | coordinador, PO | `decision`, `version`, `scope` |
+| `block` | coordinación | cualquiera | `on`, `kind`, `unblock_when`, `escalate_after`, `workaround` |
+| `unblock` | coordinación | quien bloqueó, coordinador | `target`, `how` |
+| `risk` | coordinación | cualquiera | objeto `risk` |
+| `debt` | coordinación | quien tiene `approve_gates` de alcance | objeto `debt` |
+| `checkpoint` | coordinación | coordinador | `covers`, `state`, `resume`, `open`, `gates` |
 
-> Son 24, no 20. Lo dejo así a propósito: la sección §17.2 explica cómo pasé de 31 tipos a 24 y por qué intentar bajar de ahí empeoró el diseño.
+Tres cambios respecto a ACP-1 que conviene no pasar por alto:
+
+- **`heartbeat` y `release` referencian su `claim`.** Sin ello, «renovar el lease» y «soltar el lease» son afirmaciones sobre un lease que no se nombra, y con dos claims en la historia del item nadie sabe cuál (A18).
+- **`review` exige `adversarial`.** Siendo opcional, bastaba omitirlo para esquivar `falsified`. Obligatorio, la evasión pasa a ser una afirmación falsa firmada que el perfil contradice.
+- **`debt` requiere autoridad de alcance.** Un ejecutor *propone* deuda en su `submit`; contraerla es un acto de autoridad (§13.3).
 
 ### 5.4 Causalidad: el campo `after`
 
@@ -455,6 +584,35 @@ flowchart LR
 
 Esto es un reloj de Lamport implementado con nada más que texto en comentarios. Es, creo, la pieza más barata y más valiosa del protocolo: **una línea por evento** y compra concurrencia detectable.
 
+#### 5.4.1 Modelo de raíz causal (normativo, A11)
+
+**Quién genera el puntero.** La **plataforma**, siempre. El autor lo *lee* y lo copia; nunca lo construye, lo deduce ni lo recuerda. Forma canónica: `"<binding>-<clase>:<id>"`, p. ej. `"github-comment:2451889301"`. Un entero pelado no es un puntero conforme: fuera de su plataforma no significa nada, y el log tiene que poder leerse desde fuera.
+
+**`after` es obligatorio salvo raíz.** Todo evento que muta el estado de un work item —`claim`, `submit`, `review`, `validate`, `approve`, `close` y los demás— **no puede omitirlo**. Omitirlo sin declarar raíz es `violation:orphan-event` con efecto `void`.
+
+**Una raíz se declara, no se deduce.** `root: true` es explícito. Bajo ACP el silencio nunca significa nada, y «sin `after`» sería indistinguible de «se me olvidó el `after`». Declarar `root` y `after` a la vez es no conforme.
+
+**Tipos que pueden ser raíz — tres, no seis.** El schema V2 proponía seis. Revisados uno a uno:
+
+| Tipo | ¿Raíz? | Razón |
+|---|---|---|
+| `spec` | **sí** | Crea el hilo del item. Es la raíz ordinaria |
+| `reconcile` | **sí** | Puede abrir un hilo de programa que no continúa nada |
+| `decide` | **sí, solo con `program`** | Una decisión de programa es su propia historia. Una decisión de item continúa un hilo y debe enlazarlo |
+| `risk` | **no** | Un riesgo se descubre *haciendo algo*. Sin `after`, se pierde dónde se descubrió, que es la mitad de su valor |
+| `debt` | **no** | La deuda se contrae ejecutando trabajo concreto. Una deuda sin origen no se puede cobrar a nadie |
+| `violation` | **no** | Denuncia un `target` que ya existe, luego existe historia previa a la que enlazar |
+
+Los tres excluidos eran una comodidad para el autor a costa de la trazabilidad. `risk`, `debt` y `violation` **siempre** enlazan con una historia existente.
+
+**Una raíz por hilo.** Un segundo evento con `root: true` para el mismo `item` es `violation:duplicate-root`. Un item rotado (§11.5) comienza hilo nuevo con `spec` raíz que declara `continues`.
+
+**Puntero inexistente.** Si `after` referencia un evento que no existe o no es legible, el evento es `violation:dangling-pointer` con efecto **`flag`, no `void`**: su contenido puede seguir siendo cierto y valioso, pero no cuenta para ningún gate hasta reconciliarse. Distinguir «mal formado» (void) de «no resoluble» (flag) importa: lo segundo puede ser un fallo de plataforma, no del autor.
+
+**Binding sin identificadores estables.** Un binding que no pueda proporcionar punteros de evento estables **no es conforme con ACP-1.1** y no puede reclamar perfil ACP-2 o superior. Puede operar en un modo degradado, declarado en el perfil, donde no se rastrea causalidad; en ese modo **no se satisface ningún gate que dependa de frescura**, porque no hay forma de saber qué leyó quién. Es una limitación honesta, no un permiso.
+
+**Bifurcación.** Dos eventos con el mismo `after` marcan el item `contested`. Se resuelve con `reconcile`, que enlaza todas las ramas mediante `after_multi` y explica en `fixed` qué se conservó de cada una. Avanzar de fase con `contested` abierto es `violation:stale-gate`.
+
 ### 5.5 Idempotencia
 
 Los agentes reintentan. Sin defensa, se duplican eventos. Regla: un evento con **el mismo `(type, item, actor, basis.sha, after)` que uno existente es un duplicado**; no crea efecto nuevo. El lector conserva el de ID menor. Para eventos deliberadamente repetidos (`heartbeat`, `progress`), el par `(type, actor)` es suficiente y el último gana.
@@ -470,16 +628,34 @@ Es el mecanismo que convierte "trabajo obsoleto" de problema social en problema 
 
 ```yaml
 basis:
-  repo: ReformandoPro/reforapp        # dónde
-  ref: feat/RF-142-rls-grants      # rama (contexto humano)
-  sha: 9011dd3f1c                 # ancla exacta: lo que de verdad importa
-  base: main@a71c0e94             # de dónde salía la rama al afirmar esto
+  repo:                           # referencia portable, NO `owner/name` (A13)
+    system: git
+    id: "https://github.com/ReformandoPro/reforapp.git"
+  ref: feat/RF-142-rls-grants     # rama: contexto humano, MUTABLE
+  sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b   # ancla: 40 hex minúsculas, INMUTABLE
+  base:                           # de dónde salía la rama al afirmar esto (A4)
+    ref: main
+    sha: a71c0e94f1e2d3c4b5a6978869504132abcdef01
   depends:                        # dependencias de entidades, no solo de código
     - acp:reforapp/decision/ACD-0007@2
-    - acp:reforapp/item/RF-140     # otro item del que depende
+    - acp:reforapp/item/RF-140
   scope:                          # opcional: limita la afirmación
     - src/security/rls/**
+  environment: "python3.12 / postgres:16.2"   # opcional salvo que el perfil lo exija
 ```
+
+Reglas normativas del basis en ACP-1.1:
+
+| Regla | Detalle |
+|---|---|
+| **SHA completo** (A1) | 40 hexadecimales **minúsculas**. Un prefijo puede volverse ambiguo, y un ancla que puede volverse ambigua no sostiene invalidación. Obligatorio en `review`, `revalidate`, `validate`, `approve`, `authorize` y `submit` |
+| **Rama ≠ ancla** | `ref` es mutable y sirve para orientar a un humano. **Una rama nunca sustituye a un SHA.** Una afirmación anclada solo a `ref` no es admisible en ningún gate |
+| **Repositorio portable** (A13) | `{system, id}`. `owner/name` es vocabulario de una plataforma; en Core hace ciudadanos de segunda a los demás bindings. El perfil **sí** puede usar la forma nativa, porque un perfil nombra su binding |
+| **`base` estructurada** (A4) | `{ref, sha}`. La forma `main@a71c0e94` no se puede validar como par y sus mitades obedecen reglas distintas |
+| **`scope`** | Obligatorio cuando la afirmación declara cobertura limitada. Es lo que hace posible `revalidate` (§6.3) |
+| **`depends`** | Opcional. Su movimiento produce `SUSPECT`, no `STALE` (regla R3) |
+| **`environment`** | Opcional en Core; un perfil puede exigirlo. Omitirlo es cómo una observación correcta sostiene una conclusión falsa |
+| **`delivery`** (A6) | El puntero de entrega es `{kind, id}` con `kind ∈ {pull-request, merge-request, branch, patch}`. **`pr` desaparece de Core**: es el sustantivo de una plataforma. El número de PR vive en `extensions.x-github-pr` |
 
 ### 6.2 Las cinco reglas de invalidación
 
@@ -491,24 +667,43 @@ basis:
 | **R4 · Time decay** | Ha pasado más de `review_ttl` / `approval_ttl` | Caduca aunque nada haya cambiado. Protege de "aprobado hace tres semanas, el mundo era otro" |
 | **R5 · Revocation** | Un `revoke` apunta a ella | Inválida de inmediato, con motivo registrado |
 
-### 6.3 `revalidate`: la optimización que hace esto viable
+### 6.3 `revalidate`: tipo de evento propio (normativo, A3)
 
-Invalidar cada review a cada commit es correcto pero insoportable. R1 admite una salida barata: si el diff entre `basis.sha` antiguo y el nuevo **no intersecta** `basis.scope`, el revisor puede reafirmar sin revisar:
+Invalidar cada review a cada commit es correcto pero insoportable: un typo en un README tiraría una revisión de dos horas, y el resultado previsible sería que nadie commitea o que nadie revisa hasta el final. R1 admite una salida barata.
+
+**ACP-1.1 convierte la revalidación en tipo de evento propio**, no en un campo de `review`. Como campo, nada obligaba a que el basis viejo, el nuevo y la afirmación de ámbito aparecieran los tres, y una revalidación sin basis viejo no afirma nada comparable.
 
 ````
 ```acp
-v: 1
-type: review
+v: "1.1"
+type: revalidate
 item: RF-142
+actor: hermes
+after: "github-comment:2451890120"
+revalidates: "github-comment:2451889977"
+old_basis: {ref: feat/RF-142-rls-grants, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b, scope: ["db/migrations/**"]}
+new_basis: {ref: feat/RF-142-rls-grants, sha: c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263, scope: ["db/migrations/**"]}
+scope_diff:
+  outside_scope: true
+  paths: ["README.md"]
+unchanged_claims: ["La migración sigue siendo idempotente"]
 verdict: approve
-revalidates: 2451889977
-basis: {repo: ReformandoPro/reforapp, ref: feat/RF-142-rls-grants, sha: c04ff210, base: main@a71c0e94}
-diff_outside_scope: true
 unverified: ["No he re-ejecutado tests; el diff solo toca README"]
 ```
 ````
 
-Coste: un evento. Beneficio: reviews que sobreviven a los commits de formato. Sin esto, ACP-2 se abandona en tres días. **El diseño tiene que hacer que lo correcto sea también lo cómodo, o nadie lo hará.**
+Reglas normativas:
+
+| Cuestión | Norma |
+|---|---|
+| **Cuándo basta** | El diff entre `old_basis.sha` y `new_basis.sha` **no intersecta** `old_basis.scope`. Se declara con `scope_diff.outside_scope: true` y la lista de `paths` |
+| **Cuándo exige review completa** | Si el diff toca el ámbito revisado. Entonces `outside_scope: false` y **es obligatorio** `revalidated_claims`, enumerando qué se ha vuelto a comprobar de verdad. Sin esa lista, el evento no es conforme |
+| **Quién puede emitirlo** | **Solo el autor de la afirmación original.** Una revalidación de otro actor no es una revalidación: es una afirmación nueva, y debe emitirse como `review` con su propio basis. Esto cierra la puerta a que un tercero prolongue el veredicto ajeno |
+| **Efecto sobre gates** | Traslada el veredicto original al nuevo SHA. La afirmación vuelve a `FRESH` respecto a R1 |
+| **Efecto sobre el TTL** | **Ninguno. El reloj de `review_ttl` sigue corriendo desde la review original** (regla R4). Si no fuera así, revalidar en cadena mantendría viva indefinidamente una revisión de hace tres semanas, que es exactamente lo que R4 existe para impedir |
+| **Lo que no puede probar** | Que el diff esté realmente fuera del ámbito. Eso es semántico: lo comprueba quien tenga el diff, no el formato |
+
+Coste: un evento. Beneficio: reviews que sobreviven a los commits de formato. **El diseño tiene que hacer que lo correcto sea también lo cómodo, o nadie lo hará.**
 
 ### 6.4 Estados de frescura
 
@@ -628,38 +823,42 @@ Regla dura: **una review `STALE_R`, `EXPIRED` o `VOID` no cuenta para ningún ga
 
 Los permisos se atan a **capacidades** declaradas en `acp.yml`, no a nombres. Así el protocolo sobrevive a cambiar de modelo o de agente.
 
+**Norma ACP-1.1 (A7, resuelta por construcción):** el conjunto de capacidades es **exactamente el catálogo de tipos de evento** (§5.3) más `veto`. Una capacidad autoriza a emitir el tipo de evento del mismo nombre. No hay traducción entre ambos registros, luego no puede haber divergencia semántica entre ellos.
+
+Dos consecuencias:
+
+- La antigua capacidad **`specify` desaparece**: se llama `spec`. Tener dos nombres para la misma cosa desactivó en silencio `write_surfaces.require_touches_in` durante la implementación del schema, y ese fallo no era detectable leyendo ninguno de los dos ficheros por separado.
+- La autoridad por gate **deja de escribirse `approve:<gate>`**. `approve` es una capacidad simple; *qué* gates puede consentir un rol se declara aparte, en `roles.<rol>.approve_gates`. Un identificador de capacidad con dos partes invitaba a inventarse la segunda.
+
 | Capacidad | Qué habilita |
 |---|---|
-| `specify` | Crear/modificar `accept` y `touches` |
-| `triage` | Asignar prioridad e initiative |
-| `claim` | Tomar lease de ejecución |
-| `submit` | Entregar |
-| `review` | Emitir veredicto |
-| `veto` | Bloquear un merge en solitario (poder asimétrico) |
-| `validate` | Publicar resultado de comprobación |
-| `approve:<gate>` | Consentir un gate concreto |
-| `authorize` | Permitir efectos externos |
-| `decide` | Publicar decisiones |
-| `checkpoint` | Resumir autoritativamente |
-| `reconcile` | Corregir proyecciones |
-| `close` | Cerrar items |
+| `spec`, `triage` | Definir y priorizar trabajo |
+| `claim`, `heartbeat`, `progress`, `release`, `handoff`, `submit` | Ejecutar |
+| `review`, `revalidate`, `validate` | Aseguramiento |
+| `approve` + `approve_gates: [...]` | Consentir los gates listados |
+| `authorize`, `revoke` | Permitir y anular efectos externos |
+| `question`, `answer`, `assume`, `decide` | Autoridad y desbloqueo |
+| `block`, `unblock`, `risk`, `debt`, `checkpoint`, `reconcile` | Coordinación |
+| `violation`, `supersede`, `close` | Cumplimiento y cierre |
+| `veto` | Bloquear un merge en solitario (poder asimétrico; único que no es un tipo de evento) |
 
 ### 8.2 Matriz para el equipo actual
 
 | | Jorge (PO) | ChatGPT (coord.) | Openclaw (lead) | Claude (eng.) | Hermes (rev.) |
 |---|---|---|---|---|---|
-| specify | ✅ | ✅ | propone | propone | propone |
+| spec | ✅ | ✅ | propone | propone | propone |
 | triage | ✅ | ✅ | — | — | — |
 | claim | — | — | ✅ | ✅ | ✅ (review) |
 | submit | — | — | ✅ | ✅ | — |
 | review | — | ✅ (no vinculante) | ✅ (código) | — | ✅ (**principal**) |
 | veto | ✅ | — | — | — | ✅ |
 | validate | — | ✅ | ✅ | ✅ | ✅ |
-| approve:code | — | — | ✅ | — | ✅ |
-| approve:scope | ✅ | ✅ | — | — | — |
-| approve:release | ✅ | — | — | — | — |
+| approve (gate `code`) | — | — | ✅ | — | ✅ |
+| approve (gate `scope`) | ✅ | ✅ | — | — | — |
+| approve (gate `release`) | ✅ | — | — | — | — |
 | authorize | ✅ | — | — | — | — |
 | decide | ✅ | ✅ | propone | propone | propone |
+| revalidate | — | — | ✅ | — | ✅ |
 | checkpoint | — | ✅ | ✅ | — | — |
 | reconcile | — | ✅ | ✅ | — | — |
 | close | ✅ | ✅ | — | — | — |
@@ -677,13 +876,13 @@ Una review adversarial es no conforme si le falta `falsified`:
 
 ````
 ```acp
-v: 1
+v: "1.1"
 type: review
 item: RF-142
 role: reviewer
 actor: hermes
 verdict: changes
-basis: {repo: ReformandoPro/reforapp, ref: feat/RF-142-rls-grants, sha: 9011dd3f1c}
+basis: {repo: ReformandoPro/reforapp, ref: feat/RF-142-rls-grants, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}
 falsified:
   - attempt: "Ejecutar la migración dos veces seguidas"
     result: "Falla en el segundo pase: el GRANT no es idempotente"
@@ -731,6 +930,29 @@ Cualquier lector puede evaluar un gate; no hace falta servidor. El algoritmo es:
 
 El paso 6 es lo que hace esto asequible: la evaluación de gate se **cachea en el log** con su propio basis, y se invalida por las mismas cinco reglas que todo lo demás. No hay caso especial.
 
+### 8.6 Identidad: declarada, observada y garantizada (normativo, A10)
+
+`actor` es obligatorio en todo evento. Eso **no** convierte el evento en auténtico. ACP-1.1 separa cuatro conceptos que ACP-1 mezclaba en una sola palabra:
+
+| Concepto | Qué es | Quién lo produce | Dónde vive |
+|---|---|---|---|
+| **`declared_actor`** | La identidad lógica que el evento afirma tener. Es el campo `actor` del envelope | el autor | envelope (authored) |
+| **`observed_actor`** | La identidad que la plataforma registró al recibir el evento | la plataforma | registro del binding, **nunca** authored |
+| **`identity_assurance`** | Fuerza del vínculo entre ambas, 1–5. Se declara en el perfil, no por evento | el perfil | `acp.yml: identity.trust_level` |
+| **`identity_mismatch`** | Discrepancia entre la declarada y la observada según el mapa del perfil | el binding, al comparar | `violation:identity-mismatch` |
+
+**Niveles de garantía.** 1 autodeclarada · 2 cuenta compartida · 3 cuentas distintas · 4 identidad de máquina firmada · 5 credenciales gestionadas por la organización.
+
+**Reglas normativas:**
+
+1. **Un `actor` presente prueba atribución declarada, no autenticidad.** Ningún documento de adopción puede afirmar lo contrario.
+2. **Por debajo del nivel 3, la separación de poderes de §8.2 no está garantizada.** Con cuenta compartida, «nadie revisa lo que entregó» es honor system: el binding no puede distinguir a dos agentes. Un perfil que declare nivel 1 o 2 y a la vez prometa revisión independiente está **sobrevendiendo sus garantías**, y ACP-1.1 obliga a decirlo en el perfil en lugar de dejarlo implícito.
+3. **Mismatch ⇒ violación.** Si el binding mapea el `observed_actor` a un actor lógico distinto del `declared_actor`, emite `violation:identity-mismatch` con efecto `void`: el evento no tiene efecto de protocolo. Es la única defensa real contra la suplantación, y solo existe a partir del nivel 3.
+4. **Identidad no verificable.** Si el binding no puede observar identidad alguna, el perfil declara `identity.trust_level: 1` y **ningún gate que exija independencia puede satisfacerse**. Preferimos un gate que no se cruza a un gate que se cruza sin fundamento.
+5. **Actuación por delegación.** Un humano que publica en nombre de un agente (o al revés) usa `on_behalf_of`: `actor` es quien **opera**, `on_behalf_of` es quien **responde**. Ambos deben existir en el perfil. Sin este campo, la delegación se disfraza de suplantación y el registro pierde a la persona responsable. Un evento con `on_behalf_of` **no** hereda las capacidades del principal: se comprueban las del `actor`.
+
+**Lo que ninguna de estas reglas consigue:** detectar que un `actor` honesto ha sido escrito por un modelo distinto del que dice el perfil. La identidad del *proceso* está fuera del alcance del protocolo.
+
 ---
 
 <a name="9"></a>
@@ -740,9 +962,9 @@ El paso 6 es lo que hace esto asequible: la evaluación de gate se **cachea en e
 
 | Rol | Escribe (eventos) | Escribe (proyecciones) | Nunca escribe |
 |---|---|---|---|
-| **PO (Jorge)** | `spec`, `triage`, `authorize`, `approve:release`, `answer`, `decide`, `close`, `revoke` | Sección *Intent* del item; registro de decisiones | Nada técnico de ejecución |
+| **PO (Jorge)** | `spec`, `triage`, `authorize`, `approve` (gates `scope`, `release`), `answer`, `decide`, `close`, `revoke` | Sección *Intent* del item; registro de decisiones | Nada técnico de ejecución |
 | **Coordinador (ChatGPT)** | `spec`, `triage`, `decide`, `checkpoint`, `reconcile`, `block`/`unblock`, `question`, `supersede`, `close` | Sección *Spec*; el Board; registros de riesgo y deuda | `submit`, `review` vinculante |
-| **Lead (Openclaw)** | `claim`, `heartbeat`, `progress`, `submit`, `validate`, `review` (código), `approve:code`, `handoff`, `assume` | Sección *Progress* de sus items | `authorize`, `approve:release` |
+| **Lead (Openclaw)** | `claim`, `heartbeat`, `progress`, `submit`, `validate`, `review` (código), `approve` (gate `code`), `handoff`, `assume` | Sección *Progress* de sus items | `authorize`, `approve` del gate `release` |
 | **Engineer (Claude)** | `claim`, `heartbeat`, `progress`, `submit`, `validate`, `question`, `assume`, `handoff` | Sección *Progress* de sus items | Cualquier `approve` de lo que entregó |
 | **Reviewer (Hermes)** | `review` (con `falsified`), `validate`, `block`, `violation` | Sección *Review* del item | `claim` de ejecución, `submit` |
 
@@ -876,7 +1098,7 @@ type: claim
 item: RF-143
 stack:
   base_item: RF-142
-  base_sha: 9011dd3f1c
+  base_sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b
 ```
 
 Reglas: (a) un item apilado no puede pasar de `ACCEPTED` mientras su base no esté `INTEGRATED`; (b) si la base cambia de SHA, el apilado hereda `stale` — la invalidación se propaga por el grafo de basis; (c) profundidad máxima declarada en `acp.yml` (recomendado: 3). Los stacks profundos son un olor a items mal cortados.
@@ -906,21 +1128,21 @@ Contrato duro: **todo `handoff`, todo `checkpoint` y todo `progress` que cierre 
 
 ````
 ```acp
-v: 1
+v: "1.1"
 type: handoff
 item: RF-142
 actor: claude
 to: any:engineer
-after: 2451890210
+after: "github-comment:2451890210"
 resume:
   goal: "Grants idempotentes + test de doble ejecución (accept #2 y #3 del spec)"
-  basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff210, base: main@a71c0e94}
+  basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263, base: main@a71c0e94f1e2d3c4b5a6978869504132abcdef01}
   done:
-    - "Migración 0042 reescrita con IF NOT EXISTS (commit c04ff210)"
+    - "Migración 0042 reescrita con IF NOT EXISTS (commit c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263)"
     - "Test de doble ejecución añadido, pasa en local"
   remaining:
     - "CI sigue rojo: imagen de postgres 2.39.2 con default ACL distinto (RSK-014)"
-    - "Falta decidir si se fija la imagen de CI o se hace el test tolerante — question #2451890180 vence en 18h, default: fijar imagen"
+    - "Falta decidir si se fija la imagen de CI o se hace el test tolerante — question #github-comment:2451890180 vence en 18h, default: fijar imagen"
   key_files:
     - db/migrations/0042_rls_grants.sql
     - .github/workflows/ci.yml    # fuera de mi `touches`: NO lo he tocado
@@ -929,7 +1151,7 @@ resume:
     - "El rol app_rw existe en todos los entornos (no verificado en staging)"
   traps:
     - "No ejecutar 0042 contra prod sin el rollback de RSK-014 escrito"
-  next_action: "Esperar respuesta a #2451890180 o aplicar el default al vencer"
+  next_action: "Esperar respuesta a #github-comment:2451890180 o aplicar el default al vencer"
 ```
 Dejo el lease libre. El PR #141 queda en draft a propósito.
 ````
@@ -951,13 +1173,13 @@ Un `checkpoint` es una afirmación autoritativa: *"todo lo relevante de los even
 type: checkpoint
 item: RF-142
 actor: chatgpt
-covers: [2451889301, 2451890420]     # rango de eventos absorbidos
+covers: ["github-comment:2451889301", "github-comment:2451890420"]     # rango de eventos absorbidos
 state: {phase: IN_REVIEW, freshness: FRESH, modifiers: ["at-risk:RSK-014"]}
-basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff210}
+basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263}
 resume: {...}                         # el resume packet completo
 open:
-  - "question #2451890180 vence 2026-08-02T14:00Z"
-  - "review de hermes pendiente sobre c04ff210"
+  - "question #github-comment:2451890180 vence 2026-08-02T14:00Z"
+  - "review de hermes pendiente sobre c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263"
 gates: {merge: "2/4 satisfecho: falta review fresca y validation:tests"}
 decisions_in_force: [ACD-0007@2]
 unverified_open:
@@ -1037,11 +1259,11 @@ El PR no repite el log; **apunta** a él. Plantilla:
 
 ```markdown
 Implements: acp:reforapp/item/RF-142
-Basis: main@a71c0e94 → 9011dd3f1c
+Basis: main@a71c0e94f1e2d3c4b5a6978869504132abcdef01 → 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b
 Touches: db/migrations/**, src/security/rls/**
-Submit-event: 2451890420
+Submit-event: github-comment:2451890420
 Decisions: ACD-0007@2
-Unverified: 2 (ver evento 2451890420)
+Unverified: 2 (ver evento github-comment:2451890420)
 Risks: RSK-014
 ```
 
@@ -1053,11 +1275,11 @@ Un artifact es un fichero (log de test, informe de cobertura, captura, plan de m
 
 ```yaml
 evidence:
-  - id: sha256:9f2ab41c7e...
+  - id: sha256:791adeb5e2e173d6cf2bdc532f8f08658c33fc5968c268773e330fca6033fa27
     kind: test-run
     cmd: "pytest tests/rls -q"
     env: "python3.12 / postgres:16.2 / imagen CI 2.109.1"
-    basis: {sha: 9011dd3f1c}
+    basis: {sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}
     result: pass
     location: "gh-artifact://run/8891234/pytest-out.txt"
     retention: 90d
@@ -1096,7 +1318,7 @@ scope:                  # ámbito de aplicación: dónde manda esta decisión
   - src/security/rls/**
 supersedes: ACD-0004
 superseded_by: null
-basis: {repo: ReformandoPro/reforapp, sha: 9011dd3f1c}
+basis: {repo: ReformandoPro/reforapp, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}
 reversible: true
 revert_cost: medium
 review_by: 2026-11-01   # caducidad de revisión, no de validez
@@ -1164,7 +1386,7 @@ status: open                    # open | scheduled | paid | forgiven | defaulted
 
 Tres reglas:
 
-1. **Deuda no autorizada es `violation:unauthorized-debt`.** Un ejecutor no decide en solitario endeudar al programa. Puede *proponerla* en el `submit`; alguien con `approve:scope` la autoriza.
+1. **Deuda no autorizada es `violation:unauthorized-debt`.** Un ejecutor no decide en solitario endeudar al programa. Puede *proponerla* en el `submit`; alguien con `approve` del gate `scope` la autoriza.
 2. **Sin `payoff_trigger` no se acepta.** Deuda sin condición de pago es deuda perpetua disfrazada.
 3. **`interest` es obligatorio y en unidades reales.** "Esto es deuda" no sirve; "cuesta 20 minutos cada vez que alguien toca grants" permite priorizar contra trabajo nuevo con la misma vara.
 
@@ -1199,9 +1421,11 @@ Las autorizaciones son el mecanismo por el que un humano concede a un agente per
 type: authorize
 actor: jorge
 role: product-owner
-scope: deploy:staging
+scope:                                  # acción concreta, no etiqueta (A5)
+  action: deploy
+  environment: staging
 target: acp:reforapp/item/RF-142
-basis: {sha: 9011dd3f1c}         # atada a un SHA concreto
+basis: {ref: main, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}   # atada a un SHA concreto
 limits:
   environments: [staging]
   max_attempts: 2
@@ -1255,9 +1479,9 @@ Al vencer, **quien lo detecte** (cualquier agente, en su read path) emite:
 ```yaml
 type: assume
 item: RF-142
-premise: "Se fija la imagen de CI a 2.109.1 (default de la pregunta 2451890180, vencida)"
+premise: "Se fija la imagen de CI a 2.109.1 (default de la pregunta github-comment:2451890180, vencida)"
 authority: default-on-timeout
-source_question: 2451890180
+source_question: "github-comment:2451890180"
 verify_by: "Confirmación de jorge, o primera actualización de postgres en prod"
 risk_if_wrong: RSK-016
 ```
@@ -1268,6 +1492,22 @@ Propiedades del mecanismo:
 - **El default es visible antes de aplicarse.** Jorge puede vetar durante la ventana; no le sorprende nada.
 - **Cada default aplicado deja un rastro** (`assume` + `risk`) que se puede revisar en bloque más tarde. La velocidad no se paga con opacidad.
 - **`blocking: false` es el caso normal.** Preguntar no debería detener el trabajo, solo el trabajo que depende de la respuesta.
+
+**Principio obligatorio (A15).** *El silencio nunca autoriza acciones sensibles, irreversibles o remotas.* Se materializa en dos listas del perfil, no en la buena voluntad del que pregunta:
+
+- `silence.never_default`: capacidades que el silencio no puede conceder. **Debe** contener `authorize`.
+- `silence.never_default_actions`: acciones concretas —`deploy`, `merge`, `migrate`, `release`, `remote-write`, `rotate-secret`, `delete-data`…— que no pueden ser el resultado de un default, **sea cual sea el `kind` declarado de la pregunta**.
+
+**Qué comprueba cada capa, sin exagerar lo que hace ninguna:**
+
+| Caso | ¿Lo bloquea el formato? |
+|---|---|
+| `question` con `kind: authorization` y default distinto de `deny` | **Sí** |
+| `authorize` que lleva `default_if_silent` | **Sí** |
+| `question` que pide un deploy declarándose `kind: decision` | **No.** Es sintácticamente impecable |
+| `question` cuya opción de aspecto inocuo dispara algo irreversible | **No.** Requiere saber qué hace la opción |
+
+Las dos últimas filas son el caso peligroso y son **semánticas**: las resuelve un validador con acceso al perfil, o una persona leyendo la lista corta de `never_default_actions`. **Ningún documento de adopción debe afirmar que el formato del envelope impide todos los defaults sensibles.** Impide los de las preguntas ya clasificadas correctamente; clasificarlas es el trabajo difícil.
 
 Si tuviera que quedarme con una sola idea de todo el documento para un equipo con IA, sería esta: **pregunta con default y reloj.** Es lo que convierte a un PO en árbitro de excepciones en lugar de en cuello de botella.
 
@@ -1328,8 +1568,8 @@ Cinco secciones, cada una con **un único rol propietario** (I3). Un agente edit
 
 ## ⬤ Estado            <!-- owner: coordinator | derivado del log -->
 Fase: **IN_REVIEW** · Frescura: **FRESH** · Mods: `at-risk:RSK-014`
-Basis: `acp/RF-142/rls-grants-idempotentes` @ `c04ff210` (base `main@a71c0e94`)
-Lease: libre · Último checkpoint: #2451890500 · Última proyección: evento 2451890520
+Basis: `acp/RF-142/rls-grants-idempotentes` @ `c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263` (base `main@a71c0e94f1e2d3c4b5a6978869504132abcdef01`)
+Lease: libre · Último checkpoint: #github-comment:2451890500 · Última proyección: evento github-comment:2451890520
 
 ## ◆ Intención         <!-- owner: product-owner -->
 Los grants operativos deben poder aplicarse dos veces sin fallar, para que
@@ -1351,11 +1591,11 @@ Pendiente: CI rojo por imagen de Postgres (RSK-014).
 Ignorancia declarada: >1M filas sin probar; rollback de 0042 sin ejecutar.
 
 ## ✓ Revisión          <!-- owner: reviewer -->
-hermes · `changes` @ `9011dd3f1c` → resuelto en `c04ff210` · pendiente re-review
+hermes · `changes` @ `9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b` → resuelto en `c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263` · pendiente re-review
 Falsadores intentados: doble ejecución (falló, corregido), revoke+re-run (ok)
 
 ---
-<!-- acp:projection-of: 2451890520 -->
+<!-- acp:projection-of: github-comment:2451890520 -->
 ```
 
 El marcador final es importante: dice **de qué evento es proyección este cuerpo**. Si el log tiene eventos posteriores, el cuerpo está desactualizado y se sabe sin comparar contenidos. Detección de drift en O(1).
@@ -1410,7 +1650,7 @@ Sin automatización, el protocolo no se puede *impedir* que se rompa. Así que s
 | `no-basis` | Afirmación sin basis | alta | cualquiera |
 | `stale-gate` | Gate cruzado con afirmaciones no frescas | alta | coordinador |
 | `missing-unverified` | `submit`/`review` sin `unverified` | media | revisor |
-| `unauthorized-debt` | Deuda contraída sin `approve:scope` | media | coordinador |
+| `unauthorized-debt` | Deuda contraída sin `approve` del gate `scope` | media | coordinador |
 | `lease-conflict` | Dos leases vivos | media | cualquiera |
 | `scope-creep` | Diff fuera de `touches` | media | revisor |
 | `unlinked-decision` | `touches` intersecta el `scope` de una decisión no declarada | media | coordinador |
@@ -1418,20 +1658,28 @@ Sin automatización, el protocolo no se puede *impedir* que se rompa. Así que s
 | `drift` | Proyección ≠ log | baja | cualquiera |
 | `dangling-link` | Enlace unidireccional | baja | coordinador |
 | `orphan-event` | Evento sin `after` (en perfil ≥ ACP-2) | baja | cualquiera |
-| `reserved-id` | `item:` usa un ID de producto reservado (§4.2) | baja | cualquiera |
+| `reserved-id` | `item:` usa un ID reservado del roadmap (§4.2). **Desde A12 no lo detecta el formato**: exige la pasada perfil-consciente | baja | validador de perfil |
+| `identity-mismatch` | El `observed_actor` del binding no corresponde al `actor` declarado (§8.6) | **crítica** | binding, a partir de nivel de garantía 3 |
+| `unscoped-event` | Ni `item` ni `program`, o los dos (§5.2.1) | alta | cualquiera |
+| `duplicate-root` | Segundo `root: true` en el mismo hilo (§5.4.1) | alta | cualquiera |
+| `dangling-pointer` | `after` apunta a un evento inexistente o ilegible (§5.4.1). Efecto **`flag`**, no `void` | media | lector del log |
+| `alias-type` | Tipo fuera del catálogo cerrado o alias prohibido (§5.3) | media | cualquiera |
+| `shadowed-field` | Una clave de `extensions` duplica un campo normativo (§5.2.3) | media | cualquiera |
+| `malformed` | Campo conocido con forma inválida (§16.2) | media | cualquiera |
+| `missing-touches` | Conflicto de merge que `touches` debió anticipar (§10.3 C7) | baja | quien resuelve el conflicto |
 
 ### 15.2 Cómo se denuncia
 
 ````
 ```acp
-v: 1
+v: "1.1"
 type: violation
 rule: self-approval
-target: 2451890600
+target: "github-comment:2451890600"
 severity: high
 actor: hermes
 effect: void            # void | flag
-remedy: "Requiere review de un actor distinto a claude sobre c04ff210"
+remedy: "Requiere review de un actor distinto a claude sobre c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263"
 ```
 ````
 
@@ -1488,15 +1736,64 @@ La métrica de violaciones es la más importante y la más ignorada en diseños 
 ---
 
 <a name="16"></a>
-## 16. Versionado y evolución del protocolo
+## 16. Versionado, compatibilidad y tiempo
 
-- Todo evento lleva `v:`. Un lector que no entiende `v` **no** debe interpretar el evento; lo marca `unreadable` y escala.
-- **Semver**: *patch* = aclaración; *minor* = campos o tipos nuevos opcionales (compatible hacia atrás); *major* = cambio de semántica o campo obligatorio nuevo.
-- **Compatibilidad**: un lector de `v:1.n` debe procesar cualquier `v:1.m`, ignorando campos que no conoce. Nunca romper por campo desconocido.
-- **Migración**: un cambio de major se anuncia con un `checkpoint` de programa que declara `from` y `to`. Los eventos anteriores **no se migran**: se leen con el lector de su versión. La historia es inmutable, incluida su gramática.
-- **Extensiones locales**: prefijo `x-` (`x-reforapp-hito: B`). Un lector conforme las ignora. Es el camino por el que un equipo experimenta sin bifurcar el estándar, y por el que las buenas extensiones acaban ascendiendo a campos core.
+### 16.1 Ejes de versión
 
----
+| Eje | Dónde | Regla |
+|---|---|---|
+| Core del protocolo | `v` del envelope | Cadena `"mayor.menor"`, p. ej. `"1.1"` |
+| Especificación | `acp.yml: spec` | Cadena libre |
+| Perfil | `acp.yml: profile_version` | Semver |
+| Binding | `acp.yml: binding`, p. ej. `github@0.1.0` | Semver |
+| Schema | `$id` del schema | Semver, independiente |
+
+**`v` pasa de entero a cadena `mayor.menor` (A20).** Con un entero solo se distingue el mayor, y entonces la regla del lector tolerante (§16.2) es inaplicable: no hay forma de saber si un campo desconocido viene de un menor posterior legítimo o de un error. `v: 1` de ACP-1 se lee como `"1.0"`.
+
+- **Patch:** aclaración de redacción. No cambia `v`.
+- **Menor:** campos o valores nuevos **opcionales**; catálogo intacto. Sube el menor.
+- **Mayor:** campo obligatorio nuevo, semántica cambiada, tipo de evento nuevo o retirado. Sube el mayor.
+
+Añadir un tipo de evento es **siempre** un cambio mayor: el catálogo es cerrado (§5.3).
+
+### 16.2 Escritor estricto, lector tolerante (normativo, A8)
+
+La tensión es real y se resuelve separando roles, no ablandando ninguno de los dos.
+
+**Un escritor conforme** publica solo documentos válidos contra el schema de su versión. No inventa campos, no inventa tipos, no inventa punteros.
+
+**Un lector conforme** se comporta así:
+
+| Situación | Conducta obligatoria |
+|---|---|
+| Campo desconocido, mismo mayor | **Aceptar el evento e ignorar el campo.** No rechazar. Un menor posterior puede haberlo añadido |
+| Campo desconocido, al reescribir o proyectar | **Preservarlo.** Vale también para `extensions` (§5.2.3). Perder datos que no entiendes es peor que no entenderlos |
+| **Tipo de evento** desconocido, mismo mayor | **Fallar cerrado para ese evento:** no interpretarlo, no contarlo para ningún gate, marcarlo `unreadable` y escalar. Un tipo desconocido puede ser una autorización |
+| Mayor distinto | **Fallar cerrado y detenerse.** No adivinar. Continuar en **modo solo lectura**: se puede leer y resumir el hilo, no emitir eventos ni evaluar gates |
+| Campo conocido con forma inválida | Rechazar el evento: `violation:malformed` |
+
+La asimetría entre campo desconocido (tolerar) y tipo desconocido (fallar) es deliberada. Un campo que no entiendes puede ser decorativo; **un tipo de evento que no entiendes puede ser el que te prohíbe desplegar.**
+
+### 16.3 Modelo de tiempo unificado (normativo, A9)
+
+Un solo modelo. Todo valor de tiempo es **authored** u **observed**, nunca ambos.
+
+| Clase | Quién lo produce | Forma | Ejemplos |
+|---|---|---|---|
+| **Authored** | el autor | **Duración relativa** `^[1-9][0-9]{0,3}[hdw]$` — horas, días, semanas | `lease`, `expires`, `ttl`, `escalate_after`, `review_ttl`, `retention` |
+| **Observed** | la plataforma | Instante absoluto RFC 3339 | recepción del evento, `created_at`, base de cálculo de toda caducidad |
+
+Reglas:
+
+1. **Ningún instante absoluto se escribe nunca en un envelope.** Un agente no tiene reloj fiable (invariante I4). `expires: "2026-08-02T14:00:00Z"` no es conforme; `expires: 24h` sí.
+2. **Toda caducidad se resuelve contra el timestamp que la plataforma asignó al evento**, no contra el reloj de quien lee.
+3. **Minutos y meses no existen** como unidades: el minuto está por debajo de la granularidad de un turno de agente y el mes tiene longitud variable.
+4. Los **registros de entidad** (decisiones, riesgos) son ficheros, no envelopes, y sí pueden llevar fechas absolutas (`decided`, `review_by`). La distinción es que un fichero se edita con conocimiento del calendario; un envelope se escribe a ciegas.
+5. Si un binding no puede aportar timestamps fiables, todo cálculo de caducidad queda **indeterminado** y ningún gate dependiente de frescura puede satisfacerse.
+
+### 16.4 Migración
+
+Un cambio de mayor se anuncia con un `checkpoint` de programa que declara `from` y `to`. Los eventos anteriores **no se migran**: se leen con el lector de su versión. La historia es inmutable, incluida su gramática.
 
 <a name="17"></a>
 ## 17. Autocrítica: tres iteraciones y qué rompí
@@ -1664,12 +1961,12 @@ Un item real recorrido entero, con el envelope de cada paso reducido a lo esenci
 #904  progress    claude     after: 903 · done: migración idempotente
                              remaining: CI rojo · ⇒ phase: IN_PROGRESS
 
-#905  submit      claude     after: 904 · basis: sha 9011dd3f1c, base main@a71c0e94
+#905  submit      claude     after: 904 · basis: sha 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b, base main@a71c0e94f1e2d3c4b5a6978869504132abcdef01
                              evidence: 2 (pytest pass, default_acl 0 filas)
                              unverified: [">1M filas", "rollback 0042"]
                              pr: #141 · ⇒ phase: SUBMITTED
 
-#906  review      hermes     after: 905 · verdict: changes · basis: sha 9011dd3f1c
+#906  review      hermes     after: 905 · verdict: changes · basis: sha 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b
                              falsified: doble ejecución ⇒ FALLA (blocking)
                              would_change_my_mind: "test de doble ejecución en CI"
                              ⇒ phase: REWORK
@@ -1682,12 +1979,12 @@ Un item real recorrido entero, con el envelope de cada paso reducido a lo esenci
                              risk_if_wrong: RSK-016
                              ⇒ mod: awaiting:jorge retirado
 
-#909  submit      claude     after: 908 · basis: sha c04ff210 (nuevo)
+#909  submit      claude     after: 908 · basis: sha c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263 (nuevo)
                              evidence: 3 · unverified: 2 (las mismas)
                              addresses: 906 · ⇒ phase: SUBMITTED
                              [la review #906 pasa a STALE_R: el diff toca el scope]
 
-#910  review      hermes     after: 909 · verdict: approve · basis: sha c04ff210
+#910  review      hermes     after: 909 · verdict: approve · basis: sha c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263
                              falsified: doble ejecución ⇒ ok · revoke+run ⇒ ok
                              unverified: ["sin datos de prod"]
                              ⇒ phase: IN_REVIEW → gate:merge evaluable
@@ -1701,9 +1998,9 @@ Un item real recorrido entero, con el envelope de cada paso reducido a lo esenci
                              open: ["RSK-014 sin mitigar", "DEBT-031 propuesta"]
                              unverified_open: 2
 
-      ── merge del PR #141 ──                    ⇒ phase: INTEGRATED, basis → main@f1a2b3c4
+      ── merge del PR #141 ──                    ⇒ phase: INTEGRATED, basis → main@f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4
 
-#913  authorize   jorge      scope: deploy:staging · basis: sha f1a2b3c4
+#913  authorize   jorge      scope: deploy:staging · basis: sha f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4
                              limits: {environments: [staging], reversible_only: true}
                              expires: 24h · conditions: ["RSK-014 aceptado"]
 
@@ -1732,66 +2029,50 @@ Lo que este recorrido demuestra, y que era el objetivo del brief:
 ---
 
 <a name="21"></a>
-## 21. Apéndice B — Gramática del envelope
+## 21. Apéndice B — Gramática del envelope (ACP-1.1)
 
-Informal a propósito (§18.10): el JSON Schema ejecutable es el siguiente entregable, no este.
+Informal a propósito: el JSON Schema ejecutable es una implementación separada, y su conformidad con esta gramática debe verificarse, no presuponerse.
 
 ```
 envelope   := "```acp" NL core NL type_fields NL "```"
 
-core       := "v: " int                      ; requerido siempre
-              "type: " event_type            ; requerido siempre
-              [ "item: " urn ]               ; requerido salvo eventos de programa
-              [ "actor: " agent_id ]         ; opcional: se deriva de la cuenta
-              [ "role: " role_id ]           ; opcional: se deriva de acp.yml
-              [ "after: " event_id ]         ; requerido en perfil ≥ ACP-2
+core       := "v: " version                  ; requerido. Cadena "mayor.menor"
+              "type: " event_type            ; requerido. Catálogo cerrado de 27 (§5.3)
+              "actor: " actor_id             ; requerido SIEMPRE (A10)
+              subject                        ; requerido: exactamente uno
+              [ "after: " event_pointer ]    ; requerido salvo raíz (A11)
+              [ "root: true" ]               ; solo tipos raíz-elegibles
+              [ "role: " role_id ]
+              [ "on_behalf_of: " actor_id ]
+              [ "extensions: " ext_object ]
 
-basis      := "repo: " repo_ref
-              "sha: " sha_prefix             ; ≥10 hex
-              [ "ref: " branch ]
-              [ "base: " repo_ref "@" sha ]
+subject    := "item: " work_item_id | "program: " program_id
+
+version    := /^[1-9][0-9]*\.[0-9]+$/
+event_pointer := /^[a-z][a-z0-9-]{0,31}:[A-Za-z0-9._~-]{1,128}$/   ; asignado por la plataforma
+work_item_id  := /^[!-~]{1,64}$/               ; Core. El patrón concreto es del perfil (A12)
+actor_id      := /^[a-z][a-z0-9_-]{1,31}$/
+ext_object    := { /^x-[a-z0-9][a-z0-9-]*$/ : <cualquier JSON> }
+
+basis      := "repo: " repository            ; { system, id } portable (A13)
+              "ref: " ref_name               ; mutable, orientativo
+              "sha: " full_sha               ; /^[0-9a-f]{40}$/ (A1)
+              [ "base: " { ref, sha } ]      ; estructurada (A4)
               [ "depends: " urn_list ]
               [ "scope: " glob_list ]
+              [ "environment: " string ]
 
-evidence_i := "id: " digest                  ; sha256:<hex>
-              "cmd: " string
-              "env: " string                 ; requerido
-              "result: " ("pass"|"fail"|string)
-              [ "location: " uri ]
-              [ "retention: " duration ]
-              [ "reproducible: " bool ]
-
-duration   := int ("h"|"d"|"w")              ; siempre relativo (I4)
+duration   := /^[1-9][0-9]{0,3}[hdw]$/       ; authored, siempre relativa (§16.3)
 ```
 
-**Campos obligatorios por tipo** (los que faltan hacen el evento no conforme):
+**Reglas de conformidad de lectura** (normativas, §16.2):
 
-| Tipo | Además del core |
-|---|---|
-| `spec` | `accept`, `touches`, `size` |
-| `claim` | `lease`, `touches` |
-| `submit` | `basis`, `evidence`, `unverified`, `pr` |
-| `review` | `verdict`, `basis`, `unverified`, [`falsified` si `adversarial`], [`would_change_my_mind` si no-approve] |
-| `validate` | `check`, `result`, `basis` |
-| `approve` | `gate`, `basis`, `ttl` |
-| `authorize` | `scope`, `target`, `basis`, `limits`, `expires` |
-| `question` | `to`, `question`, `default_if_silent`, `expires` |
-| `assume` | `premise`, `verify_by`, `risk_if_wrong` |
-| `block` | `on`, `kind`, `unblock_when`, `escalate_after`, `workaround` |
-| `handoff` | `to`, `resume` |
-| `checkpoint` | `covers`, `state`, `resume`, `open` |
-| `violation` | `rule`, `target`, `severity`, `effect` |
-| `close` | `resolution` |
-
-**Reglas de conformidad de lectura:**
-
-1. Un comentario sin bloque `acp` es conversación: sin efecto de protocolo.
-2. Un bloque `acp` con `v` no soportada: no se interpreta; se escala.
-3. Un campo desconocido se ignora, nunca invalida el evento (§16).
-4. Un evento al que le falta un campo obligatorio de su tipo es no conforme: **no tiene efecto** y merece `violation`.
-5. Ante conflicto entre el bloque y la prosa, gana el bloque; la discrepancia es `violation:drift`.
-
----
+1. Un comentario sin bloque ` ```acp ` es conversación: sin efecto de protocolo.
+2. Campo desconocido con el mismo mayor: **aceptar e ignorar**; preservar al reescribir.
+3. Tipo de evento desconocido: **fallar cerrado** para ese evento y escalar.
+4. Versión mayor distinta: fallar cerrado; continuar solo en modo lectura.
+5. A un evento le falta un campo obligatorio de su tipo: no conforme, **sin efecto**, merece `violation`.
+6. Conflicto entre el bloque y la prosa: gana el bloque; la discrepancia es `violation:drift`.
 
 ## Cierre
 

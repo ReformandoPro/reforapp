@@ -1,6 +1,6 @@
-# acp/AGENTS.md — punto de arranque en frío de ACP/1
+# acp/AGENTS.md — punto de arranque en frío de ACP/1.1
 
-> **Ámbito.** Este fichero es el punto de entrada del protocolo **ACP/1**, en revisión comparativa. **No sustituye ni anula el `AGENTS.md` de la raíz** del repositorio, que sigue siendo la instrucción vigente para trabajar el código. Mientras ACP/1 no esté adoptado, lo de aquí no se aplica a R1, R2 ni R2.1.
+> **Ámbito.** Este fichero es el punto de entrada del protocolo **ACP/1.1 (candidata a enmienda normativa, no aprobada)**. **No sustituye ni anula el `AGENTS.md` de la raíz** del repositorio, que sigue siendo la instrucción vigente para trabajar el código. Mientras ACP/1 no esté adoptado, lo de aquí no se aplica a R1, R2 ni R2.1.
 >
 > Las labels y templates que se citan abajo son **propuestas** (`ACP-1.md` §14): todavía no existen en el repo, así que las consultas devolverán vacío hasta que el PO apruebe crearlas.
 
@@ -22,11 +22,38 @@ Presupuestos normativos en `acp.yml: limits.context_budget`. Si el paso 6 se pas
 
 ## 2. Reglas que no se rompen
 
-1. **Nada se afirma sin `basis`.** Sin `sha`, tu review, validación o aprobación no cuenta para ningún gate.
-2. **Declara tu ignorancia.** `submit` y `review` sin `unverified` son no conformes. En review adversarial hacen falta además `falsified` y, si el veredicto no es `approve`, `would_change_my_mind`.
-3. **No revisas ni apruebas lo que entregaste.**
-4. **Toda pregunta al humano lleva `default_if_silent` y `expires`.** No te quedes esperando.
-5. **Verifica antes de actuar.** Labels y tableros son hints; confirma en el log y en el head de la rama.
+1. **No inventes nunca cuatro cosas: punteros de evento, SHAs, digests e identificadores.** Los produce la plataforma o una herramienta; tú los **lees y copias**. Un `after` recordado de memoria, un SHA de 40 caracteres «reconstruido» o un `sha256:` plausible son la falsificación más fácil de cometer y la más difícil de detectar: tienen la forma correcta. Si no puedes leer el valor, **detente y dilo**; no rellenes.
+2. **Nada se afirma sin `basis`.** SHA de **40 hex minúsculas**, completo. Una rama no sustituye a un SHA. Sin él, tu review, validación o aprobación no cuenta para ningún gate.
+3. **Declara tu ignorancia.** `submit` y `review` sin `unverified` son no conformes. `unverified: []` es admisible y significa «no queda nada por verificar»: es una afirmación fuerte y te la van a atacar. En review adversarial hacen falta además `falsified` y, si el veredicto no es `approve`, `would_change_my_mind`.
+4. **No revisas ni apruebas lo que entregaste.**
+5. **Toda pregunta al humano lleva `default_if_silent` y `expires`.** No te quedes esperando. Y el silencio **nunca** autoriza desplegar, migrar, escribir en remoto ni nada irreversible.
+6. **Verifica antes de actuar.** Labels y tableros son hints; confirma en el log y en el head de la rama.
+
+## 2.1 Miembros comunes de todo evento (ACP-1.1)
+
+```yaml
+v: "1.1"                    # cadena mayor.menor
+type: claim                 # uno de los 27 del catálogo cerrado
+actor: claude               # SIEMPRE. Es tu identidad declarada, no probada
+item: RF-142                # exactamente uno de `item` o `program`
+after: "github-comment:2451889301"   # salvo raíz. Lo asigna la plataforma
+```
+
+- **Raíz:** solo `spec`, `reconcile` y `decide` de programa pueden llevar `root: true` y omitir `after`. Todo lo demás **debe** enlazar. Una raíz se declara; no se deduce de que falte el campo.
+- **Extensiones:** van dentro de `extensions:`, con clave `^x-[a-z0-9][a-z0-9-]*$`. Nunca sueltas en la raíz, nunca sustituyendo un campo normativo.
+- **Tiempo:** todo lo que escribes es **duración relativa** (`6h`, `3d`, `2w`). Nunca una fecha absoluta: tu reloj no es fiable.
+- **Catálogo cerrado (27):** `answer` `approve` `assume` `authorize` `block` `checkpoint` `claim` `close` `debt` `decide` `handoff` `heartbeat` `progress` `question` `reconcile` `release` `revalidate` `review` `revoke` `risk` `spec` `submit` `supersede` `triage` `unblock` `validate` `violation`. No hay alias: es `decide`, no `decision`; `validate`, no `validation`; `spec`, no `specify`.
+
+## 2.2 Cuándo detenerte
+
+Detente y escala en lugar de seguir cuando:
+
+- no puedas **leer** un `after`, un SHA o un digest que necesitas;
+- el evento que quieres emitir sea de un tipo que no está en el catálogo;
+- leas un evento con **versión mayor distinta**: modo solo lectura, no emitas nada;
+- leas un **tipo de evento que no conoces**: no lo interpretes, no lo cuentes para ningún gate;
+- el log posterior al último checkpoint pase de 2.000 tokens: primero checkpoint, luego trabajo;
+- la acción que vas a hacer esté en §7 y no exista un `authorize` vigente.
 
 ## 3. Localizar tu siguiente trabajo
 
@@ -55,10 +82,11 @@ gh api repos/ReformandoPro/reforapp/issues/142/comments --jq '.[] | select(.body
 
 ````
 ```acp
-v: 1
+v: "1.1"
 type: claim
 item: RF-142
-after: 2451889301
+actor: claude
+after: "github-comment:2451889301"
 lease: 6h
 touches: [db/migrations/**, src/security/rls/**]
 intent: "Migración idempotente de grants"
@@ -91,19 +119,21 @@ Obligatorio si: el log tras el último checkpoint pasa de 2.000 tokens, hay más
 
 ````
 ```acp
-v: 1
+v: "1.1"
 type: checkpoint
 item: RF-142
-covers: [2451889301, 2451890420]
+actor: chatgpt
+after: "github-comment:2451890420"
+covers: ["github-comment:2451889301", "github-comment:2451890420"]
 state: {phase: IN_REVIEW, freshness: FRESH, modifiers: ["at-risk:RSK-014"]}
-basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff210}
+basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263}
 resume:
   goal: "..."
   done: ["..."]
   remaining: ["..."]
   traps: ["lo que ya se descubrió que no funciona"]
   next_action: "..."
-open: ["review de hermes pendiente sobre c04ff210"]
+open: ["review de hermes pendiente sobre c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263"]
 gates: {merge: "2/4: falta review fresca y validation:tests"}
 unverified_open: ["..."]
 ```
@@ -130,4 +160,4 @@ Una autorización está atada a un `basis.sha`: si el SHA cambia, muere. Y un di
 
 Emite `handoff` (o `progress`) con un `resume` que incluya `done`, `remaining`, `traps` y `next_action`. **Un handoff sin `resume` no libera tu lease**: el trabajo sigue siendo tuyo hasta que lo entregues bien.
 
-Campos obligatorios por tipo de evento: `ACP-1.md` §21.
+Campos obligatorios por tipo de evento: `ACP-1.md` §5.3 y §21. Enmiendas y su estado: `decisions/ACP-1.1-amendments.md`.
