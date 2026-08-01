@@ -1,0 +1,139 @@
+name: R1 isolated migration (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Read-only plan or guarded R1 application'
+        required: true
+        type: choice
+        options:
+          - plan_r1
+          - apply_r1
+      confirm_project_ref:
+        description: 'Must equal hafljwojvblyfljddjcr'
+        required: true
+        type: string
+      confirm_apply:
+        description: 'Confirmación adicional para apply_r1'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r1-isolated-migration
+  cancel-in-progress: false
+
+env:
+  APPROVED_SHA: 1b0bd622123929409953584c2bad70a17a570190
+  PROJECT_REF: hafljwojvblyfljddjcr
+  R1_TIMESTAMP: 20260801130000
+  R1_NAME: 20260801130000_r1_acl_orphan_tables_hardening.sql
+  R1_SHA256: 7504d537300afd3ea3dc949787ae06e0a0e64c816dc6195d68241d04fb32b84d
+
+jobs:
+  isolated-r1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout approved SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APPROVED_SHA }}
+          fetch-depth: 1
+
+      - name: Validate immutable inputs
+        env:
+          INPUT_PROJECT_REF: ${{ inputs.confirm_project_ref }}
+          INPUT_MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_SHA" = "$APPROVED_SHA"
+          test "$INPUT_PROJECT_REF" = "$PROJECT_REF"
+          case "$INPUT_MODE" in plan_r1|apply_r1) ;; *) exit 1 ;; esac
+
+      - name: Guard apply confirmation before credentials
+        env:
+          INPUT_MODE: ${{ inputs.mode }}
+          INPUT_CONFIRM_APPLY: ${{ inputs.confirm_apply }}
+          INPUT_PROJECT_REF: ${{ inputs.confirm_project_ref }}
+        run: |
+          set -euo pipefail
+          test "$INPUT_PROJECT_REF" = "hafljwojvblyfljddjcr"
+          if [ "$INPUT_MODE" = "apply_r1" ]; then
+            if [ "$INPUT_CONFIRM_APPLY" != "APPLY_R1_ONLY" ]; then
+              echo "ERROR: apply_r1 requires confirm_apply=APPLY_R1_ONLY" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Install Supabase CLI
+        run: |
+          set -euo pipefail
+          npm i -g supabase@2
+          supabase --version
+
+      - name: Plan and optionally apply only R1
+        if: ${{ inputs.mode == 'plan_r1' || inputs.mode == 'apply_r1' }}
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set -Eeuo pipefail
+          set +x
+          REPORT_DIR="$RUNNER_TEMP/r1-isolated"
+          WORK="$(mktemp -d)"
+          mkdir -p "$REPORT_DIR" "$WORK/supabase/migrations"
+          cleanup() { rm -rf "$WORK"; }
+          trap cleanup EXIT
+          test -n "$DATABASE_URL"
+          test -f "supabase/migrations/$R1_NAME"
+          actual_sha=$(sha256sum "supabase/migrations/$R1_NAME" | awk '{print $1}')
+          test "$actual_sha" = "$R1_SHA256"
+
+          supabase migration list --db-url "$DATABASE_URL" > "$REPORT_DIR/migration-list.txt" 2>&1
+          mapfile -t remote_timestamps < <(
+            awk -F'|' '{gsub(/[[:space:]]/, "", $2); if ($2 ~ /^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/) print $2}' "$REPORT_DIR/migration-list.txt" | sort -u
+          )
+          test "${#remote_timestamps[@]}" -ge 0
+          for timestamp in "${remote_timestamps[@]}"; do
+            mapfile -t matches < <(find supabase/migrations -maxdepth 1 -type f -name "${timestamp}_*.sql" -printf '%f\n')
+            test "${#matches[@]}" -eq 1
+            cp "supabase/migrations/${matches[0]}" "$WORK/supabase/migrations/${matches[0]}"
+          done
+          cp "supabase/migrations/$R1_NAME" "$WORK/supabase/migrations/$R1_NAME"
+          test "$(find "$WORK/supabase/migrations" -maxdepth 1 -type f -name '*.sql' | wc -l | tr -d ' ')" -ge 1
+
+          pushd "$WORK" >/dev/null
+          test -f "$OLDPWD/supabase/config.toml" && cp "$OLDPWD/supabase/config.toml" supabase/config.toml
+          supabase db push --dry-run --db-url "$DATABASE_URL" > "$REPORT_DIR/dry-run.txt" 2>&1
+          popd >/dev/null
+
+          mapfile -t planned_timestamps < <(
+            grep -Eo '[0-9]{14}' "$REPORT_DIR/dry-run.txt" | sort -u
+          )
+          test "${#planned_timestamps[@]}" -eq 1
+          test "${planned_timestamps[0]}" = "$R1_TIMESTAMP"
+          printf 'count=1\ntimestamp=%s\nname=%s\n' "$R1_TIMESTAMP" "$R1_NAME" > "$REPORT_DIR/plan.txt"
+          grep -F "$R1_TIMESTAMP" "$REPORT_DIR/dry-run.txt" >/dev/null
+          if grep -Eo '[0-9]{14}' "$REPORT_DIR/dry-run.txt" | grep -vFx "$R1_TIMESTAMP" >/dev/null; then
+            echo 'ERROR additional migration in dry-run' >&2
+            exit 1
+          fi
+
+          if [ "${{ inputs.mode }}" = apply_r1 ]; then
+            pushd "$WORK" >/dev/null
+            supabase db push --db-url "$DATABASE_URL" > "$REPORT_DIR/apply.txt" 2>&1
+            popd >/dev/null
+          fi
+
+      - name: Upload isolated R1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1-isolated-migration-plan
+          path: ${{ runner.temp }}/r1-isolated
+          retention-days: 7
+          if-no-files-found: error
