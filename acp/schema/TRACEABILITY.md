@@ -1,6 +1,20 @@
 # Traceability — ACP-1.1 requirement to schema to fixture
 
-Maps every normative requirement of **ACP-1.1** (`feat/acp-1-1-normative-amendments@1bda3e997291e337cc1a3956462e643219d71547`) to the schema construct that enforces it, the fixtures that prove it, and — where the schema cannot reach — the external check that must.
+Maps every normative requirement of **ACP-1.1** (`feat/acp-1-1-normative-amendments@983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad`) to the schema construct that enforces it, the fixtures that prove it, and — where the schema cannot reach — the external check that must.
+
+### Source identity
+
+| | |
+|---|---|
+| ACP-1.1 audited source head | `983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad` (`feat/acp-1-1-normative-amendments`) |
+| Integrated by | PR **#151** |
+| Merge commit into `main` | `9ee046e8bb645ae364cc38ef95875487d5060b3b` — second parent `983c3a4a…`, first parent `fbaa2f75…`, the five ACP-1.1 blobs identical to the audited head |
+| Status | **reconciled / integrated — not adopted.** ACP-1.1 remains an amendment candidate; being merged into `main` records where the tree lives, not that it was approved |
+| Superseded reference | `1bda3e99…` — the head this document cited before, an ancestor of the audited head by two commits. **No longer the canonical source** |
+
+The two SHAs answer different questions and neither replaces the other: `983c3a4a…` is the normative identity of what was audited; `9ee046e8…` is the proof of where it was integrated.
+
+---
 
 **`external` is not a gap that was overlooked. It is the honest classification.** Rows marked external are enforced by nothing in this repository today.
 

@@ -2,7 +2,13 @@
 
 > ## Status: **ACP-1.1 amendment candidate implementation**
 >
-> These schemas implement **ACP-1.1** as published in `feat/acp-1-1-normative-amendments@1bda3e997291e337cc1a3956462e643219d71547`.
+> These schemas implement **ACP-1.1** as published in `feat/acp-1-1-normative-amendments@983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad` — the audited source head.
+>
+> Schema V3 was reconciled against ACP-1.1 source head `983c3a4a…`. That exact tree was integrated into `main` by PR #151 through merge commit `9ee046e8…`. **The merge commit records integration; it does not replace the audited source identity.** `983c3a4a…` identifies *what* was reviewed; `9ee046e8…` proves *where* it landed. Both are needed to trace this schema back to its source, and neither substitutes for the other.
+>
+> The earlier head `1bda3e99…` is **no longer the canonical implemented source**: it is an ancestor of `983c3a4a…` by two commits (the H1/H2/H3 corrections and the N-2 checkpoint rule), and `acp/ACP-1.md` differs between them.
+>
+> **Known inconsistency, deliberately left in place.** The `description` strings inside `envelope.schema.json` and `profile.schema.json` still cite `1bda3e99…` as the implemented head. The JSON schemas are byte-frozen in this round and were not touched, so those two strings are stale. Until a round that may modify the schemas corrects them, **this README and `TRACEABILITY.md` carry the authoritative source identity**, and the STATUS string inside each schema must be read as historical.
 >
 > ACP-1.1 is itself a candidate that has **not** been approved. This is therefore an *implementation of a candidate*, not a conformant implementation of an adopted standard. **No conformance claim is made until a new independent review.** The previous review returned `SCHEMA STRUCTURALLY VALID — FIXTURE CORPUS INSUFFICIENT`; this version answers M1–M5 and L1–L5, and the corpus grew from 80 to 153 fixtures.
 
@@ -11,7 +17,9 @@
 | JSON Schema dialect | **Draft 2020-12** |
 | Envelope | `envelope.schema.json`, `$id: urn:acp:schema:envelope:0.3.0` |
 | Profile | `profile.schema.json`, `$id: urn:acp:schema:profile:0.3.0` |
-| Implements | ACP-1.1 @ `1bda3e99` |
+| Implements — ACP-1.1 audited source head | `983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad` on `feat/acp-1-1-normative-amendments` |
+| Integrated into `main` | PR **#151**, merge commit `9ee046e8bb645ae364cc38ef95875487d5060b3b` (second parent `983c3a4a…`, first parent `fbaa2f75…`) |
+| Integration status | **reconciled and integrated, not adopted** — merging into `main` moves the tree, it does not approve the candidate |
 | Supersedes | 0.2.0 @ `9d073e3c` |
 | Traceability | [`TRACEABILITY.md`](TRACEABILITY.md) — **113** requirements, **53** external |
 | Executable code shipped | **None** |
@@ -157,7 +165,7 @@ ACP-1.1 §0.5 listed eight points where schema 0.2.0 disagreed with the specific
 | **M2** duplicate option ids | **Documented limitation, not fixed.** A map keyed by id would prevent it structurally, but ACP-1.1 §13.6 specifies `options` as an array of objects, and changing it here would be the schema legislating over the specification — the exact mistake this round exists to correct. Fixture `50-question-duplicate-option-ids` is **valid on purpose**: it records that the schema accepts a document a semantic validator must reject. Proposed for ACP-1.2 |
 | **M3** `scope_diff.paths` | Fixed: `minItems: 1`. Fixture `56` |
 | **M4** profile referential integrity | Not fixable in JSON Schema. Full table in §7 |
-| **M5** Reformando profile fixture | Regenerated from the real `acp/acp.yml` at ACP-1.1 `1bda3e99`, transcoded without edits. Six policy keys it declares (`require_claim_reference`, `revalidate_resets_ttl`, `revalidate_same_actor_only`, `require_full_sha`, `allow_empty_unverified`, `require_adversarial_declaration`) were missing from the profile schema and were added — **the real file caught them; a hand-written example would not have** |
+| **M5** Reformando profile fixture | Regenerated from the real `acp/acp.yml` at ACP-1.1 `1bda3e99` — *the head current when this round was done, kept here as the historical record of the transcode*. That file is **byte-identical at the audited head `983c3a4a…`** (blob `65f81b28…`), so the fixture is still a faithful transcode. Transcoded without edits. Six policy keys it declares (`require_claim_reference`, `revalidate_resets_ttl`, `revalidate_same_actor_only`, `require_full_sha`, `allow_empty_unverified`, `require_adversarial_declaration`) were missing from the profile schema and were added — **the real file caught them; a hand-written example would not have** |
 | **L1** profile extension grammar | Aligned with the envelope: same pattern, same container. Fixtures `66`, `67`, `68` |
 | **L2** delivery vocabulary | **Reverted after independent review.** 0.3.0 replaced the normative enum with a generic vocabulary; that was the schema legislating over the specification. The vigent normative enum is ACP-1.1 §6.1: `pull-request`, `merge-request`, `branch`, `patch`. The generic set (`change-request`, `commit`, `artifact`, `external`) survives **only as a proposal for ACP-1.2** and MUST NOT be anticipated. A pull request number still lives in `extensions.x-github-pr` |
 | **L3** risk/debt/decision id prefixes | Removed from Core (`$defs/entityId` is a generic token). `RSK-`, `DEBT-`, `ACD-` are profile policy |
