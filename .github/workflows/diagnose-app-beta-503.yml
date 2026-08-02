@@ -131,7 +131,7 @@ jobs:
             rm -f -- "$RAW_INSPECT" "$INSPECT_ERRORS" "$APP_LOG_ERRORS" "$HEADERS"
           }
           trap cleanup_runtime_temporaries EXIT
-          SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -i "$RUNNER_TEMP/ssh/key" -p "$APP_BETA_SSH_PORT" "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST")
+          SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" -i "$RUNNER_TEMP/ssh/key" -p "$APP_BETA_SSH_PORT" "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST")
           remote() { "${SSH[@]}" "$@"; }
           export TARGET_CONTAINER FORBIDDEN_CONTAINER APP_BETA_HOST
 
