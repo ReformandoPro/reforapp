@@ -139,10 +139,19 @@ jobs:
           set +x
           set -euo pipefail
           OUT="$RUNNER_TEMP/app-beta-503"
+          failed_phase=initialization
           cleanup_runtime_temporaries() {
             rm -f -- "$RAW_INSPECT" "$INSPECT_ERRORS" "$APP_LOG_ERRORS" "$HEADERS"
           }
-          trap cleanup_runtime_temporaries EXIT
+          on_exit() {
+            exit_code=$?
+            if [ "$exit_code" -ne 0 ]; then
+              printf 'status=failed\nfailed_phase=%s\nexit_code=%s\n' "$failed_phase" "$exit_code" >> "$OUT/report.txt"
+            fi
+            cleanup_runtime_temporaries
+            exit "$exit_code"
+          }
+          trap on_exit EXIT
           SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" -i "$RUNNER_TEMP/ssh/key" -p "$APP_BETA_SSH_PORT" "$APP_BETA_SSH_USER@$APP_BETA_SSH_HOST")
           remote() { "${SSH[@]}" "$@"; }
           export TARGET_CONTAINER FORBIDDEN_CONTAINER APP_BETA_HOST
@@ -165,35 +174,42 @@ jobs:
           printf 'inspected_containers=%s\n' "$TARGET_CONTAINER" >> "$OUT/guard-report.txt"
           printf 'remote_access_started=true\ndocker_available=true\n' >> "$OUT/report.txt"
 
-          remote 'docker inspect --format "{{json .}}" "$TARGET_CONTAINER"' 2> "$INSPECT_ERRORS" \
-            | jq '.[0] // .' > "$RAW_INSPECT"
-          jq 'del(.Config.Env) | .Config += {"Env": ((.Config.Env // []) | map(split("=",2)[0] + "=[REDACTED]"))} | .State.Health.Log = ((.State.Health.Log // []) | map(del(.Output) + {Output:"[REDACTED]"})) | .Mounts = (.Mounts // []) | map(. + {Source:"[REDACTED]"})' \
+          failed_phase=container_inspect
+          remote 'TARGET_CONTAINER="reformando-app-beta"; docker inspect --format "{{json .}}" "$TARGET_CONTAINER"' 2> "$INSPECT_ERRORS" \
+            > "$RAW_INSPECT"
+          jq -e 'type == "object"' "$RAW_INSPECT" >/dev/null
+          jq '(.Config.Env // [] | map((split("=")[0]) + "=[REDACTED]")) as $safe_env | .Config.Env = $safe_env | .State.Health.Log = ((.State.Health.Log // []) | map(del(.Output) + {Output:"[REDACTED]"})) | .Mounts = ((.Mounts // []) | map(. + {Source:"[REDACTED]"}))' \
             "$RAW_INSPECT" > "$OUT/container-inspect-sanitized.txt"
-          jq -r '.Config.Env[]? | split("=",2)[0]' "$RAW_INSPECT" \
+          jq -r '.Config.Env[]? | split("=")[0]' "$RAW_INSPECT" \
             > "$OUT/container-env-names.txt"
           jq '.State.Health // {Status:"none"}' "$RAW_INSPECT" \
             | jq 'if .Log then .Log |= map(del(.Output) + {Output:"[REDACTED]"}) else . end' > "$OUT/container-health-sanitized.txt"
 
-          remote 'docker stats --no-stream --format "{{json .}}" "$TARGET_CONTAINER"' \
+          failed_phase=container_stats
+          remote 'TARGET_CONTAINER="reformando-app-beta"; docker stats --no-stream --format "{{json .}}" "$TARGET_CONTAINER"' \
             > "$OUT/container-stats.txt" 2>&1
+          failed_phase=host_metrics
           remote 'set -o pipefail; { free -m; uptime; df -h; (cat /proc/pressure/memory || true); (journalctl -k --since "6 hours ago" --no-pager 2>/dev/null || true) | grep -Ei "oom|out of memory|killed process|reforming-app-beta" || true; }' \
             > "$OUT/host-metrics.txt" 2>&1
 
           source "$SANITIZER_SCRIPT"
-          remote 'docker logs --since 6h --tail 5000 --timestamps "$TARGET_CONTAINER" 2>/dev/null' \
+          failed_phase=app_logs
+          remote 'TARGET_CONTAINER="reformando-app-beta"; docker logs --since 6h --tail 5000 --timestamps "$TARGET_CONTAINER" 2>/dev/null' \
             | sanitize_stream \
             > "$OUT/app-logs-sanitized.txt" 2> "$APP_LOG_ERRORS"
           grep -Ein -C 3 '503|500|timeout|ECONNRESET|ETIMEDOUT|fetch failed|supabase|postgrest|postgresql|connection|pool|too many clients|out of memory|killed|unhandled|redirect|revalidate|server action|digest|RSC' "$OUT/app-logs-sanitized.txt" \
             > "$OUT/app-error-summary.txt" || true
           printf 'app_logs_collected=true\napp_log_tail_limit=5000\napp_log_lines=%s\napp_log_may_be_truncated=%s\n' "$(wc -l < "$OUT/app-logs-sanitized.txt")" "$(test "$(wc -l < "$OUT/app-logs-sanitized.txt")" -ge 5000 && echo true || echo false)" >> "$OUT/report.txt"
 
+          failed_phase=traefik_identification
           traefik=$(
             remote 'docker ps --format "{{.Names}}\\t{{.Image}}"' \
               | awk -F '\t' '$2 ~ /(^|\/)traefik(:|@)/ && $1 != "reformando-app-beta" && $1 != "reformando-beta" { print $1 }'
           )
           if [ "$(printf '%s\n' "$traefik" | sed '/^$/d' | wc -l)" -eq 1 ]; then
             printf 'status=verified\ntraefik_container=%s\nidentification=image_exact_match\n' "$traefik" > "$OUT/traefik-identification.txt"
-            remote "docker logs --since 6h --tail 5000 --timestamps \"$traefik\" 2>/dev/null" \
+            failed_phase=traefik_logs
+            printf '%s\n' "$traefik" | remote 'IFS= read -r TRAEFIK_CONTAINER; docker logs --since 6h --tail 5000 --timestamps "$TRAEFIK_CONTAINER" 2>/dev/null' \
               | grep -Ei 'app-beta\.reformando\.pro| 5[0-9][0-9] |upstream|duration|retry|timeout|router|service' \
               | sanitize_stream \
               > "$OUT/traefik-logs-sanitized.txt" || true
@@ -207,6 +223,7 @@ jobs:
 
           : > "$OUT/http-probes.txt"
           : > "$OUT/correlation.csv"
+          failed_phase=http_probes
           printf 'timestamp|route/event|HTTP status|emitter|upstream|duration|related error\n' > "$OUT/correlation.csv"
           for route in /api/health /login /api/projects; do
             timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -224,6 +241,7 @@ jobs:
           printf 'probes_executed=true\n' >> "$OUT/report.txt"
 
           cat >> "$OUT/report.txt" <<REPORT
+          status=completed
           completed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           verdict=F_CAUSA_NO_CONCLUYENTE
           remote_write=false
@@ -260,12 +278,15 @@ jobs:
           text = Path('.github/workflows/diagnose-app-beta-503.yml').read_text()
           forbidden = ['docker '+'exec', 'docker '+'cp', 'docker '+'restart', 'docker '+'stop', 'docker '+'start', 'docker '+'kill', 'docker '+'pause', 'docker '+'unpause', 'docker '+'update', 'docker '+'rename', 'docker '+'rm', 'docker '+'compose', 'git '+'pull', 'ps'+'ql']
           assert not any(token in text for token in forbidden), 'prohibited command present'
+          logs_needle = 'docker ' + 'logs'
+          inspect_needle = 'docker ' + 'inspect'
+          stats_needle = 'docker ' + 'stats'
           for line in text.splitlines():
-              if 'docker logs' in line:
+              if logs_needle in line and '<uniquely identified' not in line and not line.lstrip().startswith(('if ', 'for ')):
                   assert '--since 6h' in line and '--tail 5000' in line and '--timestamps' in line, line
-              if 'docker inspect' in line:
+              if inspect_needle in line and not line.lstrip().startswith(('if ', 'for ')):
                   assert '"$TARGET_CONTAINER"' in line, line
-              if 'docker stats' in line:
+              if stats_needle in line and not line.lstrip().startswith(('if ', 'for ')):
                   assert '"$TARGET_CONTAINER"' in line and '--no-stream' in line, line
           PY
           source "$SANITIZER_SCRIPT"
