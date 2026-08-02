@@ -40,6 +40,18 @@ type IssueRow = {
   created_at: string;
 };
 
+function isIssueRow(value: unknown): value is IssueRow {
+  if (!value || typeof value !== "object") return false;
+
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.id === "string" &&
+    typeof row.reporter_user_id === "string" &&
+    typeof row.description === "string" &&
+    typeof row.created_at === "string"
+  );
+}
+
 const statusLabels: Record<ProjectTaskStatus, string> = {
   pending: "Pendiente",
   in_progress: "En curso",
@@ -217,11 +229,11 @@ export default async function AppProjectTaskDetailPage({
   }
 
   const row = task as unknown as TaskRow;
-  const issueRows = (issues ?? []) as IssueRow[];
+  const issueRows = Array.isArray(issues) ? issues.filter(isIssueRow) : [];
   const commentRows = (comments ?? []) as CommentRow[];
 
   const issueItems: TaskIssueListItem[] = issueRows.map((issue) => {
-    const reporterLabel = labelByUserId.get(issue.reporter_user_id) ?? issue.reporter_user_id;
+    const reporterLabel = labelByUserId.get(issue.reporter_user_id) ?? "Usuario";
     return {
       id: issue.id,
       reporterLabel,
