@@ -5,7 +5,7 @@
 - **Clasificación:** Post-MVP.
 - **Prioridad:** Alta para la v1 comercial.
 - **Estado:** Iniciativa documentada; no bloquea la beta actual.
-- **Fuente:** `reformando-obramat-viabilidad.md` — viabilidad técnica y contractual de la integración Reformando × OBRAMAT.
+- **Fuente:** análisis documental de viabilidad técnica y contractual de la integración Reformando × OBRAMAT, incorporado en este roadmap.
 
 ### Decisiones aprobadas
 

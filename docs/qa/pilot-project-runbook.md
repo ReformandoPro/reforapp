@@ -13,9 +13,9 @@ Demostrar el flujo completo de valor con una única obra piloto, sin intervenci�
 
 ## Ejecución
 
-1. Crear un presupuesto con partidas reales de prueba.
-2. Emitir el primer presupuesto y registrar el tiempo hasta primer valor; objetivo: menos de 60 minutos.
-3. Generar la obra desde el presupuesto y confirmar la relación.
+1. Crear un cliente.
+2. Crear una obra vinculada al cliente.
+3. Crear y editar una fase.
 4. Crear al menos 5 tareas con fase, prioridad y fecha.
 5. Completar las 5 tareas y verificar Kanban, detalle y persistencia.
 6. Registrar al menos 2 incidencias vinculadas a tareas.
@@ -26,13 +26,13 @@ Demostrar el flujo completo de valor con una única obra piloto, sin intervenci�
 
 ## Métricas
 
-- presupuesto creado y emitido: PASS/FAIL;
-- obra generada desde presupuesto: PASS/FAIL;
+- cliente creado: PASS/FAIL;
+- obra creada desde cliente: PASS/FAIL;
 - tareas creadas: mínimo 5;
 - tareas completadas: mínimo 5;
 - incidencias registradas: mínimo 2;
 - incidencias cerradas: mínimo 2;
-- tiempo hasta primer valor: <60 min;
+- tiempo hasta primer valor de cliente a estado operativo: <60 min;
 - pantallas núcleo: <3 s;
 - pérdida de datos: cero;
 - P0/P1 abiertos: cero;
