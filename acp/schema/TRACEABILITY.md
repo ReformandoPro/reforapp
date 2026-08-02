@@ -160,14 +160,73 @@ Schema paths are relative to `envelope.schema.json` unless prefixed `profile:`.
 
 ---
 
+---
+
+## 12. Requisitos añadidos tras la revisión independiente
+
+Hermes confirmó que estas reglas normativas no estaban trazadas. Se añaden con su fixture.
+
+| Requirement | ACP-1.1 § | Schema path | Valid fixture | Invalid fixture | External check |
+|---|---|---|---|---|---|
+| `delivery.kind` es el enum normativo de la spec | 6.1 (A6) | `ev.submit/delivery/kind` | `09` (pull-request), `51`, `52`, `53` | `78`, `79`, `80`, `81` | — |
+| `violation.rule` admite los 23 códigos de §15.1 | 15.1 | `ev.violation/rule` | `32`, `46`, `54`–`61` | `91-violation-unknown-rule` | — |
+| Un checkpoint puede ser de item o de programa | 11.6, 5.2.1 | `ev.checkpoint` + root `oneOf` | `30` (item), `62` (programa) | `86-checkpoint-item-and-program` | — |
+| Un checkpoint de item lleva `state` y `gates` | 11.3 | `ev.checkpoint/allOf[0]` | `30` | `87-item-checkpoint-without-state` | — |
+| Una migración de versión mayor se anuncia con `from`/`to` en un checkpoint de programa | 16.4 | `ev.checkpoint` `from`,`to` + `dependentRequired` | `62` | `88`, `89`, `90` | — |
+| `v` es exactamente `"1.1"` en un escritor conforme | 16.1, 16.2 | `properties/v` `const` | todas | `34`, `82`, `83`, `84`, `85` | Tolerancia de lector: **external** |
+| Los alias prohibidos se rechazan por el enum de `type` | 5.3 | `$defs/eventType` | — | `69`–`77` | — |
+| `reconcile` puede ser raíz de item o de programa | 5.4.1 | `$defs/rootEligibleType` + root `oneOf` | `43` (item), `63` (programa) | — | Que realmente inicie un hilo: **external** |
+| Idempotencia por `(type, item, actor, basis.sha, after)` | 5.5 | — | — | — | **external** (lector del log) |
+| Direccionamiento por URN de entidades | 4.1 | `$defs/urn` | `22`, `24` | — | Que la URN resuelva: **external** |
+| Modificadores de estado con su gramática | 7.3 | `$defs/modifier` | `30` | — | Que el modificador corresponda al estado real: **external** |
+| Registro de riesgo con `signal` y estado | 13.2 | `$defs/risk` | `26`, `44` | `57` | Que el riesgo se revise: **external** |
+| Registro de deuda con `authorized_by` y `payoff_trigger` | 13.3 | `$defs/debt` | `27`, `45` | `58` | Que el firmante tenga autoridad: **external** |
+| Registro de bloqueo con condición verificable y escalado | 13.4 | `ev.block` | `24` | — | Que `unblock_when` sea verificable: **external** |
+| Enlaces bidireccionales sin extremos colgantes | 12.1 | — | — | — | **external** (`violation:dangling-link`) |
+| Un lector falla cerrado ante un tipo desconocido | 16.2 | `$defs/eventType` (lado escritor) | — | `27` | Conducta del lector: **external** |
+| Deriva de proyección detectada en la reconciliación | 15.3 | — | — | — | **external** (motor de proyección) |
+| Ids de opción únicos y `default_if_silent` resoluble | 13.6 | **ninguno** | `50` documenta el hueco | — | **external** (validador semántico) |
+
+## 13. Registro de requisitos external
+
+Cada fila external deja de ser una etiqueta. Responsable, entradas, salida, comportamiento ante fallo y efecto sobre gates.
+
+| Invariante external | Responsable | Inputs | Output esperado | Comportamiento de fallo | ¿Bloquea gates? |
+|---|---|---|---|---|---|
+| `actor` declarado ↔ observado | binding | evento + identidad de plataforma + perfil | coincide / no coincide / indeterminado | `violation:identity-mismatch`, efecto `void` | **sí**: sin él no hay independencia |
+| `on_behalf_of` no escala privilegios | resolutor de capacidades | evento + perfil | capacidades de `actor` únicamente | rechazo del evento | **sí** |
+| `after` es el último evento leído | lector del log | log del hilo | confirmado / obsoleto | marca informativa | no |
+| Bifurcación causal | lector del log | log del hilo | `contested` | bloquear avance de fase | **sí** |
+| Una sola raíz por hilo | lector del log | log del hilo | conforme / duplicada | `violation:duplicate-root` | **sí** |
+| El puntero causal resuelve | lector del log | log + puntero | resuelve / colgante | `violation:dangling-pointer`, efecto **`flag`** | no |
+| Idempotencia | lector del log | log | conjunto deduplicado | descartar el duplicado | no |
+| El SHA existe y es head | git | basis + repositorio | existe / obsoleto / inalcanzable | afirmación `STALE` o no verificable | **sí** |
+| El diff cae dentro de `touches` | git | diff + `touches` | dentro / fuera | `violation:scope-creep` | no |
+| Caducidad de lease | motor de leases | log + reloj de plataforma | vivo / caducado | devolver el item a `READY` | **sí** para `claim` |
+| Solo el autor original revalida | lector del log | log | conforme / no conforme | descartar la revalidación | **sí** |
+| Revalidar no reinicia el TTL | lector del log + reloj | log + `review_ttl` | fresco / caducado | excluir del gate | **sí** |
+| Existencia y digest de la evidencia | verificador de artefactos | evidencia + almacén | verificada / no recuperable | degradar a `reproducible: false` | **sí** en riesgo alto |
+| Frescura y revocación de autorizaciones | evaluador de autorización | log + reloj | vigente / muerta | denegar la acción | **sí** |
+| Pregunta que es una autorización disfrazada | validador semántico | evento + `never_default_actions` | reclasificación o violación | fallar cerrado | **sí** |
+| Ids de opción únicos y default resoluble | validador semántico | evento | conforme / ambiguo | **fallar cerrado; `default_if_silent` no se aplica y el vencimiento escala** | **sí** |
+| Independencia de revisión | lector del log + identidad | log + perfil | satisfecha / indeterminada | `INCONCLUSIVE`, nunca satisfecha | **sí** |
+| Identificador de work item conforme al perfil | pasada perfil-consciente | evento + perfil | conforme / reservado | `violation:reserved-id` | no |
+| Integridad referencial del perfil | profile linter | perfil | 0 referencias rotas | bloquear adopción del perfil | **sí** |
+| Determinismo y deriva de proyección | motor de proyección | log + perfil + instante | proyección canónica + digest | marcar obsoleta, exigir `reconcile` | **sí** para estado sensible |
+| Enlaces bidireccionales | coordinador | log + entidades | 0 extremos colgantes | `violation:dangling-link` | no |
+| Conducta del lector ante tipo desconocido | lector | evento | fallar cerrado para ese evento | no contarlo para ningún gate | **sí** |
+| Honestidad de `unverified`, `falsified`, `env` | revisor adversarial | evento | juicio | `INCONCLUSIVE` | **sí** de facto |
+
 ## Coverage summary
 
-| | Count |
-|---|---|
-| Requirements traced | 78 |
-| Enforced by the schema | 52 |
-| Requiring an external check | 26 |
-| Requirements with at least one valid fixture | 51 |
-| Requirements with at least one invalid fixture | 44 |
+Recalculado desde las tablas de este fichero tras la revisión independiente. **Las cifras anteriores (78 / 52 / 26) eran incorrectas**; el error se propagó al README y a dos informes de entrega, y es el motivo por el que ninguna cifra publicada debe copiarse a mano.
 
-**Twenty-six of seventy-eight requirements are not enforced by anything in this repository.** They need a semantic validator with access to the log, the repository, the platform clock and the active profile. That component does not exist. A green validation run says nothing about any of them.
+| | Antes (incorrecto) | Recalculado |
+|---|---|---|
+| Filas-requisito trazadas | 78 | **113** |
+| Exigidas por el schema | 52 | **62** |
+| Requieren comprobación external | 26 | **51** |
+| Con al menos una fixture válida | no publicado | **78** |
+| Con al menos una fixture inválida | no publicado | **63** |
+
+**51 de 113 requisitos no los exige nada en este repositorio.** Necesitan un validador semántico con acceso al log, al repositorio, al reloj de plataforma y al perfil activo. Ese componente no existe. Una ejecución en verde no dice nada sobre ninguno de ellos, y el registro de §13 nombra quién debería.

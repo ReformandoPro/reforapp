@@ -1,6 +1,7 @@
 {
   "v": "1.1",
   "type": "authorize",
+  "item": "RF-142",
   "actor": "jorge",
   "after": "github-comment:2451890165",
   "target": "acp:example/item/RF-142",

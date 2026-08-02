@@ -1,0 +1,12 @@
+{
+  "v": "1.1",
+  "type": "violation",
+  "item": "RF-142",
+  "actor": "hermes",
+  "after": "github-comment:2451890205",
+  "rule": "missing-touches",
+  "target": "github-comment:2451890201",
+  "severity": "low",
+  "effect": "flag",
+  "remedy": "Codigo missing-touches de ACP-1.1 15.1, ausente del schema 0.3.0 hasta esta correccion"
+}

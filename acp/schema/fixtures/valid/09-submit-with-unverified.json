@@ -47,7 +47,7 @@
     "Rollback of migration 0042 was not executed"
   ],
   "delivery": {
-    "kind": "change-request",
+    "kind": "pull-request",
     "id": 141
   },
   "extensions": {

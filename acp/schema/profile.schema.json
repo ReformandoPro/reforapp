@@ -272,7 +272,7 @@
       "type": "object",
       "properties": {
         "require_touches_in": {
-          "description": "Event types that must carry a declared write surface. These are event type names, not capability names: the capability that authorizes writing a specification is called specify, while the event it emits is called spec. The two namespaces are distinct and a profile that confuses them will silently fail to enforce anything.",
+          "description": "Event types that must carry a declared write surface. These are event type names. Since ACP-1.1 amendment A7 the capability names ARE the event type names, so the two registries cannot diverge; the pre-A7 capability spelling is listed only in the prohibited-alias table of ACP-1.1 section 5.3.",
           "type": "array",
           "items": { "$ref": "#/$defs/eventType" },
           "minItems": 1,
@@ -501,7 +501,7 @@
     },
 
     "capability": {
-      "description": "A protocol capability. ACP-1.1 amendment A7: capability names ARE event type names, plus veto. There is no translation between the two registries, so they cannot diverge. The 0.2.0 capability `specify` is gone (it is `spec`), and the `approve:<gate>` form is gone: `approve` is a plain capability and which gates a role may consent to is declared in roles.<role>.approve_gates. Platform abilities such as running a shell are NOT capabilities; they belong in agent.capabilities_extra.",
+      "description": "A protocol capability. ACP-1.1 amendment A7: capability names ARE event type names, plus veto. There is no translation between the two registries, so they cannot diverge. The pre-A7 capability spelling for `spec` is gone, as is the `approve:<gate>` form: `approve` is a plain capability and which gates a role may consent to is declared in roles.<role>.approve_gates. Platform abilities such as running a shell are NOT capabilities; they belong in agent.capabilities_extra.",
       "$comment": "CATALOGUE PARITY (C1, A16): this list is the event catalogue plus veto. catalogue-digest: sha256:046f7cadad317948c7a92a808bade47bbbdf61bdb467ce26a49891da730e0e91",
       "type": "string",
       "enum": [

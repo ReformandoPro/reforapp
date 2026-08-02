@@ -7,9 +7,9 @@
   "required": ["v", "type", "actor"],
   "properties": {
     "v": {
-      "description": "ACP Core version as major.minor (ACP-1.1 section 16.1). A string, not an integer: with a major alone the tolerant-reader rule of section 16.2 is inapplicable, because there is no way to tell a field added by a later minor from an author error. This schema implements 1.1 and accepts any 1.x with x>=1 so that a later minor is not rejected outright; it rejects 1.0 (structurally different: no mandatory actor, no subject rule) and every other major, which must fail closed.",
+      "description": "ACP Core version as major.minor (ACP-1.1 section 16.1). THIS SCHEMA IS WRITER-STRICT FOR ACP-1.1 AND ACCEPTS EXACTLY 1.1. It rejects 1.0 (structurally different: no mandatory actor, no subject rule), 1.2 and any later minor (their semantics are not implemented here, and validating them against 1.1 rules produces a confusing false rejection on unknown members), the old integer form, and non-canonical spellings such as 01.1. Reader tolerance towards a later minor is a SEPARATE layer, not this file (ACP-1.1 section 16.2): a future minor needs a future schema.",
       "type": "string",
-      "pattern": "^1\\.[1-9][0-9]*$"
+      "const": "1.1"
     },
     "type": { "$ref": "#/$defs/eventType" },
     "item": { "$ref": "#/$defs/workItemId" },
@@ -122,6 +122,12 @@
       "description": "Types that may legitimately begin a thread with no causal predecessor (ACP-1.1 section 5.4.1). Three, not six: spec creates an item thread; reconcile may open a programme thread; decide may begin one only when programme-scoped. risk, debt and violation always link to existing history, because each is discovered or incurred while doing something and the link is half of its value.",
       "type": "string",
       "enum": ["spec", "reconcile", "decide"]
+    },
+
+    "protocolVersion": {
+      "description": "A protocol version as major.minor in the grammar of ACP-1.1 section 21, with no leading zeros. Used by checkpoint from/to, where any released version may be named, unlike the v of an authored event which this writer-strict schema pins to 1.1.",
+      "type": "string",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$"
     },
 
     "programId": {
@@ -660,10 +666,10 @@
         "no_evidence_reason": { "type": "string", "minLength": 1 },
         "unverified": { "$ref": "#/$defs/uncertaintyDeclaration" },
         "delivery": {
-          "description": "Portable delivery pointer (L2). pull-request and merge-request were removed in 0.3.0: they are the nouns of two specific platforms, and a Core vocabulary that names them makes every other binding translate. change-request covers both; a pull request number belongs in extensions.x-github-pr.",
+          "description": "Delivery pointer. The enum is the NORMATIVE one of ACP-1.1 section 6.1. Schema 0.3.0 had unilaterally replaced it with a generic vocabulary (change-request, commit, artifact, external); that was the schema legislating over the specification, and it is reverted here. The generic vocabulary remains a proposal for ACP-1.2 and MUST NOT be anticipated. A pull request number still belongs in extensions.x-github-pr, not here.",
           "type": "object",
           "properties": {
-            "kind": { "type": "string", "enum": ["change-request", "commit", "artifact", "external"] },
+            "kind": { "type": "string", "enum": ["pull-request", "merge-request", "branch", "patch"] },
             "id": { "type": ["string", "integer"] }
           },
           "required": ["kind", "id"],
@@ -736,14 +742,14 @@
               "items": { "type": "string", "minLength": 1 },
               "minItems": 1
             },
-            "revalidated_parts": { "description": "What was actually re-checked. Mandatory when the diff falls inside the reviewed scope.", "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+            "revalidated_claims": { "description": "What was actually re-checked. Mandatory when the diff falls inside the reviewed scope.", "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
           },
           "required": ["outside_scope", "paths"],
           "additionalProperties": false,
           "allOf": [
             {
               "if": { "type": "object", "properties": { "outside_scope": { "const": false } }, "required": ["outside_scope"] },
-              "then": { "required": ["revalidated_parts"] }
+              "then": { "required": ["revalidated_claims"] }
             }
           ]
         },
@@ -955,9 +961,30 @@
         "basis": { "$ref": "#/$defs/basis" },
         "decisions_in_force": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "unverified_open": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-        "supersedes_checkpoint": { "$ref": "#/$defs/causalPointer" }
+        "supersedes_checkpoint": { "$ref": "#/$defs/causalPointer" },
+        "from": {
+          "description": "Protocol version this programme migrates FROM (ACP-1.1 section 16.4). Only on a programme checkpoint, and only together with to.",
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "to": {
+          "description": "Protocol version this programme migrates TO. Only on a programme checkpoint, and only together with from.",
+          "$ref": "#/$defs/protocolVersion"
+        }
       },
-      "required": ["item", "covers", "state", "resume", "open", "gates"]
+      "required": ["covers", "resume", "open"],
+      "allOf": [
+        {
+          "$comment": "H3: an item checkpoint summarises one item and carries that item's composite state and gate status. A programme checkpoint (ACP-1.1 sections 11.6 and 16.4) summarises a programme and has neither.",
+          "if": { "type": "object", "required": ["item"] },
+          "then": { "type": "object", "required": ["state", "gates"] }
+        },
+        {
+          "$comment": "ACP-1.1 section 16.4: a major protocol change is announced by a PROGRAMME checkpoint declaring from and to.",
+          "if": { "type": "object", "required": ["from"] },
+          "then": { "type": "object", "required": ["program"] }
+        }
+      ],
+      "dependentRequired": { "from": ["to"], "to": ["from"] }
     },
 
     "ev.reconcile": {
@@ -980,12 +1007,32 @@
       "type": "object",
       "properties": {
         "rule": {
+          "$comment": "The 23 codes of ACP-1.1 section 15.1, verbatim. Schema 0.3.0 carried only 15, which made eight violations that ACP-1.1 itself introduced impossible to report: identity-mismatch, unscoped-event, duplicate-root, dangling-pointer, alias-type, shadowed-field, malformed and missing-touches.",
           "type": "string",
           "enum": [
-            "unauthorized-action", "unauthorized", "self-approval", "no-basis", "stale-gate",
-            "missing-unverified", "unauthorized-debt", "lease-conflict", "scope-creep",
-            "unlinked-decision", "incomplete-handoff", "drift", "dangling-link",
-            "orphan-event", "reserved-id"
+            "unauthorized-action",
+            "unauthorized",
+            "self-approval",
+            "no-basis",
+            "stale-gate",
+            "missing-unverified",
+            "unauthorized-debt",
+            "lease-conflict",
+            "scope-creep",
+            "unlinked-decision",
+            "incomplete-handoff",
+            "drift",
+            "dangling-link",
+            "orphan-event",
+            "reserved-id",
+            "identity-mismatch",
+            "unscoped-event",
+            "duplicate-root",
+            "dangling-pointer",
+            "alias-type",
+            "shadowed-field",
+            "malformed",
+            "missing-touches"
           ]
         },
         "target": { "$ref": "#/$defs/eventRef" },

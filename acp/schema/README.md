@@ -4,7 +4,7 @@
 >
 > These schemas implement **ACP-1.1** as published in `feat/acp-1-1-normative-amendments@1bda3e997291e337cc1a3956462e643219d71547`.
 >
-> ACP-1.1 is itself a candidate that has **not** been approved. This is therefore an *implementation of a candidate*, not a conformant implementation of an adopted standard. **No conformance claim is made until a new independent review.** The previous review returned `SCHEMA STRUCTURALLY VALID — FIXTURE CORPUS INSUFFICIENT`; this version answers M1–M5 and L1–L5, and the corpus grew from 80 to 117 fixtures.
+> ACP-1.1 is itself a candidate that has **not** been approved. This is therefore an *implementation of a candidate*, not a conformant implementation of an adopted standard. **No conformance claim is made until a new independent review.** The previous review returned `SCHEMA STRUCTURALLY VALID — FIXTURE CORPUS INSUFFICIENT`; this version answers M1–M5 and L1–L5, and the corpus grew from 80 to 153 fixtures.
 
 | | |
 |---|---|
@@ -13,7 +13,7 @@
 | Profile | `profile.schema.json`, `$id: urn:acp:schema:profile:0.3.0` |
 | Implements | ACP-1.1 @ `1bda3e99` |
 | Supersedes | 0.2.0 @ `9d073e3c` |
-| Traceability | [`TRACEABILITY.md`](TRACEABILITY.md) — 78 requirements, 26 external |
+| Traceability | [`TRACEABILITY.md`](TRACEABILITY.md) — **113** requirements, **51** external |
 | Executable code shipped | **None** |
 
 ---
@@ -124,7 +124,7 @@ Beyond `v`, `type`, `actor`, the subject, and `after`-unless-`root`:
 | `touches` has a bare wildcard | `touches_rationale` required |
 | `question.kind = authorization` | `default_if_silent` must be `deny` |
 | `authorize` | `default_if_silent` / `default_rationale` forbidden |
-| `revalidate.scope_diff.outside_scope = false` | `revalidated_parts` required |
+| `revalidate.scope_diff.outside_scope = false` | `revalidated_claims` required |
 | `revalidate.scope_diff.paths` | non-empty, always |
 | `assume.authority = default-on-timeout` | `source_question` required |
 | `close.resolution` ∈ {`superseded`,`rotated`} | `into` required |
@@ -219,7 +219,7 @@ No regular expression approximates any of these. A regex that half-checks a dist
 
 **Convention.** A filename containing `profile` validates against `profile.schema.json`; everything else against `envelope.schema.json`. Numbered for stable ordering. No comments inside fixtures: an unknown member would contaminate the reason a negative fixture fails.
 
-### 9.1 Valid — 50, all must be accepted
+### 9.1 Valid — 63, all must be accepted
 
 Every one of the 27 event types is exercised. New or changed in 0.3.0:
 
@@ -239,7 +239,7 @@ Every one of the 27 event types is exercised. New or changed in 0.3.0:
 | `36-profile-reformando` | the real ACP-1.1 `acp.yml`, transcoded unedited |
 | `37-profile-minimal-generic` | the profile schema is not shaped around one organization |
 
-### 9.2 Invalid — 67, each rejected by the stated keyword
+### 9.2 Invalid — 90, each rejected by the stated keyword
 
 A fixture failing for a *different* reason is a defect in the corpus. New in 0.3.0:
 
@@ -299,9 +299,30 @@ Extending without breaking: use `extensions`. A member that proves generally use
 
 **ajv 8.20.0**, Draft 2020-12, `strict: true`, `strictRequired: false`, `allErrors: true`, **format assertion explicitly enabled** (§2.1), against a temporary harness **deliberately not committed** — validation tooling is automation, and automation is out of scope.
 
-At the published commit: both schemas compile; every `$ref` resolves, none external; **50 of 50** valid fixtures accepted; **67 of 67** invalid fixtures rejected, each firing the keyword or schema path of §9.2; no duplicate keys in any of the 119 JSON files; catalogue digests identical and matching the recomputed value; `git diff --check` clean.
+At the published commit: both schemas compile; every `$ref` resolves, none external; **63 of 63** valid fixtures accepted; **90 of 90** invalid fixtures rejected, each firing the keyword or schema path of §9.2; no duplicate keys in any of the 155 JSON files; catalogue digests identical and matching the recomputed value; `git diff --check` clean.
 
 `strictRequired` is relaxed because ajv flags `required` inside an `allOf` branch when the property is declared in a sibling branch — a false positive for conditional contracts.
+
+## 12.1 Corrections after the independent review
+
+Hermes returned `CHANGES REQUIRED — NORMATIVE/EXECUTABLE DIVERGENCE REMAINS`. The confirmed defects are fixed in this revision:
+
+| Finding | What changed here |
+|---|---|
+| **H1** `delivery.kind` | The normative enum of ACP-1.1 §6.1 is restored: `pull-request`, `merge-request`, `branch`, `patch`. Schema 0.3.0 had unilaterally replaced it; **that was the schema legislating over the specification.** The generic vocabulary is now a proposal for ACP-1.2 |
+| **H2** `violation.rule` | 15 → **23 codes, taken verbatim from ACP-1.1 §15.1**, including the eight that were unreportable |
+| **H3** programme checkpoint | `checkpoint` accepts `item` **or** `program`; `state`/`gates` required only for an item checkpoint; `from`/`to` added for the migration announced by §16.4 |
+| **M-A** traceability | Rebuilt from the sources, counts recomputed, 18 untraced requirements added, and an external register naming owner, inputs, output, failure behaviour and gate effect |
+| **M-B** contaminated fixtures | The ten Hermes named now fail for the rule they announce |
+| **M-C** versioning | `v` is `const "1.1"`. **This schema is writer-strict for ACP-1.1**; reader tolerance is a separate layer and a future minor needs a future schema |
+| **L-a** | `revalidated_parts` → `revalidated_claims`, the spec's term |
+| **L-b** | Nine alias fixtures, each carrying a valid body so only the type name is wrong |
+| **L-c** | `reconcile` may root an item or a programme thread; the spec says so first, the schema follows |
+| **L-d** | No operative reference to the pre-A7 capability spelling survives outside the prohibited-alias table |
+| **L-e** | `v` and the causal pointer grammar now say the same thing in spec and schema |
+| **L-f** | ACP-1.1's own examples fixed: portable repository reference, structured `base`, subject on `authorize` |
+
+**Discriminating test, run in full.** For each of the 90 invalid fixtures: it fails; the target rule is then repaired; the fixture must pass. **90 of 90 pass after repair**, so none is contaminated. The cascade of `unevaluatedProperties` errors that accompanies a failing `then` branch is an artefact of the validator's reporting, not a second defect: it disappears with the root cause.
 
 ## 13. Remaining divergences and risks
 
@@ -310,7 +331,7 @@ At the published commit: both schemas compile; every `$ref` resolves, none exter
 3. **M2 remains open by choice.** Duplicate option ids are accepted; fixture `50` records it. Closing it needs an ACP-1.2 amendment, not a schema decision.
 4. **The profile linter of §7 does not exist**, so fourteen referential invariants are unchecked.
 5. **The profile-aware envelope pass does not exist**, so `ids.work_item_pattern` and `ids.reserved` enforce nothing (fixture `38`).
-6. **26 of 78 traced requirements are external.** A green run says nothing about them.
+6. **51 of 113 traced requirements are external.** A green run says nothing about them.
 7. **`v` accepts `1.x` for any x≥1**, so a future `1.2` document is validated against 1.1 rules and may be wrongly rejected for unknown members. That is the A8 tension made concrete: this schema is the strict-writer side and a reader must not use it unmodified.
 
 ## 14. Open decisions for reviewers

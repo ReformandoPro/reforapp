@@ -1,0 +1,31 @@
+{
+  "v": "1.1",
+  "type": "submit",
+  "item": "RF-152",
+  "actor": "claude",
+  "after": "github-comment:2451890400",
+  "basis": {
+    "ref": "acp/RF-152/x",
+    "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b",
+    "scope": [
+      "src/**"
+    ]
+  },
+  "touches": [
+    "src/**"
+  ],
+  "evidence": [
+    {
+      "cmd": "npm test",
+      "env": "node22",
+      "result": "pass"
+    }
+  ],
+  "unverified": [
+    "sin datos de produccion"
+  ],
+  "delivery": {
+    "kind": "merge-request",
+    "id": "abc-123"
+  }
+}

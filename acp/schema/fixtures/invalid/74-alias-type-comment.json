@@ -1,6 +1,6 @@
 {
   "v": "1.1",
-  "type": "escalate",
+  "type": "comment",
   "item": "RF-142",
   "actor": "claude",
   "after": "github-comment:2451890115",

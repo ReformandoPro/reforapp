@@ -24,7 +24,7 @@
     "paths": [
       "db/migrations/0042_rls_grants.sql"
     ],
-    "revalidated_parts": [
+    "revalidated_claims": [
       "Re-read 0042 and re-ran the double-execution test; the rest of the earlier review still stands"
     ]
   },

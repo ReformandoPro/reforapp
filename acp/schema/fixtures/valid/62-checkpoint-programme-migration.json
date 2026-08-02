@@ -1,0 +1,29 @@
+{
+  "v": "1.1",
+  "type": "checkpoint",
+  "program": "reforapp",
+  "actor": "chatgpt",
+  "after": "github-comment:2451890500",
+  "covers": [
+    "github-comment:2451889301",
+    "github-comment:2451890500"
+  ],
+  "resume": {
+    "goal": "Migracion de version mayor del protocolo",
+    "done": [
+      "Checkpoint de cada item en vuelo"
+    ],
+    "remaining": [
+      "Reproyectar los items abiertos con el lector de la nueva version"
+    ],
+    "traps": [
+      "Los eventos anteriores NO se migran: se leen con el lector de su version"
+    ],
+    "next_action": "Publicar el catalogo de items afectados"
+  },
+  "open": [
+    "12 items en vuelo pendientes de reproyeccion"
+  ],
+  "from": "1.1",
+  "to": "2.0"
+}

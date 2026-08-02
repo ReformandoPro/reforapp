@@ -1,0 +1,20 @@
+{
+  "v": "1.1",
+  "type": "checkpoint",
+  "program": "reforapp",
+  "actor": "chatgpt",
+  "after": "github-comment:2451890500",
+  "covers": [
+    "github-comment:2451889301",
+    "github-comment:2451890500"
+  ],
+  "resume": {
+    "goal": "x",
+    "done": [],
+    "remaining": [],
+    "traps": [],
+    "next_action": "y"
+  },
+  "open": [],
+  "from": "1.1"
+}
