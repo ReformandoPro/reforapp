@@ -1,0 +1,21 @@
+{
+  "v": "1.1",
+  "type": "debt",
+  "item": "RF-142",
+  "actor": "chatgpt",
+  "after": "github-comment:2451890185",
+  "debt": {
+    "id": "DEBT-031",
+    "title": "Duplicated grants between migrations 0038 and 0042",
+    "principal": "About 4 hours to unify into one module",
+    "interest": "About 20 minutes per new migration touching grants",
+    "interest_period": "per-change",
+    "authorized_by": "chatgpt",
+    "reason": "Deliver the milestone before the production observation window",
+    "payoff_trigger": "Third migration touching grants, or before the next milestone",
+    "blast_radius": [
+      "db/migrations/**"
+    ],
+    "status": "open"
+  }
+}

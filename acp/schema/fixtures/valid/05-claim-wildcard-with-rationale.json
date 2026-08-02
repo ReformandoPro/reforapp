@@ -1,0 +1,13 @@
+{
+  "v": "1.1",
+  "type": "claim",
+  "item": "RF-150",
+  "actor": "openclaw",
+  "after": "github-comment:2451890200",
+  "lease": "12h",
+  "touches": [
+    "**"
+  ],
+  "touches_rationale": "Repository-wide dependency bump: the surface genuinely is every file, so overlap detection must treat this as exclusive.",
+  "intent": "Upgrade the toolchain across the repository"
+}

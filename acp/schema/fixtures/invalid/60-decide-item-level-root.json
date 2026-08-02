@@ -1,0 +1,2 @@
+{ "v": "1.1", "type": "decide", "item": "RF-142", "actor": "chatgpt", "root": true,
+  "decision": "ACD-0011", "version": 1, "scope": ["src/**"] }

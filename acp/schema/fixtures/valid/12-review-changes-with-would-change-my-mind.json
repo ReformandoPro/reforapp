@@ -1,0 +1,17 @@
+{
+  "v": "1.1",
+  "type": "review",
+  "item": "RF-142",
+  "actor": "hermes",
+  "after": "github-comment:2451890115",
+  "basis": {
+    "ref": "acp/RF-142/rls-grants-idempotent",
+    "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b"
+  },
+  "verdict": "changes",
+  "adversarial": false,
+  "would_change_my_mind": "A CI test that runs the migration twice in the same job",
+  "unverified": [
+    "Did not inspect the rollback path"
+  ]
+}

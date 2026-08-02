@@ -1,0 +1,13 @@
+{
+  "v": "1.1",
+  "type": "status",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": "github-comment:2451890115",
+  "done": [
+    "Migration 0042 rewritten as idempotent"
+  ],
+  "remaining": [
+    "CI still red: Postgres image default ACL differs"
+  ]
+}

@@ -1,0 +1,2 @@
+{ "v": "1.1", "type": "reconcile", "item": "RF-142", "actor": "chatgpt", "root": true,
+  "fixed": ["Hilo abierto tras rotacion: no continua ningun evento anterior legible"], "checks_run": 14 }

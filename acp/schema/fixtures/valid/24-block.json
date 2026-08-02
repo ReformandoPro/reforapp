@@ -1,0 +1,14 @@
+{
+  "v": "1.1",
+  "type": "block",
+  "item": "RF-143",
+  "actor": "chatgpt",
+  "after": "github-comment:2451890175",
+  "on": "acp:example/item/RF-142",
+  "kind": "dependency",
+  "unblock_when": "RF-142 reaches INTEGRATED",
+  "verifiable_by": "read the phase on the RF-142 projection and confirm against its log",
+  "escalate_after": "72h",
+  "escalate_to": "jorge",
+  "workaround": "Mock the grants interface, which would incur debt"
+}

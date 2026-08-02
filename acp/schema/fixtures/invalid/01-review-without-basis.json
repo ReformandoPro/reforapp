@@ -1,0 +1,12 @@
+{
+  "v": "1.1",
+  "type": "review",
+  "item": "RF-142",
+  "actor": "hermes",
+  "after": "github-comment:2451890115",
+  "verdict": "approve",
+  "adversarial": false,
+  "unverified": [
+    "nothing checked against production"
+  ]
+}

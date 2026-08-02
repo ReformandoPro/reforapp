@@ -1,0 +1,28 @@
+{
+  "v": "1.1",
+  "type": "question",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": "github-comment:2451890110",
+  "to": "jorge",
+  "kind": "decision",
+  "question": "Pin the CI Postgres image, or make the test tolerant of both default ACLs?",
+  "options": [
+    {
+      "id": "pin",
+      "summary": "Pin the CI image",
+      "cost": "30 min",
+      "risk": "CI will diverge from production when production upgrades"
+    },
+    {
+      "id": "tolerant",
+      "summary": "Make the test tolerant",
+      "cost": "2h",
+      "risk": "The test validates less"
+    }
+  ],
+  "default_if_silent": "pin",
+  "default_rationale": "Cheaper, reversible, and unblocks the milestone",
+  "expires": "24h",
+  "blocking": false
+}

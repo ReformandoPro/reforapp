@@ -1,0 +1,3 @@
+{ "v": "1.1", "type": "debt", "item": "RF-142", "actor": "chatgpt", "after": "github-comment:2451890185",
+  "debt": { "id": "DEBT-031", "title": "Grants duplicados", "principal": "4h", "interest": "20min por cambio",
+    "authorized_by": "chatgpt", "payoff_trigger": "Tercera migracion de grants", "status": "open" } }

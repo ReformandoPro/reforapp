@@ -1,0 +1,21 @@
+{
+  "v": "1.1",
+  "type": "validate",
+  "item": "RF-142",
+  "actor": "openclaw",
+  "after": "github-comment:2451890140",
+  "check": "gate:merge",
+  "result": "pass",
+  "basis": {
+    "ref": "acp/RF-142/rls-grants-idempotent",
+    "sha": "c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263"
+  },
+  "detail": "fresh review yes, tests yes, lint yes, types yes, blockers none, unverified_ack openclaw",
+  "evidence": [
+    {
+      "cmd": "npm test",
+      "env": "node22 / ci",
+      "result": "pass"
+    }
+  ]
+}

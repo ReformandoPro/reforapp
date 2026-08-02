@@ -1,0 +1,22 @@
+{
+  "v": "1.1",
+  "type": "checkpoint",
+  "item": "RF-142",
+  "actor": "chatgpt",
+  "after": "github-comment:2451890195",
+  "covers": [
+    "github-comment:2451889301",
+    "github-comment:2451890195"
+  ],
+  "resume": {
+    "goal": "x",
+    "done": [],
+    "remaining": [],
+    "traps": [],
+    "next_action": "y"
+  },
+  "open": [],
+  "gates": {
+    "merge": "2/4"
+  }
+}

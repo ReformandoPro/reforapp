@@ -1,0 +1,11 @@
+{
+  "v": "1.1",
+  "type": "reconcile",
+  "program": "reforapp",
+  "actor": "chatgpt",
+  "root": true,
+  "fixed": [
+    "Hilo de programa abierto tras una recuperacion: no continua ningun evento legible"
+  ],
+  "checks_run": 14
+}

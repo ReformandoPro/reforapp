@@ -1,0 +1,637 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:acp:schema:profile:0.3.0",
+  "title": "ACP profile / programme configuration (ACP-1.1 amendment candidate implementation)",
+  "description": "Machine-checkable contract for an ACP profile document (for example acp/acp.yml, parsed to JSON). Layer: Implementation. STATUS: implements ACP-1.1 at its audited source head, feat/acp-1-1-normative-amendments@983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad, integrated into main by PR #151 through merge commit 9ee046e8bb645ae364cc38ef95875487d5060b3b. The merge commit records integration and does not replace the audited source identity. ACP-1.1 remains an amendment candidate: reconciled and integrated, not adopted. Paired with envelope 0.3.0. Conformance requires format-assertion enabled in the validator (M1); see README, 'Required normative amendments before adoption'. A profile selects policy inside the space Core allows: it may tighten Core requirements but must never redefine Core meanings. This schema is generic: no organization, agent, repository or path is hardcoded. It validates shape and internal consistency of policy, not whether the policy is wise or whether the declared accounts exist. Note on repository references: the profile MAY use its binding's native repository form (for example owner/name) because a profile names its binding; the Core envelope may not, and uses a portable reference instead.",
+  "type": "object",
+  "required": ["acp", "program", "agents", "roles", "permissions", "gates", "lease", "invalidation", "review", "silence", "limits", "automation"],
+  "properties": {
+    "acp": {
+      "description": "ACP Core version this profile targets, as major.minor (ACP-1.1 section 16.1, amendment A20).",
+      "type": "string",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$"
+    },
+    "spec": {
+      "description": "Version of the specification document the profile was written against.",
+      "type": "string",
+      "minLength": 1
+    },
+    "core": { "$ref": "#/$defs/semver" },
+    "profile_version": { "$ref": "#/$defs/semver" },
+    "binding": {
+      "description": "Named platform binding and its version, for example github@0.1.0. Binding identity belongs in the profile; binding rules do not belong in Core.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}@[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"
+    },
+    "schema_version": { "$ref": "#/$defs/semver" },
+    "program_revision": { "type": "integer", "minimum": 1 },
+    "schema_compatibility": {
+      "description": "Which published schema, if any, the profile author believes implements the protocol version they target. `none` is an honest and common answer.",
+      "type": "string",
+      "minLength": 1
+    },
+    "program": { "$ref": "#/$defs/programId" },
+    "status": { "type": "string", "enum": ["proposed", "active", "superseded"] },
+    "profile": {
+      "description": "Conformance profile name. Generic profiles are ACP-0 through ACP-3; an organization may name its own.",
+      "type": "string",
+      "pattern": "^(ACP-[0-9]|[a-z][a-z0-9-]{1,31})$"
+    },
+    "repos": {
+      "type": "object",
+      "properties": {
+        "coordination": { "$ref": "#/$defs/repoRef" },
+        "code": { "type": "array", "items": { "$ref": "#/$defs/repoRef" }, "minItems": 1, "uniqueItems": true }
+      },
+      "required": ["coordination"],
+      "additionalProperties": false
+    },
+    "identity": {
+      "description": "Declared trust level of actor attribution. Recommended: a profile that claims separation of powers while every agent shares one account is overstating its guarantees, and the protocol should say so out loud.",
+      "type": "object",
+      "properties": {
+        "trust_level": {
+          "description": "1 self-declared, 2 shared account, 3 distinct accounts, 4 signed machine identity, 5 organization-managed credentials.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "distinct_accounts": { "type": "boolean" },
+        "note": { "type": "string", "minLength": 1 }
+      },
+      "required": ["trust_level"],
+      "additionalProperties": false
+    },
+    "ids": {
+      "type": "object",
+      "description": "Identifier policy. This is the ONLY place naming policy lives: Core accepts any stable opaque token (amendment A12). A validator that checks envelopes without also loading the active profile cannot enforce anything here.",
+      "properties": {
+        "work_item_prefix": { "$ref": "#/$defs/idPrefix" },
+        "work_item_pattern": {
+          "description": "Regular expression the programme work item identifiers must match. Checked here for well-formedness via format: regex, WHICH IS ONLY ENFORCED IF THE VALIDATOR HAS FORMAT-ASSERTION ENABLED (M1). Conformance to this schema requires it; see README, Conformance requirements. Applying the pattern to envelopes is a separate profile-aware pass that does not exist yet.",
+          "type": "string",
+          "format": "regex",
+          "minLength": 1
+        },
+        "initiative_prefix": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{0,7}-?I?$" },
+        "decision_prefix": { "$ref": "#/$defs/idPrefix" },
+        "risk_prefix": { "$ref": "#/$defs/idPrefix" },
+        "debt_prefix": { "$ref": "#/$defs/idPrefix" },
+        "reserved": {
+          "description": "Identifiers owned by another namespace (typically a product roadmap) that must never be used as work item identifiers.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "required": ["work_item_prefix"],
+      "additionalProperties": false
+    },
+    "agents": {
+      "description": "Declared participants. uniqueItems catches exact duplicates only: two entries sharing an id but differing elsewhere are NOT detectable by JSON Schema. See README, 'What this schema cannot validate'.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/agent" }
+    },
+    "roles": {
+      "description": "Protocol capabilities per role: which event types a role may emit. Distinct from permissions, which govern effects on the world.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/roleId" },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/capability" }
+          },
+          "approve_gates": {
+            "description": "Gates this role may consent to (A7). Replaces the approve:<gate> capability form. That these names correspond to declared gates is referential integrity: a profile linter checks it, this schema cannot (M4).",
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+            "uniqueItems": true
+          },
+          "description": { "type": "string", "minLength": 1 }
+        },
+        "required": ["capabilities"],
+        "additionalProperties": false
+      }
+    },
+    "permissions": {
+      "description": "Platform permissions: what an actor may do in the world. Default deny is the only safe default for a system where some actors are language models.",
+      "type": "object",
+      "required": ["default"],
+      "properties": {
+        "default": { "type": "string", "enum": ["deny", "allow"] }
+      },
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_-]{1,47}$" },
+      "additionalProperties": { "$ref": "#/$defs/permissionEntry" }
+    },
+    "gates": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "requires": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/gateRequirement" }
+          }
+        },
+        "required": ["requires"],
+        "additionalProperties": false
+      }
+    },
+    "lease": {
+      "type": "object",
+      "properties": {
+        "default": { "$ref": "#/$defs/duration" },
+        "max": { "$ref": "#/$defs/duration" },
+        "heartbeat": { "$ref": "#/$defs/duration" },
+        "review_lease": { "$ref": "#/$defs/duration" },
+        "on_expiry": { "type": "string", "enum": ["return_to_ready", "notify_only"] },
+        "require_claim_reference": {
+          "description": "ACP-1.1 amendment A18: heartbeat and release must name the claim whose lease they act on.",
+          "type": "boolean"
+        },
+        "preempt_requires": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "required": ["default", "max", "heartbeat"],
+      "additionalProperties": false
+    },
+    "invalidation": {
+      "description": "Freshness policy. 'invalidation' names the policy; 'freshness' names the derived state of an assertion. Keeping the two words apart is deliberate.",
+      "type": "object",
+      "properties": {
+        "review_ttl": { "$ref": "#/$defs/duration" },
+        "approval_ttl": { "$ref": "#/$defs/duration" },
+        "authorization_ttl": { "$ref": "#/$defs/duration" },
+        "drift_max_commits": { "type": "integer", "minimum": 1 },
+        "drift_max_days": { "type": "integer", "minimum": 1 },
+        "on_sha_change": { "type": "string", "enum": ["stale", "suspect"] },
+        "on_dependency_change": { "type": "string", "enum": ["stale", "suspect", "ignore"] },
+        "on_revoke": { "type": "string", "enum": ["void"] },
+        "revalidate_allowed": { "type": "boolean" },
+        "revalidate_resets_ttl": {
+          "description": "ACP-1.1 section 6.3: revalidation carries the verdict to a new SHA but does NOT restart the review TTL. Chained revalidation would otherwise keep a three-week-old review alive forever, which is what rule R4 exists to prevent.",
+          "type": "boolean",
+          "const": false
+        },
+        "revalidate_same_actor_only": {
+          "description": "ACP-1.1 section 6.3: only the author of the original assertion may revalidate it. Anyone else is making a new assertion, which is a review.",
+          "type": "boolean"
+        },
+        "stale_counts_for_gates": {
+          "description": "Must be false to satisfy Core invariant 'stale evidence does not satisfy a gate'.",
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": ["review_ttl", "approval_ttl", "on_sha_change"],
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "min_independent": { "type": "integer", "minimum": 1 },
+        "self_review": {
+          "description": "Must be forbidden: Core forbids an agent independently approving its own delivery for the same basis.",
+          "type": "string",
+          "const": "forbidden"
+        },
+        "require_basis": { "type": "boolean", "const": true },
+        "require_full_sha": { "type": "boolean", "const": true },
+        "require_unverified": { "type": "boolean", "const": true },
+        "allow_empty_unverified": {
+          "description": "ACP-1.1 amendment A19: `unverified: []` is admissible and means 'nothing left to verify'. Omitting the key remains non-conformant.",
+          "type": "boolean"
+        },
+        "require_adversarial_declaration": {
+          "description": "ACP-1.1 section 5.3: every review states whether it is adversarial. Optional, the flag could simply be omitted to escape the falsified requirement.",
+          "type": "boolean"
+        },
+        "independence_guaranteed": {
+          "description": "Whether review independence is actually guaranteed. Must be false below identity.trust_level 3: with a shared account the binding cannot tell two agents apart, so 'nobody reviews what they delivered' is honour system. A profile that claims otherwise is overstating its guarantees.",
+          "type": "boolean"
+        },
+        "require_falsified_if_adversarial": { "type": "boolean" },
+        "require_would_change_my_mind_if_not_approve": { "type": "boolean" },
+        "verdicts": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["approve", "changes", "reject"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "adversarial_reviewers": { "type": "array", "items": { "$ref": "#/$defs/actorId" }, "uniqueItems": true },
+        "veto_holders": { "type": "array", "items": { "$ref": "#/$defs/actorId" }, "uniqueItems": true }
+      },
+      "required": ["min_independent", "self_review", "require_basis", "require_unverified"],
+      "additionalProperties": false
+    },
+    "silence": {
+      "description": "What the absence of a human answer means. A profile must state this; leaving it undefined is how a multi-agent system stalls on one person.",
+      "type": "object",
+      "properties": {
+        "require_default": { "type": "boolean" },
+        "require_expires": { "type": "boolean" },
+        "require_options": { "type": "boolean" },
+        "default_expires": { "$ref": "#/$defs/duration" },
+        "max_expires": { "$ref": "#/$defs/duration" },
+        "on_expiry": { "type": "string", "enum": ["apply_default", "escalate", "block"] },
+        "on_expiry_emits": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["assume", "risk", "violation", "block"] },
+          "uniqueItems": true
+        },
+        "blocking_default": { "type": "boolean" },
+        "never_default": {
+          "description": "Capabilities that silence can never grant. Must include authorize: Core requires that silence never authorizes irreversible or sensitive action.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/capability" },
+          "minItems": 1,
+          "uniqueItems": true,
+          "contains": { "const": "authorize" }
+        },
+        "never_default_actions": {
+          "description": "Concrete actions that may never be the outcome of silence, whatever the question's declared kind (amendment A15). This list exists because the envelope schema can only refuse a silent default on a question EXPLICITLY classified as kind=authorization. A question that requests a deployment while declaring itself kind=decision is syntactically impeccable and semantically an authorization; no schema can tell the difference. This list gives a semantic validator the concrete vocabulary to catch it, and gives a human reviewer a short list to check by hand in the meantime.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/authorizationAction" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": ["require_default", "default_expires", "on_expiry", "never_default"],
+      "additionalProperties": false
+    },
+    "write_surfaces": {
+      "type": "object",
+      "properties": {
+        "require_touches_in": {
+          "description": "Event types that must carry a declared write surface. These are event type names. Since ACP-1.1 amendment A7 the capability names ARE the event type names, so the two registries cannot diverge; the pre-A7 capability spelling is listed only in the prohibited-alias table of ACP-1.1 section 5.3.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/eventType" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "enforce_scope": { "type": "boolean" },
+        "surfaces": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "globs": { "type": "array", "items": { "$ref": "#/$defs/glob" }, "minItems": 1, "uniqueItems": true },
+              "owner_role": { "$ref": "#/$defs/roleId" },
+              "risk": { "type": "string", "enum": ["low", "medium", "high"] }
+            },
+            "required": ["globs"],
+            "additionalProperties": false
+          }
+        },
+        "protected": { "type": "array", "items": { "$ref": "#/$defs/surfaceRule" } },
+        "do_not_touch": { "type": "array", "items": { "$ref": "#/$defs/surfaceRule" } }
+      },
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "context_budget": {
+          "type": "object",
+          "properties": {
+            "total_tokens": { "type": "integer", "minimum": 1 },
+            "log_tokens": { "type": "integer", "minimum": 1 },
+            "resume_tokens": { "type": "integer", "minimum": 1 },
+            "agents_md_tokens": { "type": "integer", "minimum": 1 }
+          },
+          "required": ["total_tokens", "log_tokens"],
+          "additionalProperties": false
+        },
+        "checkpoint": {
+          "type": "object",
+          "properties": {
+            "every_events": { "type": "integer", "minimum": 1 },
+            "every_days": { "type": "integer", "minimum": 1 },
+            "on_phase": { "type": "array", "items": { "$ref": "#/$defs/phase" }, "uniqueItems": true }
+          },
+          "additionalProperties": false
+        },
+        "rotation": {
+          "type": "object",
+          "properties": {
+            "max_events_per_item": { "type": "integer", "minimum": 1 },
+            "max_rotations_warn": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "scale": {
+          "type": "object",
+          "properties": {
+            "max_active_items_manual": { "type": "integer", "minimum": 1 },
+            "warn_active_items": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "branches": {
+          "type": "object",
+          "properties": {
+            "pattern": { "type": "string", "minLength": 1 },
+            "integration": { "type": "string", "minLength": 1 },
+            "one_to_one": { "type": "boolean" },
+            "max_stack_depth": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "debt": {
+          "type": "object",
+          "properties": {
+            "require_authorization": { "type": "boolean" },
+            "require_payoff_trigger": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["context_budget"],
+      "additionalProperties": false
+    },
+    "reconcile": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["manual", "assisted", "automated"] },
+        "cadence": { "type": "string", "enum": ["daily", "weekly", "biweekly", "on-demand"] },
+        "owners": { "type": "array", "items": { "$ref": "#/$defs/actorId" }, "minItems": 1, "uniqueItems": true },
+        "checklist_items": { "type": "integer", "minimum": 1 },
+        "publishes": { "type": "string", "minLength": 1 }
+      },
+      "required": ["mode"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$comment": "Automated reconciliation is an implementation, and an implementation must be named before it is trusted.",
+          "if": { "type": "object", "properties": { "mode": { "const": "automated" } }, "required": ["mode"] },
+          "then": { "required": ["owners"] }
+        }
+      ]
+    },
+    "extensions": {
+      "description": "Single container for local extensions (L1, ACP-1.1 section 5.2.3). Same grammar as the envelope: ^x-[a-z0-9][a-z0-9-]*$. Loose x- members at the profile root are no longer accepted, so the rule is identical in both documents and a reader needs one habit, not two.",
+      "type": "object",
+      "propertyNames": { "pattern": "^x-[a-z0-9][a-z0-9-]*$" },
+      "minProperties": 1
+    },
+    "automation": {
+      "description": "Declared automation posture. Stating its absence explicitly is what makes the absence auditable.",
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "workflows": { "$ref": "#/$defs/automationSlot" },
+        "bots": { "$ref": "#/$defs/automationSlot" },
+        "webhooks": { "$ref": "#/$defs/automationSlot" },
+        "apps": { "$ref": "#/$defs/automationSlot" },
+        "scripts": { "$ref": "#/$defs/automationSlot" },
+        "rationale": { "type": "string", "minLength": 1 },
+        "eligible_when_adopted": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "implementation": {
+          "description": "Required when automation is enabled: what runs, who owns it, and what it is allowed to decide.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "kind": { "type": "string", "enum": ["workflow", "bot", "webhook", "app", "script", "service"] },
+              "owner": { "$ref": "#/$defs/actorId" },
+              "may_decide": { "type": "array", "items": { "$ref": "#/$defs/capability" }, "uniqueItems": true },
+              "read_only": { "type": "boolean" }
+            },
+            "required": ["name", "kind", "owner"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$comment": "Enabling automation without naming what implements it is the single most dangerous profile error: it authorizes machine action with no accountable component.",
+          "if": { "type": "object", "properties": { "enabled": { "const": true } }, "required": ["enabled"] },
+          "then": { "required": ["implementation"] }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+
+  "$defs": {
+
+    "semver": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"
+    },
+
+    "programId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+    },
+
+    "repoRef": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,64}/[A-Za-z0-9._-]{1,100}$"
+    },
+
+    "actorId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{1,31}$"
+    },
+
+    "roleId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}$"
+    },
+
+    "idPrefix": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]{0,7}$"
+    },
+
+    "glob": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._*/-]{1,200}$"
+    },
+
+    "duration": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,3}[hdw]$"
+    },
+
+    "phase": {
+      "type": "string",
+      "enum": [
+        "PROPOSED", "TRIAGED", "SPECIFIED", "READY", "CLAIMED", "IN_PROGRESS",
+        "SUBMITTED", "IN_REVIEW", "REWORK", "ACCEPTED", "INTEGRATED", "VERIFIED",
+        "DONE", "DROPPED", "SUPERSEDED"
+      ]
+    },
+
+    "authorizationAction": {
+      "description": "Concrete externally-effective actions. Mirrors envelope.schema.json#/$defs/authorizationScope/action.",
+      "type": "string",
+      "enum": [
+        "delete-data", "deploy", "merge", "migrate", "modify-platform-config",
+        "modify-workflow", "publish", "release", "remote-write", "rotate-secret", "spend"
+      ]
+    },
+
+    "eventType": {
+      "description": "Event type names. Deliberately duplicated from envelope.schema.json#/$defs/eventType rather than $ref'd across files: a cross-file reference would force every consumer of this schema to resolve and register the envelope schema, and profile documents are frequently validated alone.",
+      "$comment": "CATALOGUE PARITY (conformance requirement C1, amendment A16): this enumeration MUST be the same set as envelope.schema.json#/$defs/eventType, and both files MUST carry the identical digest below. The digest is the sha256 of the comma-joined sorted list with no spaces. Two digest strings can be compared at a glance; two 27-item lists cannot. A release in which the two digests differ is non-conforming and must not be adopted. catalogue-digest: sha256:046f7cadad317948c7a92a808bade47bbbdf61bdb467ce26a49891da730e0e91",
+      "type": "string",
+      "enum": [
+        "answer", "approve", "assume", "authorize", "block", "checkpoint", "claim",
+        "close", "debt", "decide", "handoff", "heartbeat", "progress", "question",
+        "reconcile", "release", "revalidate", "review", "revoke", "risk", "spec",
+        "submit", "supersede", "triage", "unblock", "validate", "violation"
+      ]
+    },
+
+    "capability": {
+      "description": "A protocol capability. ACP-1.1 amendment A7: capability names ARE event type names, plus veto. There is no translation between the two registries, so they cannot diverge. The pre-A7 capability spelling for `spec` is gone, as is the `approve:<gate>` form: `approve` is a plain capability and which gates a role may consent to is declared in roles.<role>.approve_gates. Platform abilities such as running a shell are NOT capabilities; they belong in agent.capabilities_extra.",
+      "$comment": "CATALOGUE PARITY (C1, A16): this list is the event catalogue plus veto. catalogue-digest: sha256:046f7cadad317948c7a92a808bade47bbbdf61bdb467ce26a49891da730e0e91",
+      "type": "string",
+      "enum": [
+        "answer", "approve", "assume", "authorize", "block", "checkpoint", "claim",
+        "close", "debt", "decide", "handoff", "heartbeat", "progress", "question",
+        "reconcile", "release", "revalidate", "review", "revoke", "risk", "spec",
+        "submit", "supersede", "triage", "unblock", "validate", "veto", "violation"
+      ]
+    },
+
+    "agent": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/actorId" },
+        "kind": { "type": "string", "enum": ["human", "llm", "service"] },
+        "role": { "$ref": "#/$defs/roleId" },
+        "handle": {
+          "description": "Platform account, or a @TODO- placeholder while unassigned. A placeholder is honest; a shared real account presented as separate identities is not.",
+          "type": "string",
+          "pattern": "^@[A-Za-z0-9][A-Za-z0-9-]{0,38}$"
+        },
+        "capabilities_extra": {
+          "description": "Platform abilities, not protocol capabilities. Deliberately loose: this is where 'can run a shell' lives.",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9:-]{1,31}$" },
+          "uniqueItems": true
+        },
+        "adversarial": { "type": "boolean" },
+        "note": { "type": "string", "minLength": 1 }
+      },
+      "required": ["id", "kind", "role"],
+      "additionalProperties": false
+    },
+
+    "permissionEntry": {
+      "description": "Three admissible forms. A bare mode; a list of roles allowed to perform it; or an expanded object able to express irreversibility, whose internal contradictions ARE checked.",
+      "oneOf": [
+        { "type": "string", "enum": ["authorization", "forbidden", "allowed"] },
+        { "type": "array", "items": { "$ref": "#/$defs/roleId" }, "minItems": 1, "uniqueItems": true },
+        { "$ref": "#/$defs/permissionObject" }
+      ]
+    },
+
+    "permissionObject": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["authorization", "forbidden", "allowed"] },
+        "roles": { "type": "array", "items": { "$ref": "#/$defs/roleId" }, "minItems": 1, "uniqueItems": true },
+        "irreversible": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "required": ["mode"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$comment": "Forbidden but granted to roles is a contradiction, not a nuance.",
+          "if": { "type": "object", "properties": { "mode": { "const": "forbidden" } }, "required": ["mode"] },
+          "then": { "not": { "type": "object", "required": ["roles"] } }
+        },
+        {
+          "$comment": "An irreversible action cannot be freely allowed; it needs authorization or prohibition.",
+          "if": { "type": "object", "properties": { "irreversible": { "const": true } }, "required": ["irreversible"] },
+          "then": { "properties": { "mode": { "enum": ["authorization", "forbidden"] } } }
+        }
+      ]
+    },
+
+    "surfaceRule": {
+      "type": "object",
+      "properties": {
+        "globs": { "type": "array", "items": { "$ref": "#/$defs/glob" }, "minItems": 1, "uniqueItems": true },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "required": ["globs", "reason"],
+      "additionalProperties": false
+    },
+
+    "gateRequirement": {
+      "description": "Exactly one condition per entry, so a gate reads as an ordered conjunction of single facts.",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "review": {
+          "type": "object",
+          "properties": {
+            "verdict": { "type": "string", "pattern": "^!?(approve|changes|reject)$" },
+            "by_role": { "$ref": "#/$defs/roleId" },
+            "by_capability": { "$ref": "#/$defs/capability" },
+            "count": { "type": "integer", "minimum": 1 },
+            "all": { "type": "boolean" },
+            "fresh": { "type": "boolean" }
+          },
+          "required": ["verdict"],
+          "additionalProperties": false
+        },
+        "validation": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "accept": { "type": "string", "enum": ["required"] },
+            "touches": { "type": "string", "enum": ["required"] }
+          },
+          "additionalProperties": false
+        },
+        "blockers": { "type": "string", "enum": ["none"] },
+        "unverified_ack": { "type": "boolean" },
+        "self_approval": { "type": "string", "enum": ["forbidden"] },
+        "gate": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+        "authorization": {
+          "type": "object",
+          "properties": {
+            "by_role": { "$ref": "#/$defs/roleId" },
+            "scope": { "type": "string", "minLength": 1 },
+            "fresh": { "type": "boolean" }
+          },
+          "required": ["by_role"],
+          "additionalProperties": false
+        },
+        "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+
+    "automationSlot": {
+      "description": "Either the explicit absence marker, or a list of named components.",
+      "oneOf": [
+        { "type": "string", "enum": ["none"] },
+        { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+      ]
+    }
+  }
+}

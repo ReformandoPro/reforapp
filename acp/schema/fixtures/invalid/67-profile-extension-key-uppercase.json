@@ -1,0 +1,66 @@
+{
+  "acp": "1.1",
+  "program": "example",
+  "agents": [
+    {
+      "id": "alice",
+      "kind": "human",
+      "role": "product-owner"
+    }
+  ],
+  "roles": {
+    "product-owner": {
+      "capabilities": [
+        "authorize"
+      ]
+    }
+  },
+  "permissions": {
+    "default": "deny"
+  },
+  "gates": {
+    "merge": {
+      "requires": [
+        {
+          "blockers": "none"
+        }
+      ]
+    }
+  },
+  "lease": {
+    "default": "6h",
+    "max": "48h",
+    "heartbeat": "24h"
+  },
+  "invalidation": {
+    "review_ttl": "7d",
+    "approval_ttl": "3d",
+    "on_sha_change": "stale"
+  },
+  "review": {
+    "min_independent": 1,
+    "self_review": "forbidden",
+    "require_basis": true,
+    "require_unverified": true
+  },
+  "silence": {
+    "require_default": true,
+    "default_expires": "24h",
+    "on_expiry": "apply_default",
+    "never_default": [
+      "authorize"
+    ]
+  },
+  "limits": {
+    "context_budget": {
+      "total_tokens": 5000,
+      "log_tokens": 2000
+    }
+  },
+  "automation": {
+    "enabled": false
+  },
+  "extensions": {
+    "X-foo": "no es una extension"
+  }
+}

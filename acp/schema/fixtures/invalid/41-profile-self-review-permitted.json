@@ -1,0 +1,116 @@
+{
+  "acp": "1.1",
+  "program": "example",
+  "profile": "ACP-1",
+  "agents": [
+    {
+      "id": "alice",
+      "kind": "human",
+      "role": "product-owner"
+    },
+    {
+      "id": "builder",
+      "kind": "llm",
+      "role": "engineer"
+    }
+  ],
+  "roles": {
+    "product-owner": {
+      "capabilities": [
+        "authorize",
+        "close",
+        "approve",
+        "veto"
+      ],
+      "approve_gates": [
+        "release"
+      ]
+    },
+    "engineer": {
+      "capabilities": [
+        "claim",
+        "submit",
+        "validate"
+      ],
+      "approve_gates": []
+    }
+  },
+  "permissions": {
+    "default": "deny",
+    "merge_main": "authorization",
+    "open_pr": [
+      "engineer"
+    ]
+  },
+  "gates": {
+    "merge": {
+      "requires": [
+        {
+          "blockers": "none"
+        },
+        {
+          "unverified_ack": true
+        }
+      ]
+    }
+  },
+  "lease": {
+    "default": "6h",
+    "max": "48h",
+    "heartbeat": "24h"
+  },
+  "invalidation": {
+    "review_ttl": "7d",
+    "approval_ttl": "3d",
+    "on_sha_change": "stale",
+    "stale_counts_for_gates": false
+  },
+  "review": {
+    "min_independent": 1,
+    "self_review": "allowed",
+    "require_basis": true,
+    "require_unverified": true
+  },
+  "silence": {
+    "require_default": true,
+    "default_expires": "24h",
+    "on_expiry": "apply_default",
+    "never_default": [
+      "authorize",
+      "approve"
+    ],
+    "never_default_actions": [
+      "deploy",
+      "merge",
+      "migrate",
+      "release",
+      "delete-data"
+    ]
+  },
+  "limits": {
+    "context_budget": {
+      "total_tokens": 5000,
+      "log_tokens": 2000
+    }
+  },
+  "automation": {
+    "enabled": false,
+    "workflows": "none",
+    "rationale": "protocol phase"
+  },
+  "ids": {
+    "work_item_prefix": "EX",
+    "work_item_pattern": "^EX-[1-9][0-9]*$",
+    "reserved": [
+      "M1",
+      "M2"
+    ]
+  },
+  "identity": {
+    "trust_level": 3,
+    "distinct_accounts": true
+  },
+  "extensions": {
+    "x-example-note": "extensiones del perfil en contenedor unico (L1)"
+  }
+}

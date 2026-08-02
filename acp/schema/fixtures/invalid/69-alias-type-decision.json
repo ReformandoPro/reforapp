@@ -1,0 +1,18 @@
+{
+  "v": "1.1",
+  "type": "decision",
+  "program": "reforapp",
+  "actor": "chatgpt",
+  "role": "coordinator",
+  "after": "github-comment:2451890190",
+  "decision": "ACD-0007",
+  "version": 2,
+  "scope": [
+    "db/migrations/**",
+    "src/security/rls/**"
+  ],
+  "status": "active",
+  "supersedes": "ACD-0004",
+  "record": "decisions/ACD-0007-operational-grants.md",
+  "reversible": true
+}

@@ -1,0 +1,4 @@
+{ "v": "1.1", "type": "risk", "item": "RF-142", "actor": "hermes", "after": "github-comment:2451890120",
+  "risk": { "id": "RSK-014", "title": "Imagen de Postgres de CI distinta de produccion", "kind": "technical",
+    "likelihood": "high", "impact": "high", "owner": "openclaw", "trigger": "Cualquier migracion con default ACL",
+    "signal": "CI verde y produccion roja en el mismo SHA", "status": "open" } }

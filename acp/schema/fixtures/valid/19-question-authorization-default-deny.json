@@ -1,0 +1,24 @@
+{
+  "v": "1.1",
+  "type": "question",
+  "item": "RF-142",
+  "actor": "openclaw",
+  "after": "github-comment:2451890150",
+  "to": "jorge",
+  "kind": "authorization",
+  "question": "May I apply migration 0042 to staging?",
+  "options": [
+    {
+      "id": "deny",
+      "summary": "Do not apply"
+    },
+    {
+      "id": "apply",
+      "summary": "Apply to staging only"
+    }
+  ],
+  "default_if_silent": "deny",
+  "default_rationale": "Silence never authorizes an action with external effects",
+  "expires": "24h",
+  "blocking": true
+}

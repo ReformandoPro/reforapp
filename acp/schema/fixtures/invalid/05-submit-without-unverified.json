@@ -1,0 +1,21 @@
+{
+  "v": "1.1",
+  "type": "submit",
+  "item": "RF-142",
+  "actor": "claude",
+  "after": "github-comment:2451890115",
+  "basis": {
+    "ref": "acp/RF-142/x",
+    "sha": "9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b"
+  },
+  "touches": [
+    "db/migrations/**"
+  ],
+  "evidence": [
+    {
+      "cmd": "pytest -q",
+      "env": "py3.12",
+      "result": "pass"
+    }
+  ]
+}

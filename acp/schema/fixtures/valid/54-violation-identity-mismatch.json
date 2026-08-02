@@ -1,0 +1,12 @@
+{
+  "v": "1.1",
+  "type": "violation",
+  "item": "RF-142",
+  "actor": "hermes",
+  "after": "github-comment:2451890205",
+  "rule": "identity-mismatch",
+  "target": "github-comment:2451890201",
+  "severity": "critical",
+  "effect": "void",
+  "remedy": "Codigo identity-mismatch de ACP-1.1 15.1, ausente del schema 0.3.0 hasta esta correccion"
+}

@@ -1,0 +1,12 @@
+{
+  "v": "1.1",
+  "type": "violation",
+  "item": "RF-142",
+  "actor": "hermes",
+  "after": "github-comment:2451890205",
+  "rule": "self-approval",
+  "target": "github-comment:2451890201",
+  "severity": "high",
+  "effect": "void",
+  "remedy": "Requires a review by an actor other than the submitter on the same SHA"
+}
