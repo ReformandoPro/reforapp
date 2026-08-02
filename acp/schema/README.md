@@ -8,7 +8,7 @@
 >
 > The earlier head `1bda3e99…` is **no longer the canonical implemented source**: it is an ancestor of `983c3a4a…` by two commits (the H1/H2/H3 corrections and the N-2 checkpoint rule), and `acp/ACP-1.md` differs between them.
 >
-> **Known inconsistency, deliberately left in place.** The `description` strings inside `envelope.schema.json` and `profile.schema.json` still cite `1bda3e99…` as the implemented head. The JSON schemas are byte-frozen in this round and were not touched, so those two strings are stale. Until a round that may modify the schemas corrects them, **this README and `TRACEABILITY.md` carry the authoritative source identity**, and the STATUS string inside each schema must be read as historical.
+> The `STATUS` strings inside `envelope.schema.json` and `profile.schema.json` carry the same two SHAs. They were the last place still citing `1bda3e99…`; that citation is gone, and the only change made to either file was inside its root `description` — no rule, `$id`, `$defs`, property, enum or conditional was touched.
 >
 > ACP-1.1 is itself a candidate that has **not** been approved. This is therefore an *implementation of a candidate*, not a conformant implementation of an adopted standard. **No conformance claim is made until a new independent review.** The previous review returned `SCHEMA STRUCTURALLY VALID — FIXTURE CORPUS INSUFFICIENT`; this version answers M1–M5 and L1–L5, and the corpus grew from 80 to 153 fixtures.
 
@@ -35,7 +35,7 @@
 | Which depend on the event type? | the `if/then` chain on `type` |
 | Which combinations are forbidden? | `oneOf`, `unevaluatedProperties`, `not`, `dependentRequired`, `const` |
 | Which invariants are syntactic? | §8A |
-| Which need semantic validation? | §8B and the 26 `external` rows of `TRACEABILITY.md` |
+| Which need semantic validation? | §8B and the 53 `external` rows of `TRACEABILITY.md` |
 | Is this programme configuration coherent? | `profile.schema.json` **plus** the linter of §7, which does not exist |
 
 A document that satisfies these schemas is **well formed**. It is not thereby true, authorized, fresh, attributable, or consistent with the log.
@@ -203,7 +203,7 @@ Formats; required members per type; enumerations; the subject rule; root eligibi
 
 ### 8B. Semantic — NOT enforced
 
-The authoritative list is `TRACEABILITY.md`, which marks **26 of 78 requirements external**. The ones most likely to be assumed away:
+The authoritative list is `TRACEABILITY.md`, which marks **53 of 113 requirements external**. The ones most likely to be assumed away:
 
 | Invariant | Needs |
 |---|---|
