@@ -12,7 +12,7 @@ Schema paths are relative to `envelope.schema.json` unless prefixed `profile:`.
 
 | Requirement | ACP-1.1 § | Schema path | Valid fixture | Invalid fixture | External semantic check |
 |---|---|---|---|---|---|
-| `v` present, `major.minor` string | 16.1 (A20) | `properties/v` pattern `^1\.[1-9][0-9]*$` | every envelope fixture | `34-protocol-version-unsupported` | — |
+| `v` present, exactly `"1.1"` in a conforming writer | 16.1 (A20), 16.2 | `properties/v` `const "1.1"` | every envelope fixture | `34`, `82`, `83`, `84`, `85` | Tolerant reading of a later minor: **external** (Reader Compatibility Layer) |
 | Major mismatch fails closed | 16.2 (A8) | same pattern | — | `34` | Reader must enter read-only mode: **external** |
 | Unknown field tolerated by readers | 16.2 (A8) | *not enforceable*: schema is the strict-writer side | — | `26-unknown-field` (writer view) | Reader tolerance: **external** |
 | `type` in closed catalogue of 27 | 5.3 | `$defs/eventType` | all | `27-unknown-event-type` | — |
@@ -170,9 +170,9 @@ Hermes confirmó que estas reglas normativas no estaban trazadas. Se añaden con
 |---|---|---|---|---|---|
 | `delivery.kind` es el enum normativo de la spec | 6.1 (A6) | `ev.submit/delivery/kind` | `09` (pull-request), `51`, `52`, `53` | `78`, `79`, `80`, `81` | — |
 | `violation.rule` admite los 23 códigos de §15.1 | 15.1 | `ev.violation/rule` | `32`, `46`, `54`–`61` | `91-violation-unknown-rule` | — |
-| Un checkpoint puede ser de item o de programa | 11.6, 5.2.1 | `ev.checkpoint` + root `oneOf` | `30` (item), `62` (programa) | `86-checkpoint-item-and-program` | — |
-| Un checkpoint de item lleva `state` y `gates` | 11.3 | `ev.checkpoint/allOf[0]` | `30` | `87-item-checkpoint-without-state` | — |
-| Una migración de versión mayor se anuncia con `from`/`to` en un checkpoint de programa | 16.4 | `ev.checkpoint` `from`,`to` + `dependentRequired` | `62` | `88`, `89`, `90` | — |
+| Un checkpoint puede ser de item o de programa, con exactamente uno de los dos | **11.3.1**, 5.2.1 | `ev.checkpoint` + root `oneOf` | `30` (item), `62` (programa) | `86-checkpoint-item-and-program` | — |
+| Un checkpoint de item lleva `state` y `gates`; uno de programa no | **11.3.1** | `ev.checkpoint/allOf[0]` | `30`, `62` | `87-item-checkpoint-without-state` | — |
+| `from`/`to` describen el rango de migración y solo son admisibles en un checkpoint de programa, siempre en pareja | **11.3.1**, 16.4 | `ev.checkpoint` `from`,`to` + `dependentRequired` | `62` | `88`, `89`, `90` | Que `from` y `to` no sean iguales: **external** |
 | `v` es exactamente `"1.1"` en un escritor conforme | 16.1, 16.2 | `properties/v` `const` | todas | `34`, `82`, `83`, `84`, `85` | Tolerancia de lector: **external** |
 | Los alias prohibidos se rechazan por el enum de `type` | 5.3 | `$defs/eventType` | — | `69`–`77` | — |
 | `reconcile` puede ser raíz de item o de programa | 5.4.1 | `$defs/rootEligibleType` + root `oneOf` | `43` (item), `63` (programa) | — | Que realmente inicie un hilo: **external** |
@@ -216,6 +216,9 @@ Cada fila external deja de ser una etiqueta. Responsable, entradas, salida, comp
 | Enlaces bidireccionales | coordinador | log + entidades | 0 extremos colgantes | `violation:dangling-link` | no |
 | Conducta del lector ante tipo desconocido | lector | evento | fallar cerrado para ese evento | no contarlo para ningún gate | **sí** |
 | Honestidad de `unverified`, `falsified`, `env` | revisor adversarial | evento | juicio | `INCONCLUSIVE` | **sí** de facto |
+| **Tolerancia del lector a campos desconocidos** de un minor posterior (§16.2) | **Reader Compatibility Layer** | evento con `v` de un minor posterior + versión soportada por el lector | evento aceptado con los miembros desconocidos **preservados**, o rechazo explícito por versión | Si el lector los descarta en silencio, pierde datos válidos y produce una proyección incompleta que parece completa | no directamente; **sí de forma indirecta**: un gate evaluado sobre una proyección con datos perdidos es un gate evaluado sobre menos de lo que había. El writer schema **no puede** cubrirlo: es `const "1.1"` por diseño |
+| **Shadowing de extensiones**: una clave de `extensions` que duplica un campo normativo (§5.2.3) | **Event-Log Semantic Validator** | evento + catálogo de campos normativos de su tipo | conforme, o `violation:shadowed-field` | Fallar cerrado para ese evento: un campo normativo eludido por una extensión hace que el evento afirme algo distinto de lo que parece | **sí**: el evento no cuenta para ningún gate hasta resolverse |
+| **`from == to` en un checkpoint de programa** (§11.3.1, §16.4) | **Event-Log Semantic Validator** | checkpoint de programa con `from` y `to` | rango válido, o rechazo | Un rango nulo no describe migración alguna; el checkpoint anuncia una transición que no ocurre. El schema comprueba la **gramática** de ambos y su presencia en pareja, no que **difieran** | **sí** para cualquier gate que dependa de la transición anunciada |
 
 ## Coverage summary
 
@@ -224,9 +227,9 @@ Recalculado desde las tablas de este fichero tras la revisión independiente. **
 | | Antes (incorrecto) | Recalculado |
 |---|---|---|
 | Filas-requisito trazadas | 78 | **113** |
-| Exigidas por el schema | 52 | **62** |
-| Requieren comprobación external | 26 | **51** |
+| Exigidas por el schema | 52 | **60** |
+| Requieren comprobación external | 26 | **53** |
 | Con al menos una fixture válida | no publicado | **78** |
 | Con al menos una fixture inválida | no publicado | **63** |
 
-**51 de 113 requisitos no los exige nada en este repositorio.** Necesitan un validador semántico con acceso al log, al repositorio, al reloj de plataforma y al perfil activo. Ese componente no existe. Una ejecución en verde no dice nada sobre ninguno de ellos, y el registro de §13 nombra quién debería.
+**53 de 113 requisitos no los exige nada en este repositorio.** Necesitan un validador semántico con acceso al log, al repositorio, al reloj de plataforma y al perfil activo. Ese componente no existe. Una ejecución en verde no dice nada sobre ninguno de ellos, y el registro de §13 nombra quién debería.

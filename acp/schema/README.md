@@ -13,7 +13,7 @@
 | Profile | `profile.schema.json`, `$id: urn:acp:schema:profile:0.3.0` |
 | Implements | ACP-1.1 @ `1bda3e99` |
 | Supersedes | 0.2.0 @ `9d073e3c` |
-| Traceability | [`TRACEABILITY.md`](TRACEABILITY.md) — **113** requirements, **51** external |
+| Traceability | [`TRACEABILITY.md`](TRACEABILITY.md) — **113** requirements, **53** external |
 | Executable code shipped | **None** |
 
 ---
@@ -140,7 +140,7 @@ ACP-1.1 §0.5 listed eight points where schema 0.2.0 disagreed with the specific
 
 | # | 0.2.0 | 0.3.0 | Fixtures |
 |---|---|---|---|
-| 1 | `v` integer `1` | string `"1.1"`, pattern `^1\.[1-9][0-9]*$` | `34` |
+| 1 | `v` integer `1` | string, `const "1.1"` | `34`, `82`, `83`, `84`, `85` |
 | 2 | `after` accepted a bare integer | namespaced `binding-class:id` only | `30` |
 | 3 | `x-*` loose at the root | single `extensions` container | `41`, `65`, `47`, `48`, `49` |
 | 4 | `item` optional on six types | exactly one of `item` / `program` | `61`, `62`, `28`, `40` |
@@ -159,7 +159,7 @@ ACP-1.1 §0.5 listed eight points where schema 0.2.0 disagreed with the specific
 | **M4** profile referential integrity | Not fixable in JSON Schema. Full table in §7 |
 | **M5** Reformando profile fixture | Regenerated from the real `acp/acp.yml` at ACP-1.1 `1bda3e99`, transcoded without edits. Six policy keys it declares (`require_claim_reference`, `revalidate_resets_ttl`, `revalidate_same_actor_only`, `require_full_sha`, `allow_empty_unverified`, `require_adversarial_declaration`) were missing from the profile schema and were added — **the real file caught them; a hand-written example would not have** |
 | **L1** profile extension grammar | Aligned with the envelope: same pattern, same container. Fixtures `66`, `67`, `68` |
-| **L2** delivery vocabulary | **Changed.** `pull-request` and `merge-request` were two platforms' nouns inside Core. Now `change-request`, `commit`, `artifact`, `external`; a pull request number lives in `extensions.x-github-pr` |
+| **L2** delivery vocabulary | **Reverted after independent review.** 0.3.0 replaced the normative enum with a generic vocabulary; that was the schema legislating over the specification. The vigent normative enum is ACP-1.1 §6.1: `pull-request`, `merge-request`, `branch`, `patch`. The generic set (`change-request`, `commit`, `artifact`, `external`) survives **only as a proposal for ACP-1.2** and MUST NOT be anticipated. A pull request number still lives in `extensions.x-github-pr` |
 | **L3** risk/debt/decision id prefixes | Removed from Core (`$defs/entityId` is a generic token). `RSK-`, `DEBT-`, `ACD-` are profile policy |
 | **L4** `decide` root | Implemented: root only when programme-scoped. Fixtures `40` valid, `60` invalid |
 | **L5** short SHAs | Audited. In fixtures the only abbreviated SHAs are the two deliberate negatives (`24`, `25`). This README's single occurrence is a **quotation** of ACP-1's old text. ACP-1.1's `acp/AGENTS.md` was checked read-only and is compatible: no short SHAs, 5 namespaced pointers, `v: "1.1"` throughout. **It was not modified from this branch** |
@@ -285,7 +285,7 @@ The rest carry over from 0.2.0 unchanged in intent: missing basis, missing SHA, 
 
 | Axis | Where | Rule |
 |---|---|---|
-| Core protocol | envelope `v` | `major.minor`; accepts `1.x` for x≥1, rejects `1.0` and other majors |
+| Core protocol | envelope `v` | **`const "1.1"`**. This writer schema validates ACP-1.1 and nothing else: it rejects `1.0`, every later minor including `1.2`, non-canonical spellings such as `01.1`, and the old integer form. Tolerant reading of a later minor belongs to a **separate reader compatibility layer**, not to this file |
 | Specification | profile `spec` | free string |
 | Profile | profile `profile_version` | semver |
 | Binding | profile `binding` | semver |
@@ -331,8 +331,8 @@ Hermes returned `CHANGES REQUIRED — NORMATIVE/EXECUTABLE DIVERGENCE REMAINS`. 
 3. **M2 remains open by choice.** Duplicate option ids are accepted; fixture `50` records it. Closing it needs an ACP-1.2 amendment, not a schema decision.
 4. **The profile linter of §7 does not exist**, so fourteen referential invariants are unchecked.
 5. **The profile-aware envelope pass does not exist**, so `ids.work_item_pattern` and `ids.reserved` enforce nothing (fixture `38`).
-6. **51 of 113 traced requirements are external.** A green run says nothing about them.
-7. **`v` accepts `1.x` for any x≥1**, so a future `1.2` document is validated against 1.1 rules and may be wrongly rejected for unknown members. That is the A8 tension made concrete: this schema is the strict-writer side and a reader must not use it unmodified.
+6. **53 of 113 traced requirements are external.** A green run says nothing about them.
+7. **`v` is `const "1.1"`, so a future `1.2` document is rejected on the version itself** — cleanly, and not with a confusing error about an unknown member. That is deliberate: this file is the strict-writer side of the A8 tension. The consequence is that **forward tolerance now has no implementation at all**: a reader compatibility layer must exist before anyone reads a `1.2` log, and it does not.
 
 ## 14. Open decisions for reviewers
 
@@ -340,4 +340,4 @@ Hermes returned `CHANGES REQUIRED — NORMATIVE/EXECUTABLE DIVERGENCE REMAINS`. 
 - Should the profile record the schema `$id` it was validated against, making drift detectable?
 - Should `unverified` require structured entries (`{area, why_not_verified}`)? More checkable, gameable differently.
 - Should a rotated item's first `checkpoint` be root-eligible, since it begins a thread while continuing another?
-- Is `change-request` the right Core noun, or should Core name no delivery vehicle at all and leave the concept entirely to bindings?
+- **For ACP-1.2 only** — the vigent normative enum is unchanged: is `change-request` a better Core noun than `pull-request`/`merge-request`, or should Core name no delivery vehicle at all and leave the concept entirely to bindings?
