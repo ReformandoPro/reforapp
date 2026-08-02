@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:acp:conformance:case-format:0.1.0",
+  "title": "ACP conformance case (declarative)",
+  "description": "Declarative format for a single ACP conformance case. A case DESCRIBES what must be evaluated; it never contains anything executable. Shell commands, scripts, code, network calls and inline programs are structurally impossible: `steps` are prose descriptions and no property accepts a command. A case is data for a future harness, not a program.",
+  "type": "object",
+  "required": ["id", "title", "layer", "requirements", "polarity", "inputs", "expected", "evidence", "automation", "status"],
+  "properties": {
+    "id": {
+      "description": "Stable case identifier: ACP-<layer>-<family>-<nnn>.",
+      "type": "string",
+      "pattern": "^ACP-L[0-7]-[A-Z][A-Z0-9]{2,15}-[0-9]{3}$"
+    },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "layer": { "$ref": "#/$defs/layer" },
+    "requirements": {
+      "description": "Requirement ids from requirements.yml that this case exercises. A case with no requirement is untraceable and non-conformant.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirementId" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "polarity": {
+      "description": "positive: conformant input must be accepted. negative: non-conformant input must be rejected. boundary: the exact edge of a rule.",
+      "type": "string",
+      "enum": ["positive", "negative", "boundary"]
+    },
+    "protocol_version": { "$ref": "#/$defs/versionString" },
+    "schema_version": { "$ref": "#/$defs/versionString" },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/versionString" },
+        "required": { "type": "boolean" }
+      },
+      "required": ["required"],
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+        "version": { "$ref": "#/$defs/versionString" },
+        "required": { "type": "boolean" }
+      },
+      "required": ["required"],
+      "additionalProperties": false
+    },
+    "preconditions": {
+      "description": "What must hold before evaluation. Declarative statements, never setup commands.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "inputs": {
+      "description": "The material under evaluation, by reference. A case never embeds a corpus.",
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "documents": { "type": "array", "items": { "$ref": "#/$defs/inputRef" }, "minItems": 1 },
+        "event_log": { "$ref": "#/$defs/inputRef" },
+        "profile_document": { "$ref": "#/$defs/inputRef" },
+        "binding_records": { "$ref": "#/$defs/inputRef" },
+        "platform_state": { "$ref": "#/$defs/inputRef" },
+        "projection": { "$ref": "#/$defs/inputRef" }
+      },
+      "additionalProperties": false
+    },
+    "evaluation_time": {
+      "description": "Explicit evaluation instant. Required whenever the outcome depends on a clock: a case that relies on the runner's wall clock is not reproducible.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "steps": {
+      "description": "Ordered declarative descriptions of what is evaluated. NOT commands. Each step names an observation or a comparison in prose.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "describe": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "observes": { "type": "string", "minLength": 1 },
+          "manual": { "type": "boolean" }
+        },
+        "required": ["describe"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "expected": {
+      "type": "object",
+      "required": ["outcome"],
+      "properties": {
+        "outcome": { "type": "string", "enum": ["accepted", "rejected", "flagged", "inconclusive", "partial"] },
+        "failure_class": { "$ref": "#/$defs/failureClass" },
+        "keyword": {
+          "description": "For L1 cases: the schema keyword that must fire. A negative case that fails for a different reason is a corpus defect, not a pass.",
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_path": { "type": "string", "minLength": 1 },
+        "diagnostics": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "state": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "forbidden": {
+      "description": "Outcomes that must NOT occur. Used where the danger is a false accept rather than a wrong reject.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidence": {
+      "description": "What an execution must record for this case to be auditable afterwards.",
+      "type": "object",
+      "required": ["must_record"],
+      "properties": {
+        "must_record": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "digest_required": { "type": "boolean" },
+        "retention": { "type": "string", "pattern": "^[1-9][0-9]{0,3}[hdw]$" }
+      },
+      "additionalProperties": false
+    },
+    "automation": {
+      "description": "Honest classification of how far this case can be automated. Overstating it is the most common way a conformance suite becomes theatre.",
+      "type": "object",
+      "required": ["class", "offline"],
+      "properties": {
+        "class": {
+          "type": "string",
+          "enum": ["fully-automatable", "automatable-with-mock", "automatable-with-sandbox", "manual-evidence-review", "not-reliably-automatable"]
+        },
+        "offline": { "type": "boolean" },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["network", "platform-read", "platform-write", "clock", "identity", "repository", "artifact-store"] },
+          "uniqueItems": true
+        },
+        "rationale": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "depends_on": {
+      "description": "Cases that must pass first. A case whose dependency failed reports NOT_APPLICABLE, never PASS.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/caseId" },
+      "uniqueItems": true
+    },
+    "tags": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" }, "uniqueItems": true },
+    "status": { "type": "string", "enum": ["planned", "specified", "implemented", "deprecated"] },
+    "deprecated_by": { "$ref": "#/$defs/caseId" },
+    "notes": { "type": "string" },
+    "extensions": {
+      "type": "object",
+      "propertyNames": { "pattern": "^x-[a-z0-9][a-z0-9-]*$" },
+      "minProperties": 1
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "$comment": "A case that depends on a clock must pin the instant; otherwise it is not reproducible.",
+      "if": { "type": "object", "properties": { "automation": { "type": "object", "properties": { "requires": { "type": "array", "contains": { "const": "clock" } } }, "required": ["requires"] } }, "required": ["automation"] },
+      "then": { "required": ["evaluation_time"] }
+    },
+    {
+      "$comment": "A case requiring platform access is not offline.",
+      "if": { "type": "object", "properties": { "automation": { "type": "object", "properties": { "offline": { "const": true } }, "required": ["offline"] } }, "required": ["automation"] },
+      "then": { "properties": { "automation": { "type": "object", "properties": { "requires": { "type": "array", "not": { "type": "array", "contains": { "enum": ["network", "platform-read", "platform-write"] } } } } } } }
+    },
+    {
+      "$comment": "Platform write is never permitted in suite 0.1.",
+      "properties": { "automation": { "type": "object", "properties": { "requires": { "type": "array", "not": { "type": "array", "contains": { "const": "platform-write" } } } } } }
+    },
+    {
+      "$comment": "A negative L1 case must name the keyword that fires, or it cannot prove it failed for the right reason.",
+      "if": { "type": "object", "properties": { "layer": { "const": "L1" }, "polarity": { "const": "negative" } }, "required": ["layer", "polarity"] },
+      "then": { "properties": { "expected": { "type": "object", "required": ["keyword"] } } }
+    },
+    {
+      "$comment": "A rejected outcome must classify the failure.",
+      "if": { "type": "object", "properties": { "expected": { "type": "object", "properties": { "outcome": { "const": "rejected" } }, "required": ["outcome"] } }, "required": ["expected"] },
+      "then": { "properties": { "expected": { "type": "object", "required": ["failure_class"] } } }
+    },
+    {
+      "$comment": "A binding-dependent case must name its binding.",
+      "if": { "type": "object", "properties": { "layer": { "const": "L4" } }, "required": ["layer"] },
+      "then": { "required": ["binding"] }
+    },
+    {
+      "$comment": "A deprecated case must name its replacement.",
+      "if": { "type": "object", "properties": { "status": { "const": "deprecated" } }, "required": ["status"] },
+      "then": { "required": ["deprecated_by"] }
+    }
+  ],
+  "$defs": {
+    "layer": { "type": "string", "enum": ["L0", "L1", "L2", "L3", "L4", "L5", "L6", "L7"] },
+    "caseId": { "type": "string", "pattern": "^ACP-L[0-7]-[A-Z][A-Z0-9]{2,15}-[0-9]{3}$" },
+    "requirementId": { "type": "string", "pattern": "^ACP-CONF-(CORE|SCHEMA|PROFILE|LOG|BIND-[A-Z]{2,6}|PROJ|GATE|OPS)-[0-9]{3}$" },
+    "versionString": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "inputRef": {
+      "description": "Reference to material by path and digest. Content is never embedded: a case describes, it does not carry.",
+      "type": "object",
+      "properties": {
+        "ref": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "description": { "type": "string", "minLength": 1 }
+      },
+      "required": ["ref"],
+      "additionalProperties": false
+    },
+    "failureClass": {
+      "type": "string",
+      "enum": [
+        "malformed-input", "ambiguous-input", "unsupported-version", "invalid-schema",
+        "unresolvable-reference", "silent-check-loss", "false-rejection", "masked-rejection",
+        "unknown-event-type", "alias-type", "catalogue-drift", "invalid-extension",
+        "unscoped-event", "missing-actor", "invalid-basis", "field-leak", "missing-conditional",
+        "missing-uncertainty", "invalid-time-model", "invalid-profile", "unauthorized",
+        "invalid-work-item-id", "reserved-id", "dangling-profile-reference", "duplicate-agent",
+        "dangling-gate-reference", "missing-permission-default", "contradictory-permission",
+        "weakened-core-invariant", "undeclared-assurance", "unaccountable-automation",
+        "dangling-pointer", "invalid-causal-pointer", "causal-cycle", "duplicate-root",
+        "invalid-root", "causal-fork", "unresolved-fork", "order-confusion",
+        "lease-miscalculation", "orphan-heartbeat", "orphan-release", "invalid-preemption",
+        "invalid-question", "invalid-assumption", "dangling-target", "misleading-checkpoint",
+        "duplicate-effect", "self-approval", "identity-mismatch", "renamed-login-confusion",
+        "authored-observed-confusion", "false-independence-claim", "privilege-escalation",
+        "mutated-event", "deleted-event", "hidden-event", "renamed-repository",
+        "nonexistent-sha", "ambiguous-evidence", "forged-evidence", "unretrievable-evidence",
+        "ui-state-as-truth", "untrusted-clock", "inferred-fact", "misplaced-event",
+        "undetected-mutation", "non-deterministic-projection", "implicit-clock",
+        "impure-reduction", "unattributable-projection", "checkpoint-divergence",
+        "silent-drift", "projection-as-truth", "false-certainty", "conflict-ignored",
+        "evidence-loss", "conflated-ledgers", "evidence-erasure", "stale-gate",
+        "unauthorized-action", "stale-authorization", "inferred-authorization",
+        "silent-authorization", "unacknowledged-uncertainty", "opaque-gate", "fail-open",
+        "unreconstructible-state", "budget-overrun", "false-complete-recovery",
+        "undetected-race", "stuck-lease", "undetected-staleness", "stalled-protocol",
+        "version-mishandling", "silent-migration", "unauthorized-side-effect",
+        "resource-exhaustion", "unsafe-input-handling", "misclassified-event",
+        "non-reproducible-digest", "non-deterministic-canonicalization"
+      ]
+    }
+  }
+}

@@ -1,0 +1,1813 @@
+# ACP Conformance Suite 0.1 - requirement catalogue
+#
+# Stable, citable conformance requirements derived from the normative and
+# candidate sources listed in `sources`. Informative drafts under
+# docs/agents/** are NOT normative and are cited as such where used.
+#
+# This file defines WHAT must hold and WHO can test it. It contains no test
+# cases, no fixtures and nothing executable.
+
+suite:
+  name: "ACP Conformance Suite"
+  version: "0.1.0-draft"
+  status: "conformance-suite candidate - not adopted"
+
+sources:
+  core:
+    name: "ACP-1.1 amendment candidate"
+    branch: "feat/acp-1-1-normative-amendments"
+    sha: "1bda3e997291e337cc1a3956462e643219d71547"
+    normative: candidate
+  envelope_schema:
+    name: "Schema V3 envelope"
+    version: "0.3.0"
+    branch: "feat/acp-envelope-schema"
+    sha: "ae3e4f5e35924e470ad909d63d5a9de55c351df0"
+    normative: candidate
+  profile_schema:
+    name: "Schema V3 profile"
+    version: "0.3.0"
+    branch: "feat/acp-envelope-schema"
+    sha: "ae3e4f5e35924e470ad909d63d5a9de55c351df0"
+    normative: candidate
+  binding_github:
+    name: "ACP GitHub Binding"
+    version: "0.1.0-draft"
+    branch: "feat/acp-github-binding"
+    sha: "ca978ac6736cf6b8c43753d46a07ee6002e9522d"
+    normative: candidate
+  reconciliation:
+    name: "ACP-1.1 / Schema V3 reconciliation"
+    branch: "chore/acp-1-1-v3-reconciliation"
+    sha: "3c884d75e2ea394f438dcb8ba2c729fd2b58574c"
+    normative: informative
+  projection_engine_draft:
+    name: "projection-engine-draft"
+    branch: "chore/agent-protocol-mvp"
+    sha: "fb40920202cdff804f4fe1c72f656870bfab5997"
+    normative: informative
+  conformance_suite_draft:
+    name: "conformance-suite-draft"
+    branch: "chore/agent-protocol-mvp"
+    sha: "fb40920202cdff804f4fe1c72f656870bfab5997"
+    normative: informative
+
+layers:
+  L0: "Serialization and document integrity"
+  L1: "Envelope and profile JSON Schema"
+  L2: "Profile-aware validation"
+  L3: "Event-log and causal semantics"
+  L4: "Binding and evidence verification"
+  L5: "Projection determinism and integrity"
+  L6: "Gate and authorization evaluation"
+  L7: "Operational resilience and recovery"
+
+testability_values:
+  - schema
+  - profile-linter
+  - semantic-validator
+  - binding-verifier
+  - projection-engine
+  - gate-evaluator
+  - resilience-test
+  - manual-review
+
+category_values:
+  - normative
+  - binding
+  - implementation
+  - security
+  - quality
+  - recommendation
+
+severity_values:
+  - blocking
+  - major
+  - minor
+
+requirements:
+  - id: ACP-CONF-CORE-001
+    title: "Document parses as declared serialization"
+    layer: L0
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.2"
+    normative_text: "Un comentario marcado con un envelope invalido es una violacion de binding y no actualiza proyecciones."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "marked document"
+    expected_result: "parsed document or explicit parse failure"
+    failure_class: malformed-input
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-CORE-002
+    title: "Duplicate keys are rejected"
+    layer: L0
+    source: "ACP-1.1/V3 reconciliation"
+    source_section: "validation"
+    normative_text: "Cero claves duplicadas en cualquier documento del corpus."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "document"
+    expected_result: "rejection with location"
+    failure_class: ambiguous-input
+    external_dependencies: "none"
+    notes: "YAML y JSON aceptan duplicados en silencio; un parser conforme debe rechazarlos."
+  - id: ACP-CONF-CORE-003
+    title: "Document size and nesting are bounded"
+    layer: L0
+    source: "suite security"
+    source_section: "14"
+    normative_text: "Los documentos de entrada tienen limites de tamano y profundidad declarados."
+    category: security
+    testability: schema
+    severity: major
+    required_for: "core-pack"
+    inputs: "document"
+    expected_result: "rejection above declared limit"
+    failure_class: resource-exhaustion
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-CORE-004
+    title: "Content digest is reproducible"
+    layer: L0
+    source: "ACP-1.1 candidate"
+    source_section: "12.3"
+    normative_text: "Un digest se calcula sobre la salida normalizada y el comando declara la normalizacion."
+    category: normative
+    testability: semantic-validator
+    severity: major
+    required_for: "core-pack"
+    inputs: "document, normalization rule"
+    expected_result: "identical digest on repeat"
+    failure_class: non-reproducible-digest
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-CORE-005
+    title: "Protocol version is declared and supported"
+    layer: L0
+    source: "ACP-1.1 candidate"
+    source_section: "16.1"
+    normative_text: "v es la cadena mayor.menor; un mayor distinto se falla cerrado."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "supported / unsupported verdict"
+    failure_class: unsupported-version
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-CORE-006
+    title: "No executable content in inputs"
+    layer: L0
+    source: "suite security"
+    source_section: "14"
+    normative_text: "Las fixtures se tratan como entrada no confiable y nunca se ejecutan."
+    category: security
+    testability: manual-review
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "corpus"
+    expected_result: "no execution path exists"
+    failure_class: unsafe-input-handling
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-CORE-007
+    title: "Marked events are distinguishable from conversation"
+    layer: L0
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.2"
+    normative_text: "Un evento debe llevar dos marcas; un comentario sin ambas es conversacion sin efecto de protocolo."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "comment corpus"
+    expected_result: "event / conversation partition"
+    failure_class: misclassified-event
+    external_dependencies: "github-read"
+    notes: "La sintaxis literal de las dos marcas es una pregunta abierta del binding."
+  - id: ACP-CONF-CORE-008
+    title: "Unicode and canonicalization are deterministic"
+    layer: L0
+    source: "suite security"
+    source_section: "14"
+    normative_text: "La canonicalizacion previa al digest es determinista."
+    category: implementation
+    testability: schema
+    severity: major
+    required_for: "core-pack"
+    inputs: "document"
+    expected_result: "stable canonical form"
+    failure_class: non-deterministic-canonicalization
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-001
+    title: "Schemas are valid under Draft 2020-12"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 2"
+    normative_text: "Ambos schemas compilan bajo el metaschema Draft 2020-12."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope and profile schema"
+    expected_result: "compilation succeeds"
+    failure_class: invalid-schema
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-002
+    title: "All $ref resolve and none are external"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 12"
+    normative_text: "Toda referencia interna resuelve; ninguna es externa."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "schemas"
+    expected_result: "0 broken, 0 external refs"
+    failure_class: unresolvable-reference
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-003
+    title: "format-assertion is enabled"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 2.1"
+    normative_text: "Una implementacion es conforme solo si la asercion de format esta activada."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "validator configuration"
+    expected_result: "assertion mode confirmed"
+    failure_class: silent-check-loss
+    external_dependencies: "none"
+    notes: "Medido: sin ella la fixture 52 se acepta. Dos keywords dependen de format, no una."
+  - id: ACP-CONF-SCHEMA-004
+    title: "Valid corpus is accepted"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 9.1"
+    normative_text: "Todas las fixtures validas se aceptan."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "valid corpus"
+    expected_result: "all accepted"
+    failure_class: false-rejection
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-005
+    title: "Invalid corpus is rejected by the intended keyword"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 9.2"
+    normative_text: "Cada fixture invalida se rechaza por el keyword o schemaPath previsto; fallar por otra causa es un defecto del corpus."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "invalid corpus"
+    expected_result: "expected keyword fires"
+    failure_class: masked-rejection
+    external_dependencies: "none"
+    notes: "Dos fixtures heredadas fallaban antes de tiempo por una regla nueva hasta corregirse."
+  - id: ACP-CONF-SCHEMA-006
+    title: "Event catalogue is closed at 27 types"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "5.3"
+    normative_text: "El catalogo es cerrado; un tipo nuevo exige version mayor."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "unknown type rejected"
+    failure_class: unknown-event-type
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-007
+    title: "Catalogue parity across schemas"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 2.2"
+    normative_text: "El digest de catalogo es identico en ambos schemas; una release donde difieran no es conforme."
+    category: implementation
+    testability: manual-review
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "both schemas"
+    expected_result: "digests identical"
+    failure_class: catalogue-drift
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-008
+    title: "Prohibited aliases are rejected"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "5.3"
+    normative_text: "Los alias prohibidos hacen el evento no conforme."
+    category: normative
+    testability: schema
+    severity: major
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "alias rejected"
+    failure_class: alias-type
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-009
+    title: "Extension grammar is enforced in the container only"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "5.2.3"
+    normative_text: "Las extensiones viven en el contenedor extensions con clave ^x-[a-z0-9][a-z0-9-]*$."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "loose or malformed keys rejected"
+    failure_class: invalid-extension
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-010
+    title: "Exactly one subject: item or program"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "5.2.1"
+    normative_text: "Exactamente uno de item o program; ninguno o ambos es violation:unscoped-event."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "both/neither rejected"
+    failure_class: unscoped-event
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-011
+    title: "actor is mandatory"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "8.6"
+    normative_text: "actor es obligatorio en todo evento authored."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "absence rejected"
+    failure_class: missing-actor
+    external_dependencies: "none"
+    notes: "Su presencia compra auditabilidad, no autenticidad: la verificacion es L4."
+  - id: ACP-CONF-SCHEMA-012
+    title: "Full 40-hex lowercase SHA on assertions"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "6.1"
+    normative_text: "SHA completo de 40 hexadecimales minusculas en review, revalidate, validate, approve, authorize y submit."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "short or uppercase rejected"
+    failure_class: invalid-basis
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-013
+    title: "Per-type field isolation"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 4.1"
+    normative_text: "Un campo de otro tipo de evento queda sin evaluar y se rechaza."
+    category: implementation
+    testability: schema
+    severity: major
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "foreign field rejected"
+    failure_class: field-leak
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-014
+    title: "Conditional rules fire as specified"
+    layer: L1
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 4.4"
+    normative_text: "Las reglas condicionales del tipo se aplican tal como se declaran."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "each condition enforced"
+    failure_class: missing-conditional
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-SCHEMA-015
+    title: "unverified key present, empty array admissible"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "5.3"
+    normative_text: "unverified debe estar presente donde el tipo lo exige; el array vacio es admisible."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "omission rejected, [] accepted"
+    failure_class: missing-uncertainty
+    external_dependencies: "none"
+    notes: "La honestidad del contenido no es comprobable en ninguna capa."
+  - id: ACP-CONF-SCHEMA-016
+    title: "Authored durations only, no absolute instants"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "16.3"
+    normative_text: "Todo valor authored es duracion relativa; ningun instante absoluto en un envelope."
+    category: normative
+    testability: schema
+    severity: major
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "absolute expires rejected"
+    failure_class: invalid-time-model
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-001
+    title: "Profile document is schema-valid"
+    layer: L2
+    source: "Schema V3 profile 0.3.0"
+    source_section: "README 6"
+    normative_text: "El documento de perfil valida contra profile.schema.json."
+    category: implementation
+    testability: schema
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "valid or rejected"
+    failure_class: invalid-profile
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-002
+    title: "Declared actor exists in the profile"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "8.1"
+    normative_text: "Un evento cuyo actor no existe en el perfil es violation:unauthorized."
+    category: normative
+    testability: profile-linter
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "envelope, profile"
+    expected_result: "unknown actor rejected"
+    failure_class: unauthorized
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-003
+    title: "Actor holds the capability for the event type"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "8.1"
+    normative_text: "Los nombres de capacidad son los nombres de tipo de evento mas veto."
+    category: normative
+    testability: profile-linter
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "envelope, profile"
+    expected_result: "capability enforced"
+    failure_class: unauthorized
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-004
+    title: "Work item id matches the profile pattern"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "4.2"
+    normative_text: "El patron concreto de identificadores pertenece al perfil."
+    category: normative
+    testability: profile-linter
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "envelope, profile"
+    expected_result: "non-matching id rejected"
+    failure_class: invalid-work-item-id
+    external_dependencies: "none"
+    notes: "Coste declarado de A12: hoy ninguna implementacion aplica esta comprobacion."
+  - id: ACP-CONF-PROFILE-005
+    title: "Reserved identifiers are rejected as subjects"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "4.2"
+    normative_text: "Los identificadores reservados no son direccionables como work items."
+    category: normative
+    testability: profile-linter
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "envelope, profile"
+    expected_result: "reserved id rejected"
+    failure_class: reserved-id
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-006
+    title: "Profile referential integrity"
+    layer: L2
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 7"
+    normative_text: "Catorce invariantes referenciales del perfil que JSON Schema no puede expresar."
+    category: implementation
+    testability: profile-linter
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "all references resolve"
+    failure_class: dangling-profile-reference
+    external_dependencies: "none"
+    notes: "Verificado a mano contra el perfil real: 0 referencias rotas en ese SHA."
+  - id: ACP-CONF-PROFILE-007
+    title: "Agent ids unique by logical identity"
+    layer: L2
+    source: "Schema V3 envelope 0.3.0"
+    source_section: "README 7"
+    normative_text: "Dos agentes con el mismo id y cuerpos distintos no son detectables por JSON Schema."
+    category: implementation
+    testability: profile-linter
+    severity: major
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "duplicate id rejected"
+    failure_class: duplicate-agent
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-008
+    title: "approve_gates reference declared gates"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "8.1"
+    normative_text: "La autoridad por gate se declara en roles.<rol>.approve_gates."
+    category: normative
+    testability: profile-linter
+    severity: major
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "unknown gate rejected"
+    failure_class: dangling-gate-reference
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-009
+    title: "Permissions default deny"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "8.4"
+    normative_text: "permissions.default acepta deny."
+    category: normative
+    testability: schema
+    severity: major
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "default present"
+    failure_class: missing-permission-default
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-010
+    title: "Irreversible actions are never freely allowed"
+    layer: L2
+    source: "Schema V3 profile 0.3.0"
+    source_section: "README 6"
+    normative_text: "Una accion irreversible es authorization o forbidden, nunca allowed."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "contradiction rejected"
+    failure_class: contradictory-permission
+    external_dependencies: "none"
+    notes: "Solo comprobable en la forma expandida; la forma corta no puede expresar contradiccion."
+  - id: ACP-CONF-PROFILE-011
+    title: "self_review forbidden"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "8.2"
+    normative_text: "Un perfil no puede permitir la auto-revision."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "allowed value rejected"
+    failure_class: weakened-core-invariant
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-012
+    title: "stale never satisfies a gate"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "6.2"
+    normative_text: "La evidencia obsoleta no satisface ningun gate."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "true value rejected"
+    failure_class: weakened-core-invariant
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-013
+    title: "never_default includes authorize"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "13.6"
+    normative_text: "El silencio nunca autoriza."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "missing value rejected"
+    failure_class: weakened-core-invariant
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROFILE-014
+    title: "Identity assurance is declared"
+    layer: L2
+    source: "ACP-1.1 candidate"
+    source_section: "8.6"
+    normative_text: "El perfil declara su nivel de garantia de identidad."
+    category: normative
+    testability: profile-linter
+    severity: major
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "level present and consistent"
+    failure_class: undeclared-assurance
+    external_dependencies: "none"
+    notes: "Por debajo de 3, independence_guaranteed debe ser false."
+  - id: ACP-CONF-PROFILE-015
+    title: "Automation enabled requires a named implementation"
+    layer: L2
+    source: "Schema V3 profile 0.3.0"
+    source_section: "README 6"
+    normative_text: "Activar automatizacion sin nombrar su implementacion no es conforme."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "profile-pack"
+    inputs: "profile"
+    expected_result: "rejection"
+    failure_class: unaccountable-automation
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-LOG-001
+    title: "after resolves to an existing event of the same subject"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.4.1"
+    normative_text: "Un puntero que no resuelve es violation:dangling-pointer con efecto flag, no void."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "resolution or flag"
+    failure_class: dangling-pointer
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-002
+    title: "Causal pointer is namespaced and platform-produced"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.4.1"
+    normative_text: "Forma canonica binding-clase:id; el entero pelado no es conforme."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "bare integer rejected"
+    failure_class: invalid-causal-pointer
+    external_dependencies: "none"
+    notes: "Que lo haya emitido la plataforma no es comprobable en L3: es L4."
+  - id: ACP-CONF-LOG-003
+    title: "No causal cycles"
+    layer: L3
+    source: "projection-engine-draft (informative)"
+    source_section: "6"
+    normative_text: "El grafo causal no contiene ciclos."
+    category: implementation
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "cycle detected and rejected"
+    failure_class: causal-cycle
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-004
+    title: "Exactly one root per thread"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.4.1"
+    normative_text: "Un segundo root:true en el mismo hilo es violation:duplicate-root."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "second root rejected"
+    failure_class: duplicate-root
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-005
+    title: "Root eligibility limited to spec, reconcile, programme-decide"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.4.1"
+    normative_text: "Solo spec, reconcile y decide de programa pueden ser raiz."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "other types rejected"
+    failure_class: invalid-root
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-LOG-006
+    title: "root and after are mutually exclusive"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.4.1"
+    normative_text: "Declarar root y after a la vez no es conforme."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "rejection"
+    failure_class: invalid-root
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-LOG-007
+    title: "Causal forks are detected"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.4"
+    normative_text: "Dos eventos con el mismo after marcan el item contested."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "fork reported"
+    failure_class: causal-fork
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-008
+    title: "Reconcile resolves a fork without erasing history"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.4.1"
+    normative_text: "reconcile enlaza las ramas con after_multi y explica que se conservo."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "fork closed, history intact"
+    failure_class: unresolved-fork
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-009
+    title: "Order is derived from the causal graph, not timestamps alone"
+    layer: L3
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.3"
+    normative_text: "El orden temporal no es la causalidad."
+    category: binding
+    testability: semantic-validator
+    severity: major
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "graph order used"
+    failure_class: order-confusion
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-LOG-010
+    title: "Lease ownership and expiry computed from platform timestamps"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "10.1"
+    normative_text: "El lease vive hasta created_at mas lease, salvo heartbeat."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log, platform timestamps"
+    expected_result: "live/expired verdict"
+    failure_class: lease-miscalculation
+    external_dependencies: "clock, log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-011
+    title: "heartbeat references a live owned claim"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.3"
+    normative_text: "heartbeat y release deben nombrar el claim sobre el que actuan."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "reference validated"
+    failure_class: orphan-heartbeat
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-012
+    title: "release references an owned claim and ends it"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.3"
+    normative_text: "Solo release o la caducidad terminan un lease."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "lease closed"
+    failure_class: orphan-release
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-013
+    title: "Preemption requires an expired lease and prior work read"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "10.1"
+    normative_text: "preempts exige declaracion explicita con ambos indicadores en true."
+    category: normative
+    testability: schema
+    severity: major
+    required_for: "core-pack"
+    inputs: "envelope, event log"
+    expected_result: "ineligible preemption rejected"
+    failure_class: invalid-preemption
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-014
+    title: "Question option ids are unique and the default names one"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "13.6"
+    normative_text: "Ids duplicados y defaults que no resuelven deben rechazarse."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope"
+    expected_result: "rejection"
+    failure_class: invalid-question
+    external_dependencies: "none"
+    notes: "CONFLICT abierto: Schema V3 no impone ni uniqueItems. Ver F-03 de la reconciliacion."
+  - id: ACP-CONF-LOG-015
+    title: "assume by timeout cites an actually expired question"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "13.6"
+    normative_text: "assume con authority default-on-timeout cita su pregunta."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log, clock"
+    expected_result: "expiry verified"
+    failure_class: invalid-assumption
+    external_dependencies: "clock, log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-016
+    title: "supersede and revoke targets exist and are eligible"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.3"
+    normative_text: "El objetivo de supersede y revoke existe y es revocable."
+    category: normative
+    testability: semantic-validator
+    severity: major
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "rejection when absent"
+    failure_class: dangling-target
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-017
+    title: "Checkpoint coverage is valid and hides no fork"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "11.3"
+    normative_text: "Un checkpoint acota la lectura y nunca sustituye al log."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "coverage validated"
+    failure_class: misleading-checkpoint
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-018
+    title: "Idempotent duplicates produce no new effect"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.5"
+    normative_text: "Un evento con la misma tupla de identidad es duplicado y no crea efecto nuevo."
+    category: normative
+    testability: semantic-validator
+    severity: major
+    required_for: "core-pack"
+    inputs: "event log"
+    expected_result: "deduplicated"
+    failure_class: duplicate-effect
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-LOG-019
+    title: "Review independence is evaluated, not assumed"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "8.2"
+    normative_text: "submit.actor distinto de review.actor sobre el mismo basis."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "event log, identity records"
+    expected_result: "independence verdict or inconclusive"
+    failure_class: self-approval
+    external_dependencies: "identity"
+    notes: "Con nivel de garantia inferior a 3 el resultado correcto es INCONCLUSIVE, no PASS."
+  - id: ACP-CONF-BIND-GH-001
+    title: "Observed actor is compared against declared actor"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "4.1"
+    normative_text: "El binding compara la identidad declarada con la observada y levanta identity-mismatch."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "event, platform record, profile"
+    expected_result: "match / mismatch / indeterminate"
+    failure_class: identity-mismatch
+    external_dependencies: "github-read, identity"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-002
+    title: "Attribution uses the account id, not the login"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "4.1"
+    normative_text: "El actor observado se identifica por el id numerico de la cuenta."
+    category: binding
+    testability: binding-verifier
+    severity: major
+    required_for: "binding-github-pack"
+    inputs: "platform record"
+    expected_result: "id-based attribution"
+    failure_class: renamed-login-confusion
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-003
+    title: "Observed identity never appears in the authored envelope"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "4.1"
+    normative_text: "El observed_actor no aparece nunca en el envelope authored."
+    category: binding
+    testability: schema
+    severity: major
+    required_for: "binding-github-pack"
+    inputs: "envelope"
+    expected_result: "field absent"
+    failure_class: authored-observed-confusion
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-004
+    title: "Shared account yields indeterminate, not matching"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "4.3"
+    normative_text: "Con cuenta compartida toda comparacion devuelve indeterminado, no coincide."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "platform record, profile"
+    expected_result: "INCONCLUSIVE"
+    failure_class: false-independence-claim
+    external_dependencies: "identity"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-005
+    title: "on_behalf_of does not inherit capabilities"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "4.4"
+    normative_text: "Las capacidades se comprueban contra actor, nunca contra on_behalf_of."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "event, profile"
+    expected_result: "capability from actor only"
+    failure_class: privilege-escalation
+    external_dependencies: "identity"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-006
+    title: "Event pointer exists and resolves in the same thread"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.4"
+    normative_text: "El puntero lo asigna la plataforma tras publicar y debe resolver."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "pointer, platform"
+    expected_result: "resolution"
+    failure_class: dangling-pointer
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-007
+    title: "Edited events are detected and voided"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.5"
+    normative_text: "Un evento cuyo updated_at difiere de created_at es VOID por edicion."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "platform record"
+    expected_result: "VOID verdict"
+    failure_class: mutated-event
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-008
+    title: "Deleted events are detected via gaps and seals"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.6"
+    normative_text: "El borrado se detecta por hueco de puntero o discrepancia con covers."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "event log, seals"
+    expected_result: "detection and violation"
+    failure_class: deleted-event
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-009
+    title: "Minimizing an event does not change its effect"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.7"
+    normative_text: "Un evento minimizado sigue contando."
+    category: binding
+    testability: binding-verifier
+    severity: minor
+    required_for: "binding-github-pack"
+    inputs: "platform record"
+    expected_result: "effect unchanged"
+    failure_class: hidden-event
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-010
+    title: "Repository identity is the numeric id"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "2.1"
+    normative_text: "La identidad de un repositorio es su id numerico, no owner/name."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "basis, platform"
+    expected_result: "rename survives"
+    failure_class: renamed-repository
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-011
+    title: "Basis SHA exists and its relation to the ref is verified"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "6.3"
+    normative_text: "Se comprueba existencia del SHA y su relacion con el head de la ref."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "basis, git"
+    expected_result: "exists / stale / unreachable"
+    failure_class: nonexistent-sha
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-012
+    title: "A branch name never anchors evidence"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "2.1"
+    normative_text: "Solo el SHA completo ancla una afirmacion."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "basis"
+    expected_result: "ref-only basis rejected"
+    failure_class: invalid-basis
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-013
+    title: "Execution evidence identifies the run, not only the SHA"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "6.1"
+    normative_text: "Un re-run produce evidencia nueva sin cambiar el SHA: toda evidencia de ejecucion identifica la ejecucion."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "evidence"
+    expected_result: "run identifier required"
+    failure_class: ambiguous-evidence
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-014
+    title: "Evidence belongs to the right repository and SHA"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "11.4"
+    normative_text: "Se verifica existencia, repositorio y asociacion al SHA antes de contar la evidencia para un gate."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "evidence, platform"
+    expected_result: "association verified"
+    failure_class: forged-evidence
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-015
+    title: "Expired artifact degrades to digest-only evidence"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "6.1"
+    normative_text: "Un artifact es evidencia caduca; solo su digest sobrevive."
+    category: binding
+    testability: binding-verifier
+    severity: major
+    required_for: "binding-github-pack"
+    inputs: "evidence"
+    expected_result: "retrievable / digest-only"
+    failure_class: unretrievable-evidence
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-016
+    title: "UI state never generates an ACP event"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "3.5"
+    normative_text: "Ningun estado de la UI genera un evento por si solo."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "platform state"
+    expected_result: "no event derived"
+    failure_class: ui-state-as-truth
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-017
+    title: "A PR review is evidence, not an ACP review"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "6.4"
+    normative_text: "Una PR review es evidencia atada a un commit, no un evento ACP."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "platform state"
+    expected_result: "classified as evidence"
+    failure_class: ui-state-as-truth
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-018
+    title: "Timestamps come from platform metadata only"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.3"
+    normative_text: "El created_at del comentario es el unico reloj de confianza."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "platform record"
+    expected_result: "platform clock used"
+    failure_class: untrusted-clock
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-019
+    title: "Failed reads are recorded as unverified, never inferred"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "8"
+    normative_text: "Ante cualquier fallo de lectura se registra lo que no se pudo verificar y no se infiere."
+    category: binding
+    testability: binding-verifier
+    severity: blocking
+    required_for: "binding-github-pack"
+    inputs: "partial platform availability"
+    expected_result: "explicit unverified"
+    failure_class: inferred-fact
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-020
+    title: "Events live only in the container of their subject"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.1"
+    normative_text: "Un evento vive en un comentario de primer nivel del contenedor de su sujeto."
+    category: binding
+    testability: binding-verifier
+    severity: major
+    required_for: "binding-github-pack"
+    inputs: "event location"
+    expected_result: "misplacement rejected"
+    failure_class: misplaced-event
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-BIND-GH-021
+    title: "Sealing makes retroactive edits evident"
+    layer: L4
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "5.5"
+    normative_text: "El checkpoint registra el digest de cada evento cubierto; editar un evento sellado produce discrepancia visible."
+    category: binding
+    testability: binding-verifier
+    severity: major
+    required_for: "binding-github-pack"
+    inputs: "seals, events"
+    expected_result: "discrepancy detected"
+    failure_class: undetected-mutation
+    external_dependencies: "none"
+    notes: "Sin sellos la ventana de mutacion no detectada es infinita."
+  - id: ACP-CONF-PROJ-001
+    title: "Identical inputs produce an equivalent projection"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "5"
+    normative_text: "La reduccion es determinista dados los mismos registros, perfil, verificaciones y version de motor."
+    category: implementation
+    testability: projection-engine
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "events, binding records, profile, evaluation time"
+    expected_result: "identical projection"
+    failure_class: non-deterministic-projection
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-002
+    title: "Evaluation time is explicit, never wall clock"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "5"
+    normative_text: "La reduccion no usa el reloj actual sin un instante de evaluacion explicito."
+    category: implementation
+    testability: projection-engine
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "evaluation timestamp"
+    expected_result: "explicit input required"
+    failure_class: implicit-clock
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-003
+    title: "No network reads during reduction"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "5"
+    normative_text: "La reduccion no lee la red ni resuelve ramas mutables."
+    category: implementation
+    testability: projection-engine
+    severity: major
+    required_for: "projection-pack"
+    inputs: "engine trace"
+    expected_result: "no reads"
+    failure_class: impure-reduction
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-004
+    title: "Source digest, profile revision and engine version recorded"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "4"
+    normative_text: "La proyeccion registra digest de origen, revision de perfil y version de motor."
+    category: implementation
+    testability: projection-engine
+    severity: major
+    required_for: "projection-pack"
+    inputs: "projection output"
+    expected_result: "all three present"
+    failure_class: unattributable-projection
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-005
+    title: "Checkpoint-accelerated replay equals full replay"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "8"
+    normative_text: "Proyectar desde un checkpoint de confianza produce el mismo resultado que el replay completo."
+    category: implementation
+    testability: projection-engine
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "events, checkpoint"
+    expected_result: "equal projections"
+    failure_class: checkpoint-divergence
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-006
+    title: "Projection drift is detected"
+    layer: L5
+    source: "ACP-1.1 candidate"
+    source_section: "7.4"
+    normative_text: "Ante discrepancia entre proyeccion y log gana el log y la proyeccion se marca obsoleta."
+    category: normative
+    testability: projection-engine
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "published projection, log"
+    expected_result: "drift reported"
+    failure_class: silent-drift
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-007
+    title: "Nothing authoritative exists only in a projection"
+    layer: L5
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "7.2"
+    normative_text: "Fase, frescura, lease, gates, autorizaciones y evidencia no existen solo en una proyeccion."
+    category: binding
+    testability: manual-review
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "projection, log"
+    expected_result: "full reconstruction"
+    failure_class: projection-as-truth
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-008
+    title: "Partial retrieval yields partial state, not false certainty"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "6"
+    normative_text: "Una recuperacion parcial produce estado parcial o desconocido, nunca certeza falsa."
+    category: implementation
+    testability: projection-engine
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "partial log"
+    expected_result: "explicit partial verdict"
+    failure_class: false-certainty
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-009
+    title: "Unresolved causal conflict blocks sensitive state"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "8"
+    normative_text: "Un conflicto causal sin resolver bloquea el estado sensible."
+    category: implementation
+    testability: projection-engine
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "log with fork"
+    expected_result: "sensitive state withheld"
+    failure_class: conflict-ignored
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-010
+    title: "Stale reviews and validations are marked, not dropped"
+    layer: L5
+    source: "ACP-1.1 candidate"
+    source_section: "6.2"
+    normative_text: "La evidencia obsoleta se marca y no cuenta; no se borra."
+    category: normative
+    testability: projection-engine
+    severity: major
+    required_for: "projection-pack"
+    inputs: "log, heads"
+    expected_result: "stale marked"
+    failure_class: evidence-loss
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-PROJ-011
+    title: "Ledgers for risk, debt and blocks are kept separate"
+    layer: L5
+    source: "projection-engine-draft (informative)"
+    source_section: "4"
+    normative_text: "Los registros de riesgo, deuda y bloqueo se mantienen separados."
+    category: implementation
+    testability: projection-engine
+    severity: minor
+    required_for: "projection-pack"
+    inputs: "log"
+    expected_result: "separate ledgers"
+    failure_class: conflated-ledgers
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-PROJ-012
+    title: "Violations and uncertainty survive projection"
+    layer: L5
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "7.2"
+    normative_text: "Una proyeccion no borra evidencia que contradiga el estado actual."
+    category: binding
+    testability: projection-engine
+    severity: blocking
+    required_for: "projection-pack"
+    inputs: "log with violations"
+    expected_result: "preserved"
+    failure_class: evidence-erasure
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-GATE-001
+    title: "Gate requirements reference existing profile gates"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "8.4"
+    normative_text: "Un gate se declara en el perfil y se evalua al cruzar."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "profile, projection"
+    expected_result: "references resolve"
+    failure_class: dangling-gate-reference
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-GATE-002
+    title: "Freshness is recomputed at crossing time"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "6.2"
+    normative_text: "La frescura se recalcula en el momento de cruzar el gate."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "projection, heads"
+    expected_result: "recomputed"
+    failure_class: stale-gate
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-GATE-003
+    title: "Stale evidence is excluded from gate satisfaction"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "6.2"
+    normative_text: "La evidencia obsoleta no satisface ningun gate."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "projection"
+    expected_result: "excluded"
+    failure_class: stale-gate
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-GATE-004
+    title: "Independent review requirement satisfied or inconclusive"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "8.2"
+    normative_text: "Nadie revisa lo que entrego."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "projection, identity"
+    expected_result: "satisfied / inconclusive"
+    failure_class: self-approval
+    external_dependencies: "identity"
+    notes: ""
+  - id: ACP-CONF-GATE-005
+    title: "Authorization matches action, target, scope, limits, basis and expiry"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "13.5"
+    normative_text: "Una autorizacion es especifica, atada a un basis, acotada, caduca y revocable."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "projection, authorization"
+    expected_result: "full match required"
+    failure_class: unauthorized-action
+    external_dependencies: "clock"
+    notes: ""
+  - id: ACP-CONF-GATE-006
+    title: "Revoked or expired authorization is excluded"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "6.2"
+    normative_text: "Un revoke anula de inmediato; la caducidad tambien."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "projection, clock"
+    expected_result: "excluded"
+    failure_class: stale-authorization
+    external_dependencies: "clock"
+    notes: ""
+  - id: ACP-CONF-GATE-007
+    title: "Authorization on a different SHA does not apply"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "13.5"
+    normative_text: "Se autoriza un artefacto, no una intencion."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "projection, basis"
+    expected_result: "no application"
+    failure_class: unauthorized-action
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-GATE-008
+    title: "An authorization is never inferred"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "13.5"
+    normative_text: "Una autorizacion no se puede inferir de una conversacion ni de un estado de la UI."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "log, platform state"
+    expected_result: "explicit event required"
+    failure_class: inferred-authorization
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-GATE-009
+    title: "Silence never authorizes a sensitive action"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "13.6"
+    normative_text: "El silencio nunca autoriza acciones sensibles, irreversibles o remotas."
+    category: normative
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "log, profile"
+    expected_result: "blocked"
+    failure_class: silent-authorization
+    external_dependencies: "none"
+    notes: "El caso disfrazado exige clasificacion semantica; el formato solo cubre el kind declarado."
+  - id: ACP-CONF-GATE-010
+    title: "unverified acknowledgement is required where the gate demands it"
+    layer: L6
+    source: "ACP-1.1 candidate"
+    source_section: "8.4"
+    normative_text: "El gate exige que alguien con autoridad haya firmado la lista de unverified."
+    category: normative
+    testability: gate-evaluator
+    severity: major
+    required_for: "gate-pack"
+    inputs: "projection"
+    expected_result: "ack present"
+    failure_class: unacknowledged-uncertainty
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-GATE-011
+    title: "Gate output explains every pass, fail and blocker"
+    layer: L6
+    source: "projection-engine-draft (informative)"
+    source_section: "9"
+    normative_text: "La salida del gate explica cada resultado."
+    category: implementation
+    testability: gate-evaluator
+    severity: major
+    required_for: "gate-pack"
+    inputs: "gate evaluation"
+    expected_result: "explanation present"
+    failure_class: opaque-gate
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-GATE-012
+    title: "Unknown or conflicting state fails closed"
+    layer: L6
+    source: "projection-engine-draft (informative)"
+    source_section: "9"
+    normative_text: "Un estado desconocido o en conflicto falla cerrado."
+    category: implementation
+    testability: gate-evaluator
+    severity: blocking
+    required_for: "gate-pack"
+    inputs: "projection"
+    expected_result: "closed failure"
+    failure_class: fail-open
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-OPS-001
+    title: "Cold start from the platform alone"
+    layer: L7
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "9.1"
+    normative_text: "Un item debe ser reconstruible con solo repo, contenedor, eventos, perfil y heads."
+    category: binding
+    testability: resilience-test
+    severity: blocking
+    required_for: "resilience-pack"
+    inputs: "platform only"
+    expected_result: "state reconstructed"
+    failure_class: unreconstructible-state
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-OPS-002
+    title: "Read budget is respected or the agent stops"
+    layer: L7
+    source: "ACP-1.1 candidate"
+    source_section: "9.2"
+    normative_text: "Si el log posterior al checkpoint supera el presupuesto, primero checkpoint."
+    category: normative
+    testability: resilience-test
+    severity: major
+    required_for: "resilience-pack"
+    inputs: "log size"
+    expected_result: "stop or checkpoint"
+    failure_class: budget-overrun
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-OPS-003
+    title: "Recovery with partial platform availability is explicit"
+    layer: L7
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "8"
+    normative_text: "Una recuperacion incompleta se publica como parcial."
+    category: binding
+    testability: resilience-test
+    severity: blocking
+    required_for: "resilience-pack"
+    inputs: "degraded platform"
+    expected_result: "partial verdict"
+    failure_class: false-complete-recovery
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-OPS-004
+    title: "Missing information never becomes inferred information"
+    layer: L7
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "9.4"
+    normative_text: "El resultado es un estado explicitamente incompleto, nunca uno completo con huecos rellenados."
+    category: binding
+    testability: resilience-test
+    severity: blocking
+    required_for: "resilience-pack"
+    inputs: "log with gaps"
+    expected_result: "explicit gaps"
+    failure_class: inferred-fact
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-OPS-005
+    title: "Concurrent claim race is detected after the fact"
+    layer: L7
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "3.4"
+    normative_text: "GitHub no ofrece transaccionalidad: los claims simultaneos se detectan, no se impiden."
+    category: binding
+    testability: resilience-test
+    severity: blocking
+    required_for: "resilience-pack"
+    inputs: "two claims"
+    expected_result: "detection"
+    failure_class: undetected-race
+    external_dependencies: "log-reader"
+    notes: ""
+  - id: ACP-CONF-OPS-006
+    title: "Expired lease returns the item to the pool"
+    layer: L7
+    source: "ACP-1.1 candidate"
+    source_section: "10.1"
+    normative_text: "Expirado el lease, el item vuelve a READY y cualquiera puede reclamarlo."
+    category: normative
+    testability: resilience-test
+    severity: major
+    required_for: "resilience-pack"
+    inputs: "log, clock"
+    expected_result: "item reclaimable"
+    failure_class: stuck-lease
+    external_dependencies: "clock"
+    notes: ""
+  - id: ACP-CONF-OPS-007
+    title: "Force push and rebase invalidate anchored assertions"
+    layer: L7
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "8"
+    normative_text: "Toda afirmacion anclada a un SHA que deja de ser alcanzable pasa a STALE y deja de ser verificable."
+    category: binding
+    testability: resilience-test
+    severity: blocking
+    required_for: "resilience-pack"
+    inputs: "git history rewrite"
+    expected_result: "assertions invalidated"
+    failure_class: undetected-staleness
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-OPS-008
+    title: "Repository rename does not orphan the basis"
+    layer: L7
+    source: "GitHub Binding 0.1.0-draft"
+    source_section: "8"
+    normative_text: "Con la identidad por id numerico, un renombrado no rompe nada."
+    category: binding
+    testability: resilience-test
+    severity: major
+    required_for: "resilience-pack"
+    inputs: "renamed repository"
+    expected_result: "references intact"
+    failure_class: renamed-repository
+    external_dependencies: "github-read"
+    notes: ""
+  - id: ACP-CONF-OPS-009
+    title: "Notification failure does not stop the clock"
+    layer: L7
+    source: "ACP-1.1 candidate"
+    source_section: "13.6"
+    normative_text: "El vencimiento corre igual: el silencio tiene semantica definida."
+    category: normative
+    testability: resilience-test
+    severity: major
+    required_for: "resilience-pack"
+    inputs: "unanswered question, clock"
+    expected_result: "default applied and recorded"
+    failure_class: stalled-protocol
+    external_dependencies: "clock"
+    notes: ""
+  - id: ACP-CONF-OPS-010
+    title: "Unsupported protocol minor fails closed for that event"
+    layer: L7
+    source: "ACP-1.1 candidate"
+    source_section: "16.2"
+    normative_text: "Campo desconocido con el mismo mayor se tolera; tipo desconocido falla cerrado; mayor distinto, modo solo lectura."
+    category: normative
+    testability: resilience-test
+    severity: blocking
+    required_for: "resilience-pack"
+    inputs: "future minor document"
+    expected_result: "correct per-case behaviour"
+    failure_class: version-mishandling
+    external_dependencies: "none"
+    notes: "CONFLICT abierto: Schema V3 acepta 1.x y puede rechazar un 1.2 valido por campos desconocidos."
+  - id: ACP-CONF-OPS-011
+    title: "Profile revision migration is explicit"
+    layer: L7
+    source: "ACP-1.1 candidate"
+    source_section: "16.4"
+    normative_text: "Un cambio mayor se anuncia con un checkpoint de programa que declara from y to."
+    category: normative
+    testability: resilience-test
+    severity: major
+    required_for: "resilience-pack"
+    inputs: "two profile revisions"
+    expected_result: "explicit migration"
+    failure_class: silent-migration
+    external_dependencies: "none"
+    notes: ""
+  - id: ACP-CONF-OPS-012
+    title: "The suite performs no mutation"
+    layer: L7
+    source: "suite security"
+    source_section: "14"
+    normative_text: "La suite nunca ejecuta merge, deploy, migracion, escritura, borrado, cambio de permisos ni rotacion de secretos."
+    category: security
+    testability: manual-review
+    severity: blocking
+    required_for: "all"
+    inputs: "suite definition"
+    expected_result: "dry-run only"
+    failure_class: unauthorized-side-effect
+    external_dependencies: "none"
+    notes: ""

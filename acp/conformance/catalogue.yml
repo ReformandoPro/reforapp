@@ -1,0 +1,266 @@
+# ACP Conformance Suite 0.1 - case families, packs and mandatory reference cases
+#
+# This catalogue declares WHAT cases must exist. It contains no cases: the
+# case files themselves are a later deliverable and are validated against
+# case-format.schema.json when they are written.
+
+suite_version: "0.1.0-draft"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Packs. A pack is the unit an implementation runs and claims. The core pack is
+# portable by construction: a future GitLab binding reuses L0-L3 and replaces
+# only the binding pack.
+# ─────────────────────────────────────────────────────────────────────────────
+packs:
+  core-pack:
+    layers: ["L0", "L1", "L3"]
+    requirement_prefixes: ["ACP-CONF-CORE", "ACP-CONF-SCHEMA", "ACP-CONF-LOG"]
+    depends_on: []
+    environment: offline
+    platform_required: false
+    fixtures: "envelope and event-log documents, no platform records"
+    evidence: "parse diagnostics, schema verdicts, causal graph, per-case keyword"
+    result: "ACP Core Syntax Conformant plus ACP Event-Log Semantics Conformant"
+    portability: "MUST run with no platform, no network and no clock other than pinned inputs"
+  profile-pack:
+    layers: ["L2"]
+    requirement_prefixes: ["ACP-CONF-PROFILE"]
+    depends_on: ["core-pack"]
+    environment: offline
+    platform_required: false
+    fixtures: "profile documents plus schema-valid envelopes"
+    evidence: "policy violations, profile revision used, referential integrity report"
+    result: "ACP Profile Conformant"
+    portability: "portable; a profile is platform-neutral policy"
+  binding-github-pack:
+    layers: ["L4"]
+    requirement_prefixes: ["ACP-CONF-BIND-GH"]
+    depends_on: ["core-pack"]
+    environment: mock-or-sandbox
+    platform_required: true
+    fixtures: "binding records, platform state snapshots, identity maps"
+    evidence: "identity comparison, evidence verification status, retrievability, mutation detection"
+    result: "ACP Binding Conformant (github 0.1.0-draft)"
+    portability: "NOT portable. MUST NOT contaminate the core pack with platform vocabulary"
+  projection-pack:
+    layers: ["L5"]
+    requirement_prefixes: ["ACP-CONF-PROJ"]
+    depends_on: ["core-pack", "profile-pack"]
+    environment: offline
+    platform_required: false
+    fixtures: "golden projections: events, binding records, profile, evaluation time, expected state"
+    evidence: "canonical projection, source digest, engine version, diagnostics"
+    result: "ACP Projection Conformant"
+    portability: "portable given pre-verified binding records"
+    blocked_by: "Projection Engine specification is not adopted; requirements are informative"
+  gate-pack:
+    layers: ["L6"]
+    requirement_prefixes: ["ACP-CONF-GATE"]
+    depends_on: ["core-pack", "profile-pack", "projection-pack"]
+    environment: offline
+    platform_required: false
+    fixtures: "projections plus profile gate definitions plus authorization ledgers"
+    evidence: "gate status with a per-requirement explanation, blockers, authorization decision"
+    result: "ACP Gate Evaluation Conformant"
+    portability: "portable"
+  resilience-pack:
+    layers: ["L7"]
+    requirement_prefixes: ["ACP-CONF-OPS"]
+    depends_on: ["core-pack", "binding-github-pack"]
+    environment: sandbox
+    platform_required: true
+    fixtures: "degraded platform scenarios, rewritten history, partial logs"
+    evidence: "recovered state, declared gaps, safe failure mode, absence of side effects"
+    result: "ACP Operationally Conformant"
+    portability: "partly binding-specific"
+  security-pack:
+    layers: ["L0", "L4", "L7"]
+    requirement_prefixes: ["ACP-CONF-CORE", "ACP-CONF-BIND-GH", "ACP-CONF-OPS"]
+    depends_on: []
+    environment: offline
+    platform_required: false
+    fixtures: "hostile documents, oversized graphs, forged evidence, secret-bearing payloads"
+    evidence: "rejection records, resource bounds respected, no execution, no mutation"
+    result: "no conformance class of its own; a blocking failure here voids every other claim"
+    portability: "portable"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Case families
+# ─────────────────────────────────────────────────────────────────────────────
+families:
+  DOCINT:
+    title: "Document integrity"
+    layers: ["L0"]
+    objective: "Prove inputs parse deterministically and hostile documents are refused."
+    risks_covered: ["silent duplicate keys", "resource exhaustion", "non-reproducible digests", "executable content in fixtures"]
+    mandatory_negatives: ["duplicate keys", "oversized document", "unsupported serialization", "unsupported major version"]
+  ENVELOPE:
+    title: "Envelope validity"
+    layers: ["L1"]
+    objective: "Prove the envelope contract is enforced per event type, including conditionals."
+    risks_covered: ["missing required member", "field from another event type", "malformed basis", "invalid extension key"]
+    mandatory_negatives: ["missing actor", "both item and program", "neither item nor program", "unknown event type", "short SHA", "uppercase SHA", "loose extension key"]
+  PROFVAL:
+    title: "Profile validity"
+    layers: ["L1", "L2"]
+    objective: "Prove profile documents are well formed and internally coherent."
+    risks_covered: ["weakened core invariant", "dangling reference", "contradictory permission", "unaccountable automation"]
+    mandatory_negatives: ["self_review allowed", "stale counts for gates", "never_default without authorize", "automation enabled without implementation", "unknown capability"]
+  CATVER:
+    title: "Catalogue and versioning"
+    layers: ["L1", "L7"]
+    objective: "Prove the closed catalogue and the version compatibility rules."
+    risks_covered: ["catalogue drift between schemas", "silent acceptance of a future minor", "alias creep"]
+    mandatory_negatives: ["prohibited alias", "catalogue digest mismatch", "unsupported major"]
+  IDENTITY:
+    title: "Actor and identity"
+    layers: ["L2", "L4"]
+    objective: "Prove declared identity is compared against observed identity, and that shared accounts yield indeterminate rather than matching."
+    risks_covered: ["impersonation", "false independence claim", "privilege escalation via delegation", "login reuse"]
+    mandatory_negatives: ["observed actor differs", "actor absent from profile", "actor lacks capability", "on_behalf_of not in profile"]
+  CAUSAL:
+    title: "Subject and causality"
+    layers: ["L3"]
+    objective: "Prove the causal graph is validated: roots, pointers, forks, cycles."
+    risks_covered: ["orphan events", "hidden forks", "cycles", "duplicate roots", "misplaced events"]
+    mandatory_negatives: ["after does not resolve", "causal cycle", "duplicate root", "root on ineligible type", "root together with after", "unresolved fork"]
+  LEASE:
+    title: "Claims and leases"
+    layers: ["L3", "L7"]
+    objective: "Prove lease ownership, expiry, heartbeat, release and preemption."
+    risks_covered: ["two agents on one item", "stuck lease", "silent takeover"]
+    mandatory_negatives: ["heartbeat after release", "heartbeat without claim", "release of a claim not owned", "preemption of a live lease", "concurrent claim"]
+  SILENCE:
+    title: "Questions and silence"
+    layers: ["L3", "L6"]
+    objective: "Prove silence has defined semantics and never authorizes a sensitive action."
+    risks_covered: ["silent authorization", "default that resolves to nothing", "stalled protocol"]
+    mandatory_negatives: ["duplicate option ids", "default naming no option", "sensitive default", "assume without an expired question"]
+  AUTHZ:
+    title: "Authorization and revocation"
+    layers: ["L6"]
+    objective: "Prove authorizations are specific, anchored, bounded, expiring and revocable."
+    risks_covered: ["replay of an old authorization", "authorization inferred from the interface", "action beyond the authorized basis"]
+    mandatory_negatives: ["expired authorization", "revoked authorization", "authorization on a different SHA", "authorization carrying a silent default", "authorization with empty limits"]
+  REVIEW:
+    title: "Reviews and validation"
+    layers: ["L3", "L6"]
+    objective: "Prove reviews carry a basis and a declared adversarial stance, and that independence is evaluated."
+    risks_covered: ["self approval", "review without anchor", "evasion of the falsification requirement"]
+    mandatory_negatives: ["self-review", "review without basis", "adversarial without falsified", "non-approve without would_change_my_mind"]
+  FRESH:
+    title: "Revalidation and freshness"
+    layers: ["L3", "L5", "L6"]
+    objective: "Prove staleness is recomputed and revalidation cannot launder an expired review."
+    risks_covered: ["stale evidence satisfying a gate", "TTL reset by chained revalidation", "revalidation by a third party"]
+    mandatory_negatives: ["stale review counted", "revalidate without new_basis", "empty scope_diff paths", "revalidate by another actor"]
+  EVIDENCE:
+    title: "Evidence and artifacts"
+    layers: ["L4"]
+    objective: "Prove evidence is verified for existence, repository, SHA and run, and that expiry degrades it rather than hiding it."
+    risks_covered: ["forged evidence", "evidence from the wrong repository", "re-run ambiguity", "expired artifact treated as present"]
+    mandatory_negatives: ["nonexistent SHA", "evidence in the wrong repository", "expired artifact", "execution evidence without run identifier", "digest mismatch"]
+  BINDGH:
+    title: "GitHub binding"
+    layers: ["L4"]
+    objective: "Prove the binding record is separate from the envelope, mutation is detected, and UI state is never truth."
+    risks_covered: ["edited event", "deleted event", "UI state as truth", "repository rename orphaning a basis"]
+    mandatory_negatives: ["edited comment", "deleted comment", "PR approval treated as an ACP review", "basis anchored to a branch name", "event in the wrong container"]
+  PROJ:
+    title: "Projection"
+    layers: ["L5"]
+    objective: "Prove reduction is deterministic, attributable and honest about partial input."
+    risks_covered: ["non-deterministic state", "silent drift", "false certainty from partial reads", "evidence erased by projection"]
+    mandatory_negatives: ["non-deterministic projection", "checkpoint that hides a fork", "projection drift undetected", "partial retrieval reported as complete"]
+  GATES:
+    title: "Gates"
+    layers: ["L6"]
+    objective: "Prove gates are evaluated at crossing time with fresh evidence and explained output."
+    risks_covered: ["fail-open", "stale gate", "opaque decision", "unacknowledged uncertainty"]
+    mandatory_negatives: ["stale evidence counted", "gate crossed with unresolved fork", "unknown state failing open", "missing unverified acknowledgement"]
+  RECOVERY:
+    title: "Recovery"
+    layers: ["L7"]
+    objective: "Prove cold start from the platform alone and honest degradation when information is missing."
+    risks_covered: ["unreconstructible state", "inferred gaps", "read budget overrun"]
+    mandatory_negatives: ["recovery with partial platform availability reported as complete", "missing event silently interpolated", "budget exceeded without checkpoint"]
+  SECURITY:
+    title: "Security"
+    layers: ["L0", "L4", "L7"]
+    objective: "Prove the suite is safe against hostile input and performs no mutation."
+    risks_covered: ["fixture execution", "graph explosion", "credential leakage", "accidental mutation"]
+    mandatory_negatives: ["oversized graph", "secret-bearing payload", "attempted platform write", "arbitrary network fetch"]
+  CONCUR:
+    title: "Concurrency"
+    layers: ["L3", "L7"]
+    objective: "Prove races are detected after the fact, since the platform offers no transactionality."
+    risks_covered: ["undetected race", "split brain", "lost work"]
+    mandatory_negatives: ["two live claims", "concurrent fork without reconcile", "competing preemption"]
+  COMPAT:
+    title: "Compatibility"
+    layers: ["L1", "L7"]
+    objective: "Prove writer-strict and reader-tolerant behaviour are distinguished."
+    risks_covered: ["future minor rejected wrongly", "unknown type tolerated wrongly", "unsupported combination reported as conforming"]
+    mandatory_negatives: ["unknown type tolerated", "unsupported combination claimed conforming", "future minor validated against older rules"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Mandatory reference cases. The suite is incomplete until every entry has a
+# case file. Each names the family that owns it and the requirement it proves.
+# ─────────────────────────────────────────────────────────────────────────────
+mandatory_reference_cases:
+  - { ref: malformed-marked-event,            family: DOCINT,   layer: L0, requirement: ACP-CONF-CORE-001,     polarity: negative }
+  - { ref: unknown-event-type,                family: ENVELOPE, layer: L1, requirement: ACP-CONF-SCHEMA-006,   polarity: negative }
+  - { ref: actor-absent,                      family: ENVELOPE, layer: L1, requirement: ACP-CONF-SCHEMA-011,   polarity: negative }
+  - { ref: item-and-program-both,             family: ENVELOPE, layer: L1, requirement: ACP-CONF-SCHEMA-010,   polarity: negative }
+  - { ref: item-and-program-neither,          family: ENVELOPE, layer: L1, requirement: ACP-CONF-SCHEMA-010,   polarity: negative }
+  - { ref: invalid-root-type,                 family: CAUSAL,   layer: L3, requirement: ACP-CONF-LOG-005,      polarity: negative }
+  - { ref: after-does-not-resolve,            family: CAUSAL,   layer: L3, requirement: ACP-CONF-LOG-001,      polarity: negative }
+  - { ref: causal-fork,                       family: CAUSAL,   layer: L3, requirement: ACP-CONF-LOG-007,      polarity: negative }
+  - { ref: causal-cycle,                      family: CAUSAL,   layer: L3, requirement: ACP-CONF-LOG-003,      polarity: negative }
+  - { ref: duplicate-root,                    family: CAUSAL,   layer: L3, requirement: ACP-CONF-LOG-004,      polarity: negative }
+  - { ref: reconcile-resolves-fork,           family: CAUSAL,   layer: L3, requirement: ACP-CONF-LOG-008,      polarity: positive }
+  - { ref: concurrent-claim,                  family: CONCUR,   layer: L3, requirement: ACP-CONF-OPS-005,      polarity: negative }
+  - { ref: expired-lease,                     family: LEASE,    layer: L3, requirement: ACP-CONF-LOG-010,      polarity: boundary }
+  - { ref: heartbeat-after-release,           family: LEASE,    layer: L3, requirement: ACP-CONF-LOG-011,      polarity: negative }
+  - { ref: invalid-preemption,                family: LEASE,    layer: L3, requirement: ACP-CONF-LOG-013,      polarity: negative }
+  - { ref: duplicate-question-options,        family: SILENCE,  layer: L3, requirement: ACP-CONF-LOG-014,      polarity: negative }
+  - { ref: sensitive-silent-default,          family: SILENCE,  layer: L6, requirement: ACP-CONF-GATE-009,     polarity: negative }
+  - { ref: assume-without-valid-question,     family: SILENCE,  layer: L3, requirement: ACP-CONF-LOG-015,      polarity: negative }
+  - { ref: self-review,                       family: REVIEW,   layer: L3, requirement: ACP-CONF-LOG-019,      polarity: negative }
+  - { ref: stale-review,                      family: FRESH,    layer: L6, requirement: ACP-CONF-GATE-003,     polarity: negative }
+  - { ref: nonexistent-sha,                   family: EVIDENCE, layer: L4, requirement: ACP-CONF-BIND-GH-011,  polarity: negative }
+  - { ref: moved-ref,                         family: EVIDENCE, layer: L4, requirement: ACP-CONF-BIND-GH-011,  polarity: boundary }
+  - { ref: evidence-wrong-repository,         family: EVIDENCE, layer: L4, requirement: ACP-CONF-BIND-GH-014,  polarity: negative }
+  - { ref: expired-artifact,                  family: EVIDENCE, layer: L4, requirement: ACP-CONF-BIND-GH-015,  polarity: boundary }
+  - { ref: expired-authorization,             family: AUTHZ,    layer: L6, requirement: ACP-CONF-GATE-006,     polarity: negative }
+  - { ref: revoked-authorization,             family: AUTHZ,    layer: L6, requirement: ACP-CONF-GATE-006,     polarity: negative }
+  - { ref: authorization-on-different-sha,    family: AUTHZ,    layer: L6, requirement: ACP-CONF-GATE-007,     polarity: negative }
+  - { ref: observed-identity-differs,         family: IDENTITY, layer: L4, requirement: ACP-CONF-BIND-GH-001,  polarity: negative }
+  - { ref: edited-comment,                    family: BINDGH,   layer: L4, requirement: ACP-CONF-BIND-GH-007,  polarity: negative }
+  - { ref: deleted-comment,                   family: BINDGH,   layer: L4, requirement: ACP-CONF-BIND-GH-008,  polarity: negative }
+  - { ref: force-push,                        family: RECOVERY, layer: L7, requirement: ACP-CONF-OPS-007,      polarity: negative }
+  - { ref: repository-rename,                 family: RECOVERY, layer: L7, requirement: ACP-CONF-OPS-008,      polarity: positive }
+  - { ref: rerun-same-sha-different-run,      family: EVIDENCE, layer: L4, requirement: ACP-CONF-BIND-GH-013,  polarity: negative }
+  - { ref: non-deterministic-projection,      family: PROJ,     layer: L5, requirement: ACP-CONF-PROJ-001,     polarity: negative }
+  - { ref: checkpoint-omits-fork,             family: PROJ,     layer: L5, requirement: ACP-CONF-LOG-017,      polarity: negative }
+  - { ref: projection-drift,                  family: PROJ,     layer: L5, requirement: ACP-CONF-PROJ-006,     polarity: negative }
+  - { ref: recovery-partial-platform,         family: RECOVERY, layer: L7, requirement: ACP-CONF-OPS-003,      polarity: boundary }
+  - { ref: future-minor-version,              family: COMPAT,   layer: L7, requirement: ACP-CONF-OPS-010,      polarity: boundary }
+  - { ref: reader-tolerant-writer-strict,     family: COMPAT,   layer: L7, requirement: ACP-CONF-OPS-010,      polarity: boundary }
+
+automation_classes:
+  fully-automatable:
+    examples: ["schema validation", "duplicate key detection", "causal graph validation", "SHA existence", "digest comparison"]
+    note: "Decidable from inputs alone or from a single platform read."
+  automatable-with-mock:
+    examples: ["identity mismatch", "edited comment detection", "expired artifact", "partial platform availability"]
+    note: "Requires a simulated platform record; the semantics are decidable, the platform is not needed live."
+  automatable-with-sandbox:
+    examples: ["force push", "repository rename", "re-run on the same SHA", "concurrent claim race"]
+    note: "Requires a disposable repository. MUST NOT run against a real programme repository."
+  manual-evidence-review:
+    examples: ["checkpoint quality", "whether a question is a disguised authorization", "whether a scope claim is honest", "review independence under a shared account"]
+    note: "A human judgement is the verdict. The report names the reviewer."
+  not-reliably-automatable:
+    examples: ["honesty of unverified", "truthfulness of a declared environment", "identity of the process behind an account", "human intent"]
+    note: "MUST be reported as INCONCLUSIVE or out of scope, never as PASS. Asserting these is how a suite becomes theatre."
