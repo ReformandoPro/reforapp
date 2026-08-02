@@ -1,0 +1,363 @@
+# ACP/1.1 — configuración del programa (perfil Reformando)
+# Fichero normativo del perfil. La spec (ACP-1.md) describe la gramática;
+# esto declara la política de ESTE programa. Se cambia por PR.
+#
+# Estado: CANDIDATA a enmienda normativa ACP-1.1. Nada de aquí está activo.
+# No hay automatización: ni workflows, ni Actions, ni bots, ni webhooks, ni scripts.
+
+acp: "1.1"                      # versión Core: cadena mayor.menor (A20)
+spec: "1.1.0-draft"             # versión del documento ACP-1.md
+profile_version: "0.2.0"
+program: reforapp
+status: proposed                # proposed | active | superseded
+profile: ACP-1                  # perfil de conformidad operativo (ACP-0..ACP-3)
+schema_compatibility: none      # ningún schema publicado implementa ACP-1.1 todavía
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Repositorios. Forma nativa del binding: legítima AQUÍ porque el perfil nombra
+# su binding. El envelope Core usa la forma portable {system, id} (A13).
+# ─────────────────────────────────────────────────────────────────────────────
+repos:
+  coordination: ReformandoPro/reforapp
+  code:
+    - ReformandoPro/reforapp
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Identidad (A10, ACP-1.md §8.6)
+#
+# trust_level: 1 autodeclarada · 2 cuenta compartida · 3 cuentas distintas
+#              4 identidad de máquina firmada · 5 credenciales de organización
+# ─────────────────────────────────────────────────────────────────────────────
+identity:
+  trust_level: 1
+  distinct_accounts: false
+  note: >-
+    Nivel 1: los handles siguen sin asignar, luego `actor` es autodeclarado y
+    NO verificable. Consecuencia declarada en lugar de implícita: la separación
+    de poderes de ACP-1.md 8.2 es honor system, y ningún gate que exija
+    revisión independiente está realmente garantizado hasta llegar al nivel 3.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Política de identificadores. Core no impone ninguna (A12): toda la política
+# vive aquí, y aplicarla a los envelopes es una segunda pasada perfil-consciente.
+# ─────────────────────────────────────────────────────────────────────────────
+ids:
+  work_item_prefix: "RF"
+  work_item_pattern: "^RF-I?[1-9][0-9]{0,8}$"
+  initiative_prefix: "RF-I"
+  decision_prefix: "ACD"
+  risk_prefix: "RSK"
+  debt_prefix: "DEBT"
+  # Nombres históricos del roadmap de producto, anteriores a ACP y ajenos a él.
+  # NO son work items ACP y no pueden aparecer como `item:` de ningún evento.
+  reserved:
+    - "R1"
+    - "R2"
+    - "R2.1"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agentes. Un handle por agente, cuenta distinta. Mientras sean @TODO, el
+# trust_level no puede subir de 1 y no se inventan cuentas.
+# ─────────────────────────────────────────────────────────────────────────────
+agents:
+  - id: jorge
+    kind: human
+    role: product-owner
+    handle: "@TODO-po"
+  - id: chatgpt
+    kind: llm
+    role: coordinator
+    handle: "@TODO-coordinator"
+  - id: openclaw
+    kind: llm
+    role: lead-engineer
+    handle: "@TODO-lead"
+    capabilities_extra: ["shell", "deploy-staging"]
+  - id: claude
+    kind: llm
+    role: engineer
+    handle: "@TODO-engineer"
+    capabilities_extra: ["shell"]
+  - id: hermes
+    kind: llm
+    role: reviewer
+    handle: "@TODO-reviewer"
+    adversarial: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Roles y capacidades (A7, ACP-1.md 8.1)
+#
+# NORMA: los nombres de capacidad SON los nombres de tipo de evento del
+# catálogo cerrado, más `veto`. No hay traducción, luego no puede haber
+# divergencia. `approve` es capacidad simple; qué gates puede consentir un rol
+# se declara en `approve_gates`, nunca como `approve:<gate>`.
+# ─────────────────────────────────────────────────────────────────────────────
+roles:
+  product-owner:
+    capabilities: ["spec", "triage", "decide", "authorize", "revoke", "question", "answer", "close", "supersede", "approve", "veto"]
+    approve_gates: ["scope", "release"]
+  coordinator:
+    capabilities: ["spec", "triage", "decide", "checkpoint", "reconcile", "validate", "block", "unblock", "question", "answer", "assume", "risk", "debt", "violation", "supersede", "close", "approve"]
+    approve_gates: ["scope"]
+  lead-engineer:
+    capabilities: ["claim", "heartbeat", "progress", "release", "handoff", "submit", "validate", "review", "revalidate", "assume", "question", "risk", "checkpoint", "reconcile", "approve"]
+    approve_gates: ["code"]
+  engineer:
+    capabilities: ["claim", "heartbeat", "progress", "release", "handoff", "submit", "validate", "question", "assume", "risk"]
+    approve_gates: []
+  reviewer:
+    capabilities: ["review", "revalidate", "validate", "block", "violation", "risk", "approve", "veto"]
+    approve_gates: ["code"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Permisos de plataforma: default deny. Distinto de las capacidades: esto es
+# qué puede hacerse en el mundo. `authorization` exige un evento `authorize`
+# vigente del PO, atado a un basis.sha (ACP-1.md 13.5).
+# ─────────────────────────────────────────────────────────────────────────────
+permissions:
+  default: deny
+  push_branch: ["lead-engineer", "engineer", "coordinator"]
+  open_pr: ["lead-engineer", "engineer", "coordinator"]
+  merge_main:
+    mode: authorization
+    irreversible: false
+    reason: "Reversible con revert, pero cambia la base de todo el trabajo en vuelo"
+  force_push:
+    mode: forbidden
+    irreversible: true
+    reason: "Destruye historia; incompatible con un log append-only"
+  rewrite_history:
+    mode: forbidden
+    irreversible: true
+  delete_branch_others:
+    mode: forbidden
+    irreversible: true
+  remote_db_write:
+    mode: authorization
+    irreversible: true
+  run_migration:
+    mode: authorization
+    irreversible: true
+    reason: "Efecto en datos, no reversible con un revert"
+  deploy_staging: authorization
+  deploy_production:
+    mode: authorization
+    irreversible: true
+  modify_workflows:
+    mode: authorization
+    reason: "Cambiar un workflow es cambiar la definicion de la evidencia"
+  modify_secrets:
+    mode: forbidden
+    irreversible: true
+  manage_labels: authorization
+  manage_projects: authorization
+  manage_issue_templates: authorization
+  create_release:
+    mode: authorization
+    irreversible: true
+  delete_data:
+    mode: forbidden
+    irreversible: true
+  post_secrets: forbidden       # tokens, JWTs, cookies, URLs con credenciales
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Gates. Se evalúan al cruzar, contra el head actual.
+# ─────────────────────────────────────────────────────────────────────────────
+gates:
+  ready:
+    requires:
+      - spec: {accept: required, touches: required}
+      - blockers: none
+  code:
+    requires:
+      - review: {verdict: "approve", by_role: "reviewer", count: 1, fresh: true}
+      - self_approval: forbidden
+  merge:
+    requires:
+      - gate: "code"
+      - review: {verdict: "!reject", by_capability: "veto", all: true}
+      - validation: ["tests", "lint", "types"]
+      - blockers: none
+      - unverified_ack: true
+  scope:
+    requires:
+      - authorization: {by_role: "coordinator", scope: "scope-change"}
+  release:
+    requires:
+      - gate: "merge"
+      - authorization: {by_role: "product-owner", scope: "release"}
+      - validation: ["migration-dry-run", "rollback-plan"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Leases. Duraciones relativas: el reloj es el timestamp de plataforma (16.3).
+# `heartbeat` y `release` deben referenciar su `claim` (A18).
+# ─────────────────────────────────────────────────────────────────────────────
+lease:
+  default: 6h
+  max: 48h
+  heartbeat: 24h
+  review_lease: 12h
+  on_expiry: return_to_ready
+  require_claim_reference: true
+  preempt_requires: ["previous_lease_expired", "previous_work_read"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Política de invalidación / frescura (ACP-1.md 6.2)
+# ─────────────────────────────────────────────────────────────────────────────
+invalidation:
+  review_ttl: 7d
+  approval_ttl: 3d
+  authorization_ttl: 24h
+  drift_max_commits: 50
+  drift_max_days: 10
+  on_sha_change: stale
+  on_dependency_change: suspect
+  on_revoke: void
+  revalidate_allowed: true
+  revalidate_resets_ttl: false  # revalidar NO reinicia el reloj de la review original
+  revalidate_same_actor_only: true
+  stale_counts_for_gates: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Política de revisión (ACP-1.md 8.3)
+# ─────────────────────────────────────────────────────────────────────────────
+review:
+  min_independent: 1
+  self_review: forbidden
+  require_basis: true
+  require_full_sha: true
+  require_unverified: true
+  allow_empty_unverified: true  # `[]` = "ninguna declarada"; omitirlo sigue siendo no conforme
+  require_adversarial_declaration: true
+  require_falsified_if_adversarial: true
+  require_would_change_my_mind_if_not_approve: true
+  verdicts: ["approve", "changes", "reject"]
+  adversarial_reviewers: ["hermes"]
+  veto_holders: ["jorge", "hermes"]
+  independence_guaranteed: false  # cierto solo a partir de identity.trust_level 3
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Política de silencio (ACP-1.md 13.6)
+# Principio: el silencio nunca autoriza acciones sensibles, irreversibles o remotas.
+# ─────────────────────────────────────────────────────────────────────────────
+silence:
+  require_default: true
+  require_expires: true
+  require_options: true
+  default_expires: 24h
+  max_expires: 72h
+  on_expiry: apply_default
+  on_expiry_emits: ["assume", "risk"]
+  blocking_default: false
+  never_default: ["authorize", "approve"]
+  # Acciones que nunca pueden resultar de un default, sea cual sea el `kind`
+  # declarado de la pregunta. Clasificar una pregunta disfrazada es semántico.
+  never_default_actions:
+    - "deploy"
+    - "merge"
+    - "migrate"
+    - "release"
+    - "remote-write"
+    - "rotate-secret"
+    - "delete-data"
+    - "modify-workflow"
+    - "modify-platform-config"
+    - "spend"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Superficies de escritura declaradas (ACP-1.md 10.2)
+# ─────────────────────────────────────────────────────────────────────────────
+write_surfaces:
+  require_touches_in: ["spec", "claim"]   # nombres de TIPO DE EVENTO, no de capacidad
+  enforce_scope: true
+  surfaces:
+    app: {globs: ["src/**"], owner_role: "engineer"}
+    database: {globs: ["supabase/**"], owner_role: "lead-engineer", risk: "high"}
+    tests: {globs: ["tests/**"], owner_role: "engineer"}
+    tooling: {globs: ["scripts/**", "package.json"], owner_role: "lead-engineer"}
+    docs: {globs: ["docs/**", "README.md"], owner_role: "coordinator"}
+    protocol: {globs: ["acp/**"], owner_role: "coordinator"}
+  protected:
+    - globs: [".github/workflows/**"]
+      reason: "CI/CD: cambiar un workflow es cambiar la definicion de la evidencia"
+    - globs: ["supabase/migrations/**"]
+      reason: "Efecto en datos, no reversible con un revert"
+  do_not_touch:
+    - globs: ["docs/agents/**", ".github/ISSUE_TEMPLATE/agent-task.yml"]
+      reason: "Propuesta paralela en chore/agent-protocol-mvp. No modificar, no mergear, no cherry-pick"
+    - globs: ["AGENTS.md"]
+      reason: "AGENTS.md de la raiz: instruccion vigente del repo. acp/AGENTS.md no lo sustituye"
+    - globs: ["acp/schema/**"]
+      reason: "Schema V2 en feat/acp-envelope-schema. Reconciliarlo con ACP-1.1 exige un schema V3 aparte"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Límites operativos
+# ─────────────────────────────────────────────────────────────────────────────
+limits:
+  context_budget:
+    total_tokens: 5000
+    log_tokens: 2000
+    resume_tokens: 500
+    agents_md_tokens: 900
+  checkpoint:
+    every_events: 30
+    every_days: 7
+    on_phase: ["ACCEPTED", "INTEGRATED"]
+  rotation:
+    max_events_per_item: 300
+    max_rotations_warn: 1
+  scale:
+    max_active_items_manual: 50
+    warn_active_items: 30
+  branches:
+    pattern: "acp/{item}/{slug}"
+    integration: "main"
+    one_to_one: true
+    max_stack_depth: 3
+  debt:
+    require_authorization: true
+    require_payoff_trigger: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Reconciliación: manual. Automatizarla es L3 y está fuera de alcance.
+# ─────────────────────────────────────────────────────────────────────────────
+reconcile:
+  mode: manual
+  cadence: weekly
+  owners: ["chatgpt", "openclaw"]
+  checklist_items: 14
+  publishes: "program-checkpoint"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Automatización: declarada explícitamente como ausente.
+# ─────────────────────────────────────────────────────────────────────────────
+automation:
+  enabled: false
+  workflows: none
+  bots: none
+  webhooks: none
+  apps: none
+  scripts: none
+  rationale: "Fase de protocolo. Ver ACP-1.md 17.4"
+  eligible_when_adopted: ["validation", "reconcile", "projection_refresh"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Extensiones locales en contenedor único (A14). Un lector conforme las ignora
+# y las preserva; nunca sustituyen un campo normativo.
+# ─────────────────────────────────────────────────────────────────────────────
+extensions:
+  x-reforapp-hitos: ["A", "A.5", "B"]
+  x-reforapp-bloques: ["B17", "B18", "B19", "B20", "B21", "B22", "B23"]
+  x-reforapp-parallel-proposals:
+    - branch: "chore/agent-protocol-mvp"
+      path: "docs/agents/protocol.md"
+      author: "chatgpt"
+    - branch: "openclaw/agent-operating-protocol"
+      author: "openclaw"
+    - branch: "feat/acp-1-protocol"
+      path: "acp/ACP-1.md"
+      author: "claude"
+    - branch: "feat/acp-envelope-schema"
+      path: "acp/schema/"
+      author: "claude"
+  x-reforapp-out-of-scope-while-in-review: ["R1", "R2", "R2.1", "workflows", "deploys", "migrations"]
