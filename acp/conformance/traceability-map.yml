@@ -1,0 +1,1062 @@
+traceability_map:
+  purpose: 'Stable, bidirectional correspondence between the 113 requirement rows
+    of acp/schema/TRACEABILITY.md and the requirements of this suite. TRACEABILITY.md
+    has no per-row identifiers of its own and is NOT modified: TRACE-nnn is assigned
+    here, by order of appearance across its sections 1 to 12, excluding the external
+    register of section 13.'
+  source:
+    document: acp/schema/TRACEABILITY.md
+    branch: feat/acp-envelope-schema
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+    rows: 113
+  suite:
+    document: acp/conformance/requirements.yml
+    requirements: 124
+  invariants:
+  - every row is covered by at least one requirement
+  - every covered_by identifier exists in requirements.yml
+  - 'a requirement with no row is marked traceability_status: suite-native'
+  - 'no row is covered by two requirements that contradict each other: a row with
+    several covers is a one-to-many split into separately verifiable checks'
+  counts:
+    source_rows: 113
+    covered: 113
+    uncovered: 0
+    schema_enforced_rows: 60
+    external_rows: 53
+    suite_requirements: 124
+    source_derived_requirements: 72
+    suite_native_requirements: 52
+    one_to_one: 39
+    many_to_one: 64
+    one_to_many: 10
+  rows:
+  - id: TRACE-001
+    section: "#1 Common envelope"
+    requirement: '`v` present, exactly `"1.1"` in a conforming writer'
+    spec_section: 16.1 (A20), 16.2
+    schema_path: '`properties/v` `const "1.1"`'
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-020
+    mapping: many-to-one
+  - id: TRACE-002
+    section: "#1 Common envelope"
+    requirement: Major mismatch fails closed
+    spec_section: 16.2 (A8)
+    schema_path: same pattern
+    classification: external
+    covered_by:
+    - ACP-CONF-CORE-005
+    - ACP-CONF-OPS-010
+    mapping: one-to-many
+  - id: TRACE-003
+    section: "#1 Common envelope"
+    requirement: Unknown field tolerated by readers
+    spec_section: 16.2 (A8)
+    schema_path: "*not enforceable*: schema is the strict-writer side"
+    classification: external
+    covered_by:
+    - ACP-CONF-OPS-013
+    mapping: one-to-one
+  - id: TRACE-004
+    section: "#1 Common envelope"
+    requirement: "`type` in closed catalogue of 27"
+    spec_section: '5.3'
+    schema_path: "`$defs/eventType`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-006
+    mapping: many-to-one
+  - id: TRACE-005
+    section: "#1 Common envelope"
+    requirement: Prohibited aliases rejected
+    spec_section: '5.3'
+    schema_path: same enum
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-008
+    mapping: many-to-one
+  - id: TRACE-006
+    section: "#1 Common envelope"
+    requirement: "`actor` mandatory"
+    spec_section: 8.6 (A10)
+    schema_path: root `required`
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-011
+    mapping: one-to-one
+  - id: TRACE-007
+    section: "#1 Common envelope"
+    requirement: "`actor` is declared, not authentic"
+    spec_section: '8.6'
+    schema_path: "*deliberately unenforced*"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-001
+    - ACP-CONF-BIND-GH-004
+    mapping: one-to-many
+  - id: TRACE-008
+    section: "#1 Common envelope"
+    requirement: "`on_behalf_of` does not inherit capability"
+    spec_section: 8.6 rule 5 (A22)
+    schema_path: "`properties/on_behalf_of` type only"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-005
+    mapping: one-to-one
+  - id: TRACE-009
+    section: "#1 Common envelope"
+    requirement: Exactly one of `item` / `program`
+    spec_section: 5.2.1 (A17)
+    schema_path: root `oneOf`
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-010
+    mapping: one-to-one
+  - id: TRACE-010
+    section: "#1 Common envelope"
+    requirement: Extensions only in container
+    spec_section: 5.2.3 (A14)
+    schema_path: "`$defs/extensions` + no root `patternProperties`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-009
+    mapping: one-to-one
+  - id: TRACE-011
+    section: "#1 Common envelope"
+    requirement: Extensions cannot shadow normative fields
+    spec_section: 5.2.3
+    schema_path: container makes it structural
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-020
+    mapping: one-to-one
+  - id: TRACE-012
+    section: "#1 Common envelope"
+    requirement: Flat form (no `payload`)
+    spec_section: 5.2.2 (A23)
+    schema_path: shape of the whole schema
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-013
+    mapping: many-to-one
+  - id: TRACE-013
+    section: "#1 Common envelope"
+    requirement: Field-name collision policy
+    spec_section: 5.2.2
+    schema_path: "*process rule*"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-013
+    mapping: many-to-one
+  - id: TRACE-014
+    section: "#2 Causality"
+    requirement: "`after` required unless root"
+    spec_section: 5.4.1 (A11)
+    schema_path: "`allOf[0]`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-001
+    mapping: many-to-one
+  - id: TRACE-015
+    section: "#2 Causality"
+    requirement: Namespaced pointer only
+    spec_section: 5.4.1 (A21)
+    schema_path: "`$defs/causalPointer`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-002
+    mapping: one-to-one
+  - id: TRACE-016
+    section: "#2 Causality"
+    requirement: Pointer produced by platform
+    spec_section: 5.4.1
+    schema_path: "*unenforceable*"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-006
+    - ACP-CONF-BIND-GH-018
+    mapping: one-to-many
+  - id: TRACE-017
+    section: "#2 Causality"
+    requirement: Pointer actually resolves
+    spec_section: 5.4.1
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-001
+    - ACP-CONF-BIND-GH-006
+    mapping: one-to-many
+  - id: TRACE-018
+    section: "#2 Causality"
+    requirement: "`after` is the last event read"
+    spec_section: 5.4.1
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-009
+    mapping: one-to-one
+  - id: TRACE-019
+    section: "#2 Causality"
+    requirement: Root-eligible types only
+    spec_section: 5.4.1
+    schema_path: "`$defs/rootEligibleType` = `spec`,`reconcile`,`decide`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-005
+    mapping: many-to-one
+  - id: TRACE-020
+    section: "#2 Causality"
+    requirement: "`decide` root only when programme-scoped"
+    spec_section: 5.4.1 (L4)
+    schema_path: "`allOf[2]`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-005
+    mapping: many-to-one
+  - id: TRACE-021
+    section: "#2 Causality"
+    requirement: "`root` and `after` mutually exclusive"
+    spec_section: 5.4.1
+    schema_path: "`allOf[1]` `not`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-006
+    mapping: one-to-one
+  - id: TRACE-022
+    section: "#2 Causality"
+    requirement: One root per thread
+    spec_section: 5.4.1
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-004
+    mapping: one-to-one
+  - id: TRACE-023
+    section: "#2 Causality"
+    requirement: Causal fork detection
+    spec_section: '5.4'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-007
+    - ACP-CONF-LOG-008
+    mapping: one-to-many
+  - id: TRACE-024
+    section: "#3 Basis and freshness"
+    requirement: 40-hex lowercase SHA
+    spec_section: 6.1 (A1)
+    schema_path: "`$defs/fullSha`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-012
+    mapping: many-to-one
+  - id: TRACE-025
+    section: "#3 Basis and freshness"
+    requirement: Basis mandatory on assertions
+    spec_section: '6.1'
+    schema_path: "`ev.review`, `ev.validate`, `ev.approve`, `ev.authorize`, `ev.submit`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-012
+    mapping: many-to-one
+  - id: TRACE-026
+    section: "#3 Basis and freshness"
+    requirement: "`sha` mandatory inside basis"
+    spec_section: '6.1'
+    schema_path: "`$defs/basis` `required`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-012
+    mapping: many-to-one
+  - id: TRACE-027
+    section: "#3 Basis and freshness"
+    requirement: Branch never substitutes SHA
+    spec_section: '6.1'
+    schema_path: "`ref` and `sha` both required"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-BIND-GH-012
+    mapping: one-to-one
+  - id: TRACE-028
+    section: "#3 Basis and freshness"
+    requirement: Portable repository reference
+    spec_section: 6.1 (A13)
+    schema_path: "`$defs/repository`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-BIND-GH-010
+    mapping: one-to-one
+  - id: TRACE-029
+    section: "#3 Basis and freshness"
+    requirement: Structured `base`
+    spec_section: 6.1 (A4)
+    schema_path: "`$defs/basis/properties/base`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-030
+    section: "#3 Basis and freshness"
+    requirement: "`scope` when coverage is limited"
+    spec_section: '6.1'
+    schema_path: "`$defs/basis/properties/scope`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-031
+    section: "#3 Basis and freshness"
+    requirement: "`environment`"
+    spec_section: '6.1'
+    schema_path: optional in Core
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-032
+    section: "#3 Basis and freshness"
+    requirement: SHA exists / is head of ref
+    spec_section: '6.2'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-011
+    mapping: one-to-one
+  - id: TRACE-033
+    section: "#3 Basis and freshness"
+    requirement: Drift, TTL expiry, `SUSPECT`
+    spec_section: '6.2'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-GATE-002
+    - ACP-CONF-PROJ-010
+    mapping: one-to-many
+  - id: TRACE-034
+    section: "#4 Write surface"
+    requirement: "`touches` non-empty, unique"
+    spec_section: '10.2'
+    schema_path: "`$defs/touches`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-035
+    section: "#4 Write surface"
+    requirement: Bare wildcard needs rationale
+    spec_section: '10.2'
+    schema_path: "`ev.spec`/`ev.claim` `allOf`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-036
+    section: "#4 Write surface"
+    requirement: Diff actually inside `touches`
+    spec_section: '10.2'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-014
+    mapping: many-to-one
+  - id: TRACE-037
+    section: "#4 Write surface"
+    requirement: Overlap between active items
+    spec_section: '10.2'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-OPS-005
+    mapping: many-to-one
+  - id: TRACE-038
+    section: "#5 Lease"
+    requirement: "`claim` requires lease, touches, intent"
+    spec_section: '5.3'
+    schema_path: "`ev.claim` `required`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-039
+    section: "#5 Lease"
+    requirement: Duration grammar `h`/`d`/`w`
+    spec_section: 16.3 (A9)
+    schema_path: "`$defs/duration`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-016
+    mapping: many-to-one
+  - id: TRACE-040
+    section: "#5 Lease"
+    requirement: "`heartbeat` references its claim"
+    spec_section: 5.3 (A18)
+    schema_path: "`ev.heartbeat` `required`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-011
+    mapping: one-to-one
+  - id: TRACE-041
+    section: "#5 Lease"
+    requirement: "`release` references its claim"
+    spec_section: 5.3 (A18)
+    schema_path: "`ev.release` `required`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-012
+    mapping: one-to-one
+  - id: TRACE-042
+    section: "#5 Lease"
+    requirement: Preemption declared explicitly
+    spec_section: '10.1'
+    schema_path: "`dependentRequired`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-013
+    mapping: one-to-one
+  - id: TRACE-043
+    section: "#5 Lease"
+    requirement: Lease actually expired
+    spec_section: '10.1'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-010
+    - ACP-CONF-OPS-006
+    mapping: one-to-many
+  - id: TRACE-044
+    section: "#5 Lease"
+    requirement: Two live claims / split brain
+    spec_section: 10.3 C1
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-OPS-005
+    mapping: many-to-one
+  - id: TRACE-045
+    section: "#6 Assurance"
+    requirement: "`review` requires basis, verdict, adversarial, unverified"
+    spec_section: '5.3'
+    schema_path: "`ev.review`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-046
+    section: "#6 Assurance"
+    requirement: Adversarial requires `falsified`
+    spec_section: '8.3'
+    schema_path: "`ev.review` `allOf[0]`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-047
+    section: "#6 Assurance"
+    requirement: Non-approve requires `would_change_my_mind`
+    spec_section: '8.3'
+    schema_path: "`ev.review` `allOf[1]`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-048
+    section: "#6 Assurance"
+    requirement: "`unverified` key mandatory, `[]` allowed"
+    spec_section: 5.3 (A19)
+    schema_path: "`$defs/uncertaintyDeclaration` `minItems: 0`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-015
+    mapping: one-to-one
+  - id: TRACE-049
+    section: "#6 Assurance"
+    requirement: "`submit` needs evidence or a stated reason"
+    spec_section: '5.3'
+    schema_path: "`ev.submit` `allOf`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-050
+    section: "#6 Assurance"
+    requirement: Evidence carries `cmd` and `env`
+    spec_section: '12.3'
+    schema_path: "`$defs/evidenceReference`"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-014
+    mapping: many-to-one
+  - id: TRACE-051
+    section: "#6 Assurance"
+    requirement: Review independence
+    spec_section: '8.2'
+    schema_path: "*unenforceable*"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-019
+    - ACP-CONF-GATE-004
+    mapping: one-to-many
+  - id: TRACE-052
+    section: "#6 Assurance"
+    requirement: "`validate` requires check, result, basis"
+    spec_section: '5.3'
+    schema_path: "`ev.validate`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-053
+    section: "#6 Assurance"
+    requirement: Gate computation vs consent
+    spec_section: '5.3'
+    schema_path: "`ev.validate` vs `ev.approve`"
+    classification: external
+    covered_by:
+    - ACP-CONF-GATE-001
+    - ACP-CONF-GATE-011
+    mapping: one-to-many
+  - id: TRACE-054
+    section: "#7 Revalidation"
+    requirement: Own event type
+    spec_section: 6.3 (A3)
+    schema_path: "`$defs/eventType`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-006
+    mapping: many-to-one
+  - id: TRACE-055
+    section: "#7 Revalidation"
+    requirement: "`old_basis` + `new_basis` + `scope_diff`"
+    spec_section: '6.3'
+    schema_path: "`ev.revalidate` `required`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-056
+    section: "#7 Revalidation"
+    requirement: "`scope_diff.paths` non-empty"
+    spec_section: 6.3 (M3)
+    schema_path: "`minItems: 1`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-057
+    section: "#7 Revalidation"
+    requirement: Inside-scope diff must name what was rechecked
+    spec_section: '6.3'
+    schema_path: "`scope_diff` `allOf`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-058
+    section: "#7 Revalidation"
+    requirement: Only the original author may revalidate
+    spec_section: '6.3'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-016
+    mapping: one-to-one
+  - id: TRACE-059
+    section: "#7 Revalidation"
+    requirement: Does not reset the TTL
+    spec_section: '6.3'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-GATE-002
+    mapping: many-to-one
+  - id: TRACE-060
+    section: "#7 Revalidation"
+    requirement: Diff genuinely outside reviewed scope
+    spec_section: '6.3'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-014
+    mapping: many-to-one
+  - id: TRACE-061
+    section: "#8 Authority and silence"
+    requirement: "`authorize` needs target, scope, basis, limits, expires"
+    spec_section: '13.5'
+    schema_path: "`ev.authorize` `required`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-062
+    section: "#8 Authority and silence"
+    requirement: Concrete action, structured scope
+    spec_section: 13.5 (A5)
+    schema_path: "`$defs/authorizationScope`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-063
+    section: "#8 Authority and silence"
+    requirement: Limits non-empty
+    spec_section: '13.5'
+    schema_path: "`minProperties: 1`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-064
+    section: "#8 Authority and silence"
+    requirement: "`authorize` cannot carry a silent default"
+    spec_section: '13.5'
+    schema_path: "`ev.authorize` `not`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-065
+    section: "#8 Authority and silence"
+    requirement: Authorization bound to a SHA
+    spec_section: '13.5'
+    schema_path: "`basis` required"
+    classification: external
+    covered_by:
+    - ACP-CONF-GATE-007
+    mapping: one-to-one
+  - id: TRACE-066
+    section: "#8 Authority and silence"
+    requirement: Authorization freshness / revocation
+    spec_section: 6.2 R5
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-GATE-006
+    mapping: one-to-one
+  - id: TRACE-067
+    section: "#8 Authority and silence"
+    requirement: "`question` needs options, default, expiry"
+    spec_section: '13.6'
+    schema_path: "`ev.question` `required`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-068
+    section: "#8 Authority and silence"
+    requirement: "`kind: authorization` ⇒ default `deny`"
+    spec_section: '13.6'
+    schema_path: "`ev.question` `allOf`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-069
+    section: "#8 Authority and silence"
+    requirement: Disguised authorization question
+    spec_section: '13.6'
+    schema_path: "**not enforceable**"
+    classification: external
+    covered_by:
+    - ACP-CONF-GATE-009
+    mapping: one-to-one
+  - id: TRACE-070
+    section: "#8 Authority and silence"
+    requirement: "`default_if_silent` names a real option"
+    spec_section: '13.6'
+    schema_path: "**not enforceable**"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-014
+    mapping: many-to-one
+  - id: TRACE-071
+    section: "#8 Authority and silence"
+    requirement: Option ids unique
+    spec_section: "— (M2)"
+    schema_path: "**not enforceable**"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-014
+    mapping: many-to-one
+  - id: TRACE-072
+    section: "#8 Authority and silence"
+    requirement: "`assume` from timeout cites its question"
+    spec_section: '13.6'
+    schema_path: "`ev.assume` `allOf`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-LOG-015
+    mapping: one-to-one
+  - id: TRACE-073
+    section: "#9 Identifiers and time"
+    requirement: Core work item id is a generic token
+    spec_section: 4.2 (A12)
+    schema_path: "`$defs/workItemId`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-074
+    section: "#9 Identifiers and time"
+    requirement: Profile pattern `RF-*`
+    spec_section: '4.2'
+    schema_path: "`profile:ids/work_item_pattern`"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROFILE-004
+    mapping: one-to-one
+  - id: TRACE-075
+    section: "#9 Identifiers and time"
+    requirement: Reserved historical ids `R1`,`R2`,`R2.1`
+    spec_section: '4.2'
+    schema_path: "`profile:ids/reserved`"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROFILE-005
+    mapping: one-to-one
+  - id: TRACE-076
+    section: "#9 Identifiers and time"
+    requirement: Risk/debt/decision ids generic in Core
+    spec_section: "— (L3)"
+    schema_path: "`$defs/entityId`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-077
+    section: "#9 Identifiers and time"
+    requirement: Authored durations only, no absolute instants
+    spec_section: 16.3 (A9)
+    schema_path: "`$defs/duration`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-016
+    mapping: many-to-one
+  - id: TRACE-078
+    section: "#9 Identifiers and time"
+    requirement: Observed timestamps from the platform
+    spec_section: '16.3'
+    schema_path: "*absent by design*"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-018
+    mapping: many-to-one
+  - id: TRACE-079
+    section: "#10 Profile"
+    requirement: "`acp` as `major.minor`"
+    spec_section: '16.1'
+    schema_path: "`profile:acp`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-001
+    mapping: many-to-one
+  - id: TRACE-080
+    section: "#10 Profile"
+    requirement: Capabilities = event types + `veto`
+    spec_section: 8.1 (A7)
+    schema_path: "`profile:$defs/capability`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-003
+    mapping: many-to-one
+  - id: TRACE-081
+    section: "#10 Profile"
+    requirement: "`approve_gates` instead of `approve:<gate>`"
+    spec_section: '8.1'
+    schema_path: "`profile:roles/*/approve_gates`"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROFILE-008
+    mapping: one-to-one
+  - id: TRACE-082
+    section: "#10 Profile"
+    requirement: Permissions default deny
+    spec_section: '8.4'
+    schema_path: "`profile:permissions/default`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-009
+    mapping: one-to-one
+  - id: TRACE-083
+    section: "#10 Profile"
+    requirement: Contradictory permission (expanded form)
+    spec_section: '8.4'
+    schema_path: "`profile:$defs/permissionObject`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-010
+    mapping: one-to-one
+  - id: TRACE-084
+    section: "#10 Profile"
+    requirement: Self-review forbidden
+    spec_section: '8.2'
+    schema_path: "`profile:review/self_review` const"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-011
+    mapping: one-to-one
+  - id: TRACE-085
+    section: "#10 Profile"
+    requirement: Stale never satisfies a gate
+    spec_section: '6.2'
+    schema_path: "`profile:invalidation/stale_counts_for_gates` const"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-012
+    mapping: one-to-one
+  - id: TRACE-086
+    section: "#10 Profile"
+    requirement: Silence never authorizes
+    spec_section: '13.6'
+    schema_path: "`profile:silence/never_default` `contains`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-013
+    mapping: many-to-one
+  - id: TRACE-087
+    section: "#10 Profile"
+    requirement: "`never_default_actions` vocabulary"
+    spec_section: 13.6 (A15)
+    schema_path: "`profile:$defs/authorizationAction`"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROFILE-013
+    mapping: many-to-one
+  - id: TRACE-088
+    section: "#10 Profile"
+    requirement: Identity trust level declared
+    spec_section: '8.6'
+    schema_path: "`profile:identity/trust_level`"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROFILE-014
+    mapping: one-to-one
+  - id: TRACE-089
+    section: "#10 Profile"
+    requirement: Automation needs an implementation
+    spec_section: "—"
+    schema_path: "`profile:automation` `allOf`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-015
+    mapping: one-to-one
+  - id: TRACE-090
+    section: "#10 Profile"
+    requirement: Profile extensions in container
+    spec_section: 5.2.3 (L1)
+    schema_path: "`profile:extensions`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-001
+    mapping: many-to-one
+  - id: TRACE-091
+    section: "#10 Profile"
+    requirement: Agents unique by id
+    spec_section: "—"
+    schema_path: "`uniqueItems` (exact duplicates only)"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROFILE-007
+    mapping: one-to-one
+  - id: TRACE-092
+    section: "#10 Profile"
+    requirement: Referential integrity (roles, owners, gates)
+    spec_section: "—"
+    schema_path: "**not enforceable**"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROFILE-006
+    mapping: one-to-one
+  - id: TRACE-093
+    section: "#11 Catalogue parity"
+    requirement: One closed catalogue of 27
+    spec_section: '5.3'
+    schema_path: "`$defs/eventType`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-006
+    mapping: many-to-one
+  - id: TRACE-094
+    section: "#11 Catalogue parity"
+    requirement: Profile capabilities from the same set
+    spec_section: 8.1 (A7)
+    schema_path: "`profile:$defs/capability`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-PROFILE-003
+    mapping: many-to-one
+  - id: TRACE-095
+    section: "#11 Catalogue parity"
+    requirement: Digest identical in both schemas
+    spec_section: 5.3 (A16)
+    schema_path: "`$comment` in both"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-007
+    mapping: one-to-one
+  - id: TRACE-096
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: "`delivery.kind` es el enum normativo de la spec"
+    spec_section: 6.1 (A6)
+    schema_path: "`ev.submit/delivery/kind`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-017
+    mapping: one-to-one
+  - id: TRACE-097
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: "`violation.rule` admite los 23 códigos de §15.1"
+    spec_section: '15.1'
+    schema_path: "`ev.violation/rule`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-018
+    mapping: one-to-one
+  - id: TRACE-098
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Un checkpoint puede ser de item o de programa, con exactamente uno
+      de los dos
+    spec_section: "**11.3.1**, 5.2.1"
+    schema_path: "`ev.checkpoint` + root `oneOf`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-019
+    mapping: one-to-one
+  - id: TRACE-099
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Un checkpoint de item lleva `state` y `gates`; uno de programa no
+    spec_section: "**11.3.1**"
+    schema_path: "`ev.checkpoint/allOf[0]`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-021
+    - ACP-CONF-SCHEMA-022
+    mapping: one-to-many
+  - id: TRACE-100
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: "`from`/`to` describen el rango de migración y solo son admisibles
+      en un checkpoint de programa, siempre en pareja"
+    spec_section: "**11.3.1**, 16.4"
+    schema_path: "`ev.checkpoint` `from`,`to` + `dependentRequired`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-022
+    mapping: many-to-one
+  - id: TRACE-101
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: '`v` es exactamente `"1.1"` en un escritor conforme'
+    spec_section: 16.1, 16.2
+    schema_path: "`properties/v` `const`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-020
+    mapping: many-to-one
+  - id: TRACE-102
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Los alias prohibidos se rechazan por el enum de `type`
+    spec_section: '5.3'
+    schema_path: "`$defs/eventType`"
+    classification: schema-enforced
+    covered_by:
+    - ACP-CONF-SCHEMA-008
+    mapping: many-to-one
+  - id: TRACE-103
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: "`reconcile` puede ser raíz de item o de programa"
+    spec_section: 5.4.1
+    schema_path: "`$defs/rootEligibleType` + root `oneOf`"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-005
+    mapping: many-to-one
+  - id: TRACE-104
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Idempotencia por `(type, item, actor, basis.sha, after)`
+    spec_section: '5.5'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-018
+    mapping: one-to-one
+  - id: TRACE-105
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Direccionamiento por URN de entidades
+    spec_section: '4.1'
+    schema_path: "`$defs/urn`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-106
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Modificadores de estado con su gramática
+    spec_section: '7.3'
+    schema_path: "`$defs/modifier`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-107
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Registro de riesgo con `signal` y estado
+    spec_section: '13.2'
+    schema_path: "`$defs/risk`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-108
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Registro de deuda con `authorized_by` y `payoff_trigger`
+    spec_section: '13.3'
+    schema_path: "`$defs/debt`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-109
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Registro de bloqueo con condición verificable y escalado
+    spec_section: '13.4'
+    schema_path: "`ev.block`"
+    classification: external
+    covered_by:
+    - ACP-CONF-SCHEMA-014
+    mapping: many-to-one
+  - id: TRACE-110
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Enlaces bidireccionales sin extremos colgantes
+    spec_section: '12.1'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-BIND-GH-014
+    mapping: many-to-one
+  - id: TRACE-111
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Un lector falla cerrado ante un tipo desconocido
+    spec_section: '16.2'
+    schema_path: "`$defs/eventType` (lado escritor)"
+    classification: external
+    covered_by:
+    - ACP-CONF-OPS-010
+    mapping: many-to-one
+  - id: TRACE-112
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Deriva de proyección detectada en la reconciliación
+    spec_section: '15.3'
+    schema_path: "—"
+    classification: external
+    covered_by:
+    - ACP-CONF-PROJ-006
+    mapping: one-to-one
+  - id: TRACE-113
+    section: "#12 Requisitos añadidos tras la revisión independiente"
+    requirement: Ids de opción únicos y `default_if_silent` resoluble
+    spec_section: '13.6'
+    schema_path: "**ninguno**"
+    classification: external
+    covered_by:
+    - ACP-CONF-LOG-014
+    mapping: many-to-one

@@ -45,6 +45,10 @@
     "binding_version": {
       "$ref": "#/$defs/version"
     },
+    "binding_sha": {
+      "description": "Exact commit of the binding source. Required whenever binding_version is present, and absent entirely when no binding layer is claimed (F7).",
+      "$ref": "#/$defs/fullSha"
+    },
     "combination_supported": {
       "description": "Whether this combination of protocol, schema, profile, binding and suite versions is declared supported. If false, every layer result MUST be INCONCLUSIVE and no claim may be issued.",
       "type": "boolean"
@@ -343,6 +347,21 @@
       "then": {
         "required": [
           "binding_version"
+        ]
+      }
+    },
+    {
+      "$comment": "F7: a binding named without its exact commit is not reproducible. The pair is all-or-nothing, and absent entirely when no binding layer is claimed.",
+      "if": {
+        "type": "object",
+        "required": [
+          "binding_version"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "required": [
+          "binding_sha"
         ]
       }
     }
@@ -787,7 +806,23 @@
           "const": true
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependentRequired": {
+        "binding": [
+          "binding_sha"
+        ],
+        "binding_sha": [
+          "binding"
+        ]
+      }
     }
+  },
+  "dependentRequired": {
+    "binding_version": [
+      "binding_sha"
+    ],
+    "binding_sha": [
+      "binding_version"
+    ]
   }
 }

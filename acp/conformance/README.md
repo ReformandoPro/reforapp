@@ -14,7 +14,8 @@
 | Fichero | Qué es | Normativo |
 |---|---|---|
 | [`ACP-CONFORMANCE-0.1.md`](ACP-CONFORMANCE-0.1.md) | La especificación: 8 capas, 7 clases, claims, agregación, packs, seguridad, gates de adopción | **sí** |
-| [`requirements.yml`](requirements.yml) | Catálogo de **121** requisitos con ID estable, fuente, comprobabilidad y componente external responsable | **sí** |
+| [`requirements.yml`](requirements.yml) | Catálogo de **124** requisitos: fuentes estructuradas y resolubles, comprobabilidad, componente responsable y filas de origen que cubre | **sí** |
+| [`traceability-map.yml`](traceability-map.yml) | Correspondencia bidireccional `TRACE-001…113` ↔ requisitos. **113/113 cubiertas, 0 sin cubrir** | **sí** |
 | [`case-format.schema.json`](case-format.schema.json) | Formato declarativo de un caso de conformidad (Draft 2020-12) | **sí** |
 | [`report-format.schema.json`](report-format.schema.json) | Formato del informe de ejecución y del claim (Draft 2020-12) | **sí** |
 | [`catalogue.yml`](catalogue.yml) | 7 packs, 19 familias, 39 casos obligatorios, clases de automatización | **sí** |
@@ -39,11 +40,13 @@
 
 ## Las tres cosas que conviene saber antes de usar esto
 
-1. **35 de los 121 requisitos son comprobables por JSON Schema.** Los otros **86** nombran uno de nueve componentes responsables —profile linter, validador semántico del log, verificador de binding, verificador de identidad, verificador de evidencia, motor de leases, motor de proyección, evaluador de gates y capa de compatibilidad de lectura—. **Ninguno de los nueve existe hoy.**
+1. **38 de los 124 requisitos son comprobables por JSON Schema.** Los otros **86** nombran uno de nueve componentes responsables —profile linter, validador semántico del log, verificador de binding, verificador de identidad, verificador de evidencia, motor de leases, motor de proyección, evaluador de gates y capa de compatibilidad de lectura—. **Ninguno de los nueve existe hoy.**
 
 2. **Queda un conflicto abierto entre las fuentes** (spec §5.5): C2, el digest de evidencia. C1 y C3 se cerraron en la reconciliación, y con ellos los cinco requisitos que describían violaciones no emitibles. La suite marca `CONFLICT` y **no arbitra**.
 
-3. **Las cifras han cambiado dos veces.** Se publicaron 78/26, se midieron 95/39 al congelar esta suite, y las canónicas tras la reconciliación son **113 filas, 60 con regla de schema y 53 external**, con 78 y 63 filas cubiertas por fixture válida e inválida. Corpus del Schema V3: **63 + 90 = 153**. La suite mapea contra las canónicas y conserva la historia (spec §5.2). De ahí `CONF-033` y `CONF-034`: ninguna cifra publicada debe copiarse a mano.
+3. **113/60/53 y 124/38/86 miden cosas distintas y ninguna sustituye a la otra.** Las primeras son filas de `TRACEABILITY.md`, requisitos de las fuentes; las segundas son requisitos de esta suite, unidades verificables con dueño y pack. La reconciliación exacta —39 one-to-one, 64 many-to-one, 10 one-to-many, 72 derivados y 52 propios— está en la spec §4.2 y es verificable contra `traceability-map.yml`.
+
+4. **Las cifras de origen han cambiado dos veces.** Se publicaron 78/26, se midieron 95/39 al congelar esta suite, y las canónicas tras la reconciliación son **113 filas, 60 con regla de schema y 53 external**, con 78 y 63 filas cubiertas por fixture válida e inválida. Corpus del Schema V3: **63 + 90 = 153**. La suite mapea contra las canónicas y conserva la historia (spec §5.2). De ahí `CONF-033` y `CONF-034`: ninguna cifra publicada debe copiarse a mano.
 
 ## Lo que está prohibido
 
