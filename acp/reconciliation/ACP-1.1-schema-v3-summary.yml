@@ -1,0 +1,268 @@
+# ACP-1.1 <-> Schema V3 reconciliation summary
+# Machine-readable companion to ACP-1.1-schema-v3-matrix.md and -findings.md.
+# Mechanical reconciliation by the author of both artefacts. NOT an independent review.
+
+reconciliation:
+  date_utc: "2026-08-02"
+  performed_by: "principal-protocol-conformance-engineer"
+  independent: false
+  note: >-
+    The author of this reconciliation wrote both the specification and the
+    schema. Every check here is mechanical and reproducible; the judgement
+    is not impartial and does not substitute an adversarial review.
+
+origin_main: "48049b05a88c423f305f32bc70e66f4451f008a1"
+merge_base: "cbc335d52e2cb826cc55bf44e63b47291a3e498b"
+
+spec:
+  branch: "feat/acp-1-1-normative-amendments"
+  sha: "1bda3e997291e337cc1a3956462e643219d71547"
+  parent: "0b714a9a634255039dbed3a1083718f6ecb7f132"
+  primary_source: "acp/ACP-1.md"
+  auxiliary_sources:
+    - "acp/AGENTS.md"
+    - "acp/acp.yml"
+    - "acp/CHANGELOG.md"
+    - "acp/decisions/ACP-1.1-amendments.md"
+
+schema:
+  branch: "feat/acp-envelope-schema"
+  sha: "ae3e4f5e35924e470ad909d63d5a9de55c351df0"
+  parent: "9d073e3c9d63a7d1e4b9f2e237a65c8da9c508a6"
+  envelope_version: "0.3.0"
+  profile_version: "0.3.0"
+  dialect: "https://json-schema.org/draft/2020-12/schema"
+  conformance_requires_format_assertion: true
+
+architecture_reference:
+  branch: "chore/agent-protocol-mvp"
+  sha: "c5d57bf41dfd77a3b8a14ab8f63b07f6af179e44"
+  normative: false
+
+counts:
+  normative_requirements: 136
+  implemented: 76
+  partial: 25
+  external: 32
+  missing: 0
+  conflicts: 2
+  ambiguous: 1
+
+traceability:
+  file: "acp/schema/TRACEABILITY.md"
+  rows_total: 95
+  claimed_rows: 78
+  claimed_schema_enforced: 52
+  claimed_external: 26
+  measured_external_marked_rows: 39
+  correct: 95
+  incomplete: 14
+  incorrect: 3
+  missing_requirements: 41
+  untraced_schema_rules: 0
+  untraced_fixtures: 14
+  event_types_without_row: 13
+  counts_accurate: false
+
+fixtures:
+  valid: 50
+  invalid: 67
+  total: 117
+  verified: 117
+  failures: 0
+  valid_accepted: 50
+  invalid_rejected_for_expected_reason: 67
+  event_types_without_negative_fixture: 10
+  validator: "ajv 8.20.0"
+  validator_options: "strict, strictRequired:false, allErrors, validateFormats:true"
+
+catalogue:
+  events: 27
+  digest: "sha256:046f7cadad317948c7a92a808bade47bbbdf61bdb467ce26a49891da730e0e91"
+  digest_occurrences_in_schemas: 3
+  identical_in:
+    - "acp/ACP-1.md"
+    - "acp/AGENTS.md"
+    - "acp/acp.yml"
+    - "envelope.schema.json"
+    - "profile.schema.json (capability)"
+    - "profile.schema.json (eventType)"
+    - "acp/schema/README.md"
+  prohibited_aliases_present: 0
+
+schema_integrity:
+  envelope_refs: 66
+  envelope_defs: 66
+  profile_refs: 18
+  profile_defs: 18
+  broken_refs: 0
+  external_refs: 0
+  unused_defs: 0
+  json_files: 119
+  duplicate_keys: 0
+
+profile_referential_integrity:
+  checks_defined: 14
+  checks_run_manually: 14
+  broken_references_in_real_profile: 0
+  enforced_by_tooling: false
+  shorthand_permissions_unauditable: 8
+  todo_handles: 5
+  identity_trust_level: 1
+
+prior_findings:
+  M1: CLOSED
+  M2: PARTIAL
+  M3: CLOSED
+  M4: CLOSED
+  M5: CLOSED
+  L1: CLOSED
+  L2: CLOSED
+  L3: CLOSED
+  L4: CLOSED
+  L5: CLOSED
+
+findings:
+  - id: "F-01"
+    severity: high
+    owner: schema
+    requirement: "ACP11-REQ-073"
+    summary: "violation.rule enum has 15 codes; ACP-1.1 section 15.1 defines 23"
+    blocking: true
+  - id: "F-02"
+    severity: medium
+    owner: schema-or-spec
+    requirement: "ACP11-REQ-047"
+    summary: "evidenceReference does not require the digest that section 12.3 demands"
+    blocking: false
+  - id: "F-03"
+    severity: medium
+    owner: schema-and-spec
+    requirement: "ACP11-REQ-093"
+    summary: "question options lack even uniqueItems; M2 deferral is too soft"
+    blocking: false
+  - id: "F-04"
+    severity: medium
+    owner: external-validator
+    requirement: "ACP11-REQ-112"
+    summary: "no profile-aware pass exists, so work item pattern and reserved ids enforce nothing"
+    blocking: false
+  - id: "F-05"
+    severity: low
+    owner: spec
+    requirement: "ACP11-REQ-082"
+    summary: "Core enumerates eleven authorization actions the specification never enumerates"
+    blocking: false
+  - id: "F-06"
+    severity: medium
+    owner: spec-and-readme
+    requirement: "ACP11-REQ-004"
+    summary: "v accepts 1.x for x>=1; recommended minimum change is const 1.1"
+    blocking: false
+  - id: "F-07"
+    severity: low
+    owner: schema
+    requirement: "ACP11-REQ-118"
+    summary: "modifier pattern admits needs:, which section 7.3 does not list"
+    blocking: false
+  - id: "F-08"
+    severity: medium
+    owner: profile
+    requirement: "ACP11-REQ-129"
+    summary: "gate code requires an independent review that trust_level 1 cannot prove"
+    blocking: false
+  - id: "F-09"
+    severity: high
+    owner: readme-and-traceability
+    requirement: "traceability"
+    summary: "published coverage counts 78/52/26 do not match the 95 rows and 39 external marks"
+    blocking: true
+  - id: "F-10"
+    severity: medium
+    owner: traceability
+    requirement: "traceability"
+    summary: "14 fixtures and 13 event types have no traceability row"
+    blocking: false
+  - id: "F-11"
+    severity: medium
+    owner: fixture
+    requirement: "multiple"
+    summary: "10 event types have no negative fixture; block, validate, approve and revoke deserve one"
+    blocking: false
+  - id: "F-12"
+    severity: low
+    owner: readme
+    requirement: "ACP11-REQ-136"
+    summary: "README says one keyword depends on format assertion; there are two"
+    blocking: false
+  - id: "F-13"
+    severity: informational
+    owner: profile
+    requirement: "ACP11-REQ-123"
+    summary: "8 of 17 permissions use the shorthand form and cannot be checked for contradiction"
+    blocking: false
+  - id: "F-14"
+    severity: informational
+    owner: profile
+    requirement: "ACP11-REQ-132"
+    summary: "the real profile passes all 14 referential checks today, run manually"
+    blocking: false
+
+external_requirements_by_component:
+  github_binding: 4
+  semantic_event_validator: 4
+  profile_linter: 3
+  event_log_reader: 7
+  identity_verifier: 2
+  lease_reconciliation_engine: 3
+  artifact_repository_verifier: 5
+  authorization_gate_evaluator: 3
+  projection_engine: 2
+  total: 33
+  note: >-
+    33 rather than 32 because ACP11-REQ-047 is counted once as PARTIAL in the
+    matrix and once under the artifact verifier, which owns the part the
+    schema cannot reach.
+  blocking_some_gate: 19
+
+conformance_suite_layers:
+  L0_json_syntax: exists
+  L1_json_schema: exists
+  L2_profile_aware: missing
+  L3_event_log_semantics: missing
+  L4_binding_verification: missing
+  L5_projection_consistency: missing
+  L6_gate_evaluation: missing
+
+recommendations:
+  m2_question_options:
+    decision: "defer the structural change, harden now"
+    actions:
+      - "add uniqueItems: true to options (strict improvement, legislates nothing)"
+      - "add a negative fixture with two identical options"
+      - "keep fixture 50 valid: duplicate ids with different bodies is the real gap"
+      - "make the semantic validator requirement normative in ACP-1.1 section 13.6, not a README note"
+      - "defer the map-keyed-by-id change to ACP-1.2"
+    blocks_consolidation: false
+  versioning:
+    determination: "current pattern is wrong for a strict-writer artefact"
+    minimum_change: 'set properties/v to const "1.1"'
+    rationale: >-
+      A 1.2 document currently passes the version check and then fails on
+      unevaluatedProperties, which is a confusing false rejection. Forward
+      tolerance belongs to a separate reader layer, not to this file.
+    schema_modified: false
+
+verdict:
+  value: "CHANGES REQUIRED — NORMATIVE/EXECUTABLE DIVERGENCE REMAINS"
+  blocking_findings:
+    - "F-01"
+    - "F-09"
+  next_action: >-
+    Correct F-01 (eight strings in an enum), F-07 (seven characters in a
+    pattern) and F-09 (three numbers) on feat/acp-envelope-schema, then hand
+    the incremental adversarial review to Hermes scoped to those three plus
+    the classification of the 32 external requirements.
+  not_approved_because: >-
+    The reconciler is the author of both artefacts and cannot issue an
+    approval verdict on their own work.
