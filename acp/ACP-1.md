@@ -441,6 +441,8 @@ de CI (2.39.2 frente a 2.109.1 en prod); lo documento como riesgo RSK-014
 porque **no** lo he resuelto aquí, solo aislado.
 ````
 
+> **Bloques completos frente a fragmentos.** Un bloque marcado ` ```acp ` es un **envelope completo** y debe validar contra el schema de su versión. Un bloque marcado ` ```yaml ` es un **fragmento ilustrativo** —una sección de un envelope, un registro de entidad o un extracto de configuración— y no se le exige validación completa. Los cinco envelopes completos de este documento validan contra el schema de referencia.
+
 **Por qué YAML dentro de una valla de código:** renderiza limpio en GitHub, se parsea con una línea de código cuando llegue L3, sobrevive al copy-paste humano y no obliga a nadie a escribir JSON a mano. El tag `acp` es el discriminador: un comentario sin bloque ` ```acp ` es **conversación**, no evento, y no tiene efecto en el protocolo. Esa distinción es importante: deja espacio para que los humanos hablen sin ensuciar el log.
 
 #### 5.2.1 Miembros comunes (normativo, ACP-1.1)
@@ -597,7 +599,7 @@ Esto es un reloj de Lamport implementado con nada más que texto en comentarios.
 | Tipo | ¿Raíz? | Razón |
 |---|---|---|
 | `spec` | **sí** | Crea el hilo del item. Es la raíz ordinaria |
-| `reconcile` | **sí** | Puede abrir un hilo de programa que no continúa nada |
+| `reconcile` | **sí, de item o de programa** | Puede abrir un hilo que no continúa nada legible: de **item** tras una rotación o una recuperación en la que el predecesor no resuelve, y de **programa** en una recuperación de programa. Como todo evento, declara exactamente uno de `item` o `program` (§5.2.1) |
 | `decide` | **sí, solo con `program`** | Una decisión de programa es su propia historia. Una decisión de item continúa un hilo y debe enlazarlo |
 | `risk` | **no** | Un riesgo se descubre *haciendo algo*. Sin `after`, se pierde dónde se descubrió, que es la mitad de su valor |
 | `debt` | **no** | La deuda se contrae ejecutando trabajo concreto. Una deuda sin origen no se puede cobrar a nadie |
@@ -655,7 +657,7 @@ Reglas normativas del basis en ACP-1.1:
 | **`scope`** | Obligatorio cuando la afirmación declara cobertura limitada. Es lo que hace posible `revalidate` (§6.3) |
 | **`depends`** | Opcional. Su movimiento produce `SUSPECT`, no `STALE` (regla R3) |
 | **`environment`** | Opcional en Core; un perfil puede exigirlo. Omitirlo es cómo una observación correcta sostiene una conclusión falsa |
-| **`delivery`** (A6) | El puntero de entrega es `{kind, id}` con `kind ∈ {pull-request, merge-request, branch, patch}`. **`pr` desaparece de Core**: es el sustantivo de una plataforma. El número de PR vive en `extensions.x-github-pr` |
+| **`delivery`** (A6) | El puntero de entrega es `{kind, id}` con `kind ∈ {pull-request, merge-request, branch, patch}`. **`pr` desaparece de Core**: es el sustantivo de una plataforma. El número de PR vive en `extensions.x-github-pr`. **Este enum es el normativo vigente**; sustituirlo por un vocabulario genérico (`change-request`, `commit`, `artifact`, `external`) es una **propuesta para ACP-1.2**, no una decisión de esta versión, y ninguna implementación debe adelantarla (§17 decisión abierta) |
 
 ### 6.2 Las cinco reglas de invalidación
 
@@ -881,8 +883,10 @@ type: review
 item: RF-142
 role: reviewer
 actor: hermes
+after: "github-comment:2451890115"
+adversarial: true
 verdict: changes
-basis: {repo: ReformandoPro/reforapp, ref: feat/RF-142-rls-grants, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}
+basis: {repo: {system: git, id: "https://github.com/ReformandoPro/reforapp.git"}, ref: feat/RF-142-rls-grants, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}
 falsified:
   - attempt: "Ejecutar la migración dos veces seguidas"
     result: "Falla en el segundo pase: el GRANT no es idempotente"
@@ -1134,9 +1138,10 @@ item: RF-142
 actor: claude
 to: any:engineer
 after: "github-comment:2451890210"
+releases_lease: true
 resume:
   goal: "Grants idempotentes + test de doble ejecución (accept #2 y #3 del spec)"
-  basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263, base: main@a71c0e94f1e2d3c4b5a6978869504132abcdef01}
+  basis: {ref: acp/RF-142/rls-grants-idempotentes, sha: c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263, base: {ref: main, sha: a71c0e94f1e2d3c4b5a6978869504132abcdef01}}
   done:
     - "Migración 0042 reescrita con IF NOT EXISTS (commit c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263)"
     - "Test de doble ejecución añadido, pasa en local"
@@ -1259,7 +1264,7 @@ El PR no repite el log; **apunta** a él. Plantilla:
 
 ```markdown
 Implements: acp:reforapp/item/RF-142
-Basis: main@a71c0e94f1e2d3c4b5a6978869504132abcdef01 → 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b
+Basis: base `main` @ `a71c0e94f1e2d3c4b5a6978869504132abcdef01` → `9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b`
 Touches: db/migrations/**, src/security/rls/**
 Submit-event: github-comment:2451890420
 Decisions: ACD-0007@2
@@ -1318,7 +1323,7 @@ scope:                  # ámbito de aplicación: dónde manda esta decisión
   - src/security/rls/**
 supersedes: ACD-0004
 superseded_by: null
-basis: {repo: ReformandoPro/reforapp, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}
+basis: {repo: {system: git, id: "https://github.com/ReformandoPro/reforapp.git"}, ref: main, sha: 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b}
 reversible: true
 revert_cost: medium
 review_by: 2026-11-01   # caducidad de revisión, no de validez
@@ -1419,6 +1424,7 @@ Las autorizaciones son el mecanismo por el que un humano concede a un agente per
 
 ```yaml
 type: authorize
+item: RF-142
 actor: jorge
 role: product-owner
 scope:                                  # acción concreta, no etiqueta (A5)
@@ -1492,6 +1498,8 @@ Propiedades del mecanismo:
 - **El default es visible antes de aplicarse.** Jorge puede vetar durante la ventana; no le sorprende nada.
 - **Cada default aplicado deja un rastro** (`assume` + `risk`) que se puede revisar en bloque más tarde. La velocidad no se paga con opacidad.
 - **`blocking: false` es el caso normal.** Preguntar no debería detener el trabajo, solo el trabajo que depende de la respuesta.
+
+**Unicidad de los identificadores de opción (normativo).** Los `options[].id` de una pregunta **deben ser únicos dentro de esa pregunta**, y `default_if_silent` **debe** nombrar uno existente. Esta regla es **external**: JSON Schema no puede cruzar referencias dentro de un array, de modo que el formato **no la impide**. La comprueba el **validador semántico del log de eventos**, que **debe fallar cerrado** ante una pregunta con identificadores duplicados. Mientras haya ambigüedad, **`default_if_silent` no se aplica**: el vencimiento no produce `assume`, produce una escalada. Convertir `options` en un mapa indexado por id cerraría el hueco estructuralmente y queda **diferido a ACP-1.2** (§17).
 
 **Principio obligatorio (A15).** *El silencio nunca autoriza acciones sensibles, irreversibles o remotas.* Se materializa en dos listas del perfil, no en la buena voluntad del que pregunta:
 
@@ -1568,7 +1576,7 @@ Cinco secciones, cada una con **un único rol propietario** (I3). Un agente edit
 
 ## ⬤ Estado            <!-- owner: coordinator | derivado del log -->
 Fase: **IN_REVIEW** · Frescura: **FRESH** · Mods: `at-risk:RSK-014`
-Basis: `acp/RF-142/rls-grants-idempotentes` @ `c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263` (base `main@a71c0e94f1e2d3c4b5a6978869504132abcdef01`)
+Basis: `acp/RF-142/rls-grants-idempotentes` @ `c04ff2101a2b3c4d5e6f7a8b9c0d1e2f30415263` (base `main` @ `a71c0e94f1e2d3c4b5a6978869504132abcdef01`)
 Lease: libre · Último checkpoint: #github-comment:2451890500 · Última proyección: evento github-comment:2451890520
 
 ## ◆ Intención         <!-- owner: product-owner -->
@@ -1674,6 +1682,9 @@ Sin automatización, el protocolo no se puede *impedir* que se rompa. Así que s
 ```acp
 v: "1.1"
 type: violation
+item: RF-142
+actor: hermes
+after: "github-comment:2451890600"
 rule: self-approval
 target: "github-comment:2451890600"
 severity: high
@@ -1961,7 +1972,7 @@ Un item real recorrido entero, con el envelope de cada paso reducido a lo esenci
 #904  progress    claude     after: 903 · done: migración idempotente
                              remaining: CI rojo · ⇒ phase: IN_PROGRESS
 
-#905  submit      claude     after: 904 · basis: sha 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b, base main@a71c0e94f1e2d3c4b5a6978869504132abcdef01
+#905  submit      claude     after: 904 · basis: sha 9011dd3f1c4e2b7a8f0d6c5e4a3b2c1d0e9f8a7b, base {main, a71c0e94f1e2d3c4b5a6978869504132abcdef01}
                              evidence: 2 (pytest pass, default_acl 0 filas)
                              unverified: [">1M filas", "rollback 0042"]
                              pr: #141 · ⇒ phase: SUBMITTED
@@ -1998,7 +2009,7 @@ Un item real recorrido entero, con el envelope de cada paso reducido a lo esenci
                              open: ["RSK-014 sin mitigar", "DEBT-031 propuesta"]
                              unverified_open: 2
 
-      ── merge del PR #141 ──                    ⇒ phase: INTEGRATED, basis → main@f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4
+      ── merge del PR #141 ──                    ⇒ phase: INTEGRATED, basis → {main, f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4}
 
 #913  authorize   jorge      scope: deploy:staging · basis: sha f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4
                              limits: {environments: [staging], reversible_only: true}
@@ -2048,8 +2059,11 @@ core       := "v: " version                  ; requerido. Cadena "mayor.menor"
 
 subject    := "item: " work_item_id | "program: " program_id
 
-version    := /^[1-9][0-9]*\.[0-9]+$/
-event_pointer := /^[a-z][a-z0-9-]{0,31}:[A-Za-z0-9._~-]{1,128}$/   ; asignado por la plataforma
+version    := /^[1-9][0-9]*\.[0-9]+$/            ; sin ceros iniciales: "01.1" no es conforme
+event_pointer := /^[a-z][a-z0-9]*-[a-z0-9-]+:[A-Za-z0-9._~-]{1,128}$/
+              ; forma <binding>-<clase>:<id>, asignada por la plataforma.
+              ; El guion que separa binding y clase es obligatorio: `foo:123` no
+              ; identifica de qué clase de objeto es el puntero (§5.4.1).
 work_item_id  := /^[!-~]{1,64}$/               ; Core. El patrón concreto es del perfil (A12)
 actor_id      := /^[a-z][a-z0-9_-]{1,31}$/
 ext_object    := { /^x-[a-z0-9][a-z0-9-]*$/ : <cualquier JSON> }
