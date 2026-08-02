@@ -1192,6 +1192,22 @@ unverified_open:
   - "Rollback de 0042"
 ```
 
+#### 11.3.1 Checkpoint de item y checkpoint de programa (normativo)
+
+Un checkpoint, como todo evento, declara **exactamente uno de `item` o `program`** (§5.2.1). De ese sujeto dependen sus campos obligatorios, y la diferencia no es de estilo:
+
+| Sujeto | Campos obligatorios adicionales | Por qué |
+|---|---|---|
+| **`item`** | **`state` y `gates`** | Resume **un** hilo, y por tanto tiene un estado compuesto y un estado de gates que resumir |
+| **`program`** | **`from` y `to`**, cuando describe una migración o transición de versión (§16.4) | Resume **un programa**, que no tiene ni fase ni frescura ni gates propios: lo que sí tiene es el rango entre el que se mueve |
+
+Reglas:
+
+1. Un checkpoint de **item** **DEBE** llevar `state` y `gates`. Sin ellos no resume nada utilizable: el siguiente lector tendría que recalcular el estado leyendo el log, que es justo lo que el checkpoint evita.
+2. Un checkpoint de **programa** **NO DEBE** llevar `state` ni `gates`: no existe un estado compuesto de un programa, y publicar uno inventaría información.
+3. `from` y `to` describen el **rango de migración o transición** y **solo** son admisibles en un checkpoint de programa. Van **siempre en pareja**: uno sin el otro no describe un rango.
+4. Ambas formas siguen sujetas a la regla de sujeto único. Un checkpoint con `item` y `program` a la vez es `violation:unscoped-event`.
+
 Un checkpoint **no borra nada**: los eventos siguen ahí para auditoría. Lo que hace es **acotar la lectura obligatoria**, que es lo que salva el presupuesto de contexto. Es exactamente una compactación de log con snapshot, aplicada a coordinación en vez de a bases de datos.
 
 ### 11.4 Handoff
