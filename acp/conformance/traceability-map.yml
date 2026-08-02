@@ -11,25 +11,34 @@ traceability_map:
     rows: 113
   suite:
     document: acp/conformance/requirements.yml
-    requirements: 124
+    requirements: 144
   invariants:
   - every row is covered by at least one requirement
   - every covered_by identifier exists in requirements.yml
   - 'a requirement with no row is marked traceability_status: suite-native'
   - 'no row is covered by two requirements that contradict each other: a row with
     several covers is a one-to-many split into separately verifiable checks'
+  - a requirement covers several rows only when they share one verifiable mechanism,
+    so a PASS demonstrates each of them
+  - no requirement covers more than three source rows
+  - a row with both a schema part and an external part is split into a schema requirement
+    and an external one, never merged into a single mixed obligation
   counts:
     source_rows: 113
     covered: 113
     uncovered: 0
     schema_enforced_rows: 60
     external_rows: 53
-    suite_requirements: 124
-    source_derived_requirements: 72
-    suite_native_requirements: 52
-    one_to_one: 39
-    many_to_one: 64
-    one_to_many: 10
+    suite_requirements: 144
+    active_requirements: 143
+    deprecated_requirements: 1
+    source_derived_requirements: 92
+    suite_native_requirements: 51
+    one_to_one: 49
+    many_to_one: 47
+    one_to_many: 17
+    largest_aggregate_rows: 3
+    aggregates_over_three_rows: 0
   rows:
   - id: TRACE-001
     section: "#1 Common envelope"
@@ -140,7 +149,7 @@ traceability_map:
     classification: schema-enforced
     covered_by:
     - ACP-CONF-SCHEMA-013
-    mapping: many-to-one
+    mapping: one-to-one
   - id: TRACE-013
     section: "#1 Common envelope"
     requirement: Field-name collision policy
@@ -148,8 +157,8 @@ traceability_map:
     schema_path: "*process rule*"
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-013
-    mapping: many-to-one
+    - ACP-CONF-CORE-009
+    mapping: one-to-one
   - id: TRACE-014
     section: "#2 Causality"
     requirement: "`after` required unless root"
@@ -232,7 +241,7 @@ traceability_map:
     classification: external
     covered_by:
     - ACP-CONF-LOG-004
-    mapping: one-to-one
+    mapping: many-to-one
   - id: TRACE-023
     section: "#2 Causality"
     requirement: Causal fork detection
@@ -295,8 +304,8 @@ traceability_map:
     schema_path: "`$defs/basis/properties/base`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-023
+    mapping: one-to-one
   - id: TRACE-030
     section: "#3 Basis and freshness"
     requirement: "`scope` when coverage is limited"
@@ -304,7 +313,7 @@ traceability_map:
     schema_path: "`$defs/basis/properties/scope`"
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-LOG-022
     mapping: many-to-one
   - id: TRACE-031
     section: "#3 Basis and freshness"
@@ -313,7 +322,7 @@ traceability_map:
     schema_path: optional in Core
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-LOG-022
     mapping: many-to-one
   - id: TRACE-032
     section: "#3 Basis and freshness"
@@ -341,7 +350,7 @@ traceability_map:
     schema_path: "`$defs/touches`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-024
     mapping: many-to-one
   - id: TRACE-035
     section: "#4 Write surface"
@@ -350,7 +359,7 @@ traceability_map:
     schema_path: "`ev.spec`/`ev.claim` `allOf`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-024
     mapping: many-to-one
   - id: TRACE-036
     section: "#4 Write surface"
@@ -359,7 +368,7 @@ traceability_map:
     schema_path: "—"
     classification: external
     covered_by:
-    - ACP-CONF-BIND-GH-014
+    - ACP-CONF-BIND-GH-022
     mapping: many-to-one
   - id: TRACE-037
     section: "#4 Write surface"
@@ -377,8 +386,8 @@ traceability_map:
     schema_path: "`ev.claim` `required`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-025
+    mapping: one-to-one
   - id: TRACE-039
     section: "#5 Lease"
     requirement: Duration grammar `h`/`d`/`w`
@@ -441,7 +450,7 @@ traceability_map:
     schema_path: "`ev.review`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-026
     mapping: many-to-one
   - id: TRACE-046
     section: "#6 Assurance"
@@ -450,7 +459,7 @@ traceability_map:
     schema_path: "`ev.review` `allOf[0]`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-026
     mapping: many-to-one
   - id: TRACE-047
     section: "#6 Assurance"
@@ -459,7 +468,7 @@ traceability_map:
     schema_path: "`ev.review` `allOf[1]`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-026
     mapping: many-to-one
   - id: TRACE-048
     section: "#6 Assurance"
@@ -477,8 +486,8 @@ traceability_map:
     schema_path: "`ev.submit` `allOf`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-027
+    mapping: one-to-one
   - id: TRACE-050
     section: "#6 Assurance"
     requirement: Evidence carries `cmd` and `env`
@@ -487,7 +496,7 @@ traceability_map:
     classification: external
     covered_by:
     - ACP-CONF-BIND-GH-014
-    mapping: many-to-one
+    mapping: one-to-one
   - id: TRACE-051
     section: "#6 Assurance"
     requirement: Review independence
@@ -505,8 +514,8 @@ traceability_map:
     schema_path: "`ev.validate`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-028
+    mapping: one-to-one
   - id: TRACE-053
     section: "#6 Assurance"
     requirement: Gate computation vs consent
@@ -533,7 +542,7 @@ traceability_map:
     schema_path: "`ev.revalidate` `required`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-029
     mapping: many-to-one
   - id: TRACE-056
     section: "#7 Revalidation"
@@ -542,7 +551,7 @@ traceability_map:
     schema_path: "`minItems: 1`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-029
     mapping: many-to-one
   - id: TRACE-057
     section: "#7 Revalidation"
@@ -551,7 +560,7 @@ traceability_map:
     schema_path: "`scope_diff` `allOf`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-029
     mapping: many-to-one
   - id: TRACE-058
     section: "#7 Revalidation"
@@ -578,7 +587,7 @@ traceability_map:
     schema_path: "—"
     classification: external
     covered_by:
-    - ACP-CONF-BIND-GH-014
+    - ACP-CONF-BIND-GH-022
     mapping: many-to-one
   - id: TRACE-061
     section: "#8 Authority and silence"
@@ -587,7 +596,7 @@ traceability_map:
     schema_path: "`ev.authorize` `required`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-030
     mapping: many-to-one
   - id: TRACE-062
     section: "#8 Authority and silence"
@@ -596,7 +605,7 @@ traceability_map:
     schema_path: "`$defs/authorizationScope`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-030
     mapping: many-to-one
   - id: TRACE-063
     section: "#8 Authority and silence"
@@ -605,7 +614,7 @@ traceability_map:
     schema_path: "`minProperties: 1`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-030
     mapping: many-to-one
   - id: TRACE-064
     section: "#8 Authority and silence"
@@ -614,8 +623,8 @@ traceability_map:
     schema_path: "`ev.authorize` `not`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-035
+    mapping: one-to-one
   - id: TRACE-065
     section: "#8 Authority and silence"
     requirement: Authorization bound to a SHA
@@ -641,7 +650,7 @@ traceability_map:
     schema_path: "`ev.question` `required`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-031
     mapping: many-to-one
   - id: TRACE-068
     section: "#8 Authority and silence"
@@ -650,7 +659,7 @@ traceability_map:
     schema_path: "`ev.question` `allOf`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-031
     mapping: many-to-one
   - id: TRACE-069
     section: "#8 Authority and silence"
@@ -695,7 +704,7 @@ traceability_map:
     schema_path: "`$defs/workItemId`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-032
     mapping: many-to-one
   - id: TRACE-074
     section: "#9 Identifiers and time"
@@ -722,7 +731,7 @@ traceability_map:
     schema_path: "`$defs/entityId`"
     classification: schema-enforced
     covered_by:
-    - ACP-CONF-SCHEMA-014
+    - ACP-CONF-SCHEMA-032
     mapping: many-to-one
   - id: TRACE-077
     section: "#9 Identifiers and time"
@@ -813,7 +822,7 @@ traceability_map:
     classification: schema-enforced
     covered_by:
     - ACP-CONF-PROFILE-013
-    mapping: many-to-one
+    mapping: one-to-one
   - id: TRACE-087
     section: "#10 Profile"
     requirement: "`never_default_actions` vocabulary"
@@ -821,8 +830,8 @@ traceability_map:
     schema_path: "`profile:$defs/authorizationAction`"
     classification: external
     covered_by:
-    - ACP-CONF-PROFILE-013
-    mapping: many-to-one
+    - ACP-CONF-PROFILE-016
+    mapping: one-to-one
   - id: TRACE-088
     section: "#10 Profile"
     requirement: Identity trust level declared
@@ -942,7 +951,8 @@ traceability_map:
     classification: external
     covered_by:
     - ACP-CONF-SCHEMA-022
-    mapping: many-to-one
+    - ACP-CONF-LOG-021
+    mapping: one-to-many
   - id: TRACE-101
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: '`v` es exactamente `"1.1"` en un escritor conforme'
@@ -969,7 +979,8 @@ traceability_map:
     classification: external
     covered_by:
     - ACP-CONF-LOG-005
-    mapping: many-to-one
+    - ACP-CONF-LOG-004
+    mapping: one-to-many
   - id: TRACE-104
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: Idempotencia por `(type, item, actor, basis.sha, after)`
@@ -986,8 +997,9 @@ traceability_map:
     schema_path: "`$defs/urn`"
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-033
+    - ACP-CONF-LOG-023
+    mapping: one-to-many
   - id: TRACE-106
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: Modificadores de estado con su gramática
@@ -995,8 +1007,9 @@ traceability_map:
     schema_path: "`$defs/modifier`"
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-033
+    - ACP-CONF-LOG-023
+    mapping: one-to-many
   - id: TRACE-107
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: Registro de riesgo con `signal` y estado
@@ -1004,8 +1017,9 @@ traceability_map:
     schema_path: "`$defs/risk`"
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-034
+    - ACP-CONF-LOG-024
+    mapping: one-to-many
   - id: TRACE-108
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: Registro de deuda con `authorized_by` y `payoff_trigger`
@@ -1013,8 +1027,9 @@ traceability_map:
     schema_path: "`$defs/debt`"
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-034
+    - ACP-CONF-LOG-024
+    mapping: one-to-many
   - id: TRACE-109
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: Registro de bloqueo con condición verificable y escalado
@@ -1022,8 +1037,9 @@ traceability_map:
     schema_path: "`ev.block`"
     classification: external
     covered_by:
-    - ACP-CONF-SCHEMA-014
-    mapping: many-to-one
+    - ACP-CONF-SCHEMA-034
+    - ACP-CONF-LOG-024
+    mapping: one-to-many
   - id: TRACE-110
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: Enlaces bidireccionales sin extremos colgantes
@@ -1031,8 +1047,8 @@ traceability_map:
     schema_path: "—"
     classification: external
     covered_by:
-    - ACP-CONF-BIND-GH-014
-    mapping: many-to-one
+    - ACP-CONF-BIND-GH-023
+    mapping: one-to-one
   - id: TRACE-111
     section: "#12 Requisitos añadidos tras la revisión independiente"
     requirement: Un lector falla cerrado ante un tipo desconocido

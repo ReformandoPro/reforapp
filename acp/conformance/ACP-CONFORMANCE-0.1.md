@@ -8,8 +8,8 @@
 | Versión | **`0.1.0-draft`** |
 | Estado | **`conformance-suite candidate — not adopted`** |
 | Capa | Conformance (transversal a Core, Profile, Binding e Implementation) |
-| Requisitos | **124** (`requirements.yml`) · 72 derivados de fuente, 52 propios de la suite |
-| Trazabilidad de origen | [`traceability-map.yml`](traceability-map.yml) — **113/113 filas cubiertas** |
+| Requisitos | **143 activos** + 1 retirado (`requirements.yml`) · 92 derivados de fuente, 51 propios de la suite |
+| Trazabilidad de origen | [`traceability-map.yml`](traceability-map.yml) — **113/113 filas cubiertas, y ninguna agrupación de más de 3 filas** |
 | Capas de conformidad | **8** (L0–L7) |
 | Packs | **7** |
 | Familias de casos | **19** |
@@ -52,7 +52,7 @@
 
 > «Pasa el JSON Schema, luego cumple ACP.»
 
-Es falsa, y es la forma más probable en que ACP se degradará. De los 124 requisitos de conformidad, **38 son comprobables por JSON Schema**. Los otros **86 no lo son**, y entre ellos están casi todos los que sostienen los gates: que el actor sea quien dice, que el lease haya caducado, que el SHA exista, que la review sea independiente, que la evidencia no esté fabricada.
+Es falsa, y es la forma más probable en que ACP se degradará. De los 143 requisitos de conformidad, **50 son comprobables por JSON Schema**. Los otros **93 no lo son**, y entre ellos están casi todos los que sostienen los gates: que el actor sea quien dice, que el lease haya caducado, que el SHA exista, que la review sea independiente, que la evidencia no esté fabricada.
 
 **CONF-001.** Una implementación **NO DEBE** afirmar conformidad con ACP sin nombrar las capas superadas. «ACP compliant» sin capas es una afirmación vacía y esta suite la declara no conforme (§3.3).
 
@@ -260,7 +260,7 @@ ACP Conformance
 | Prohibido | Por qué |
 |---|---|
 | «ACP compliant» | No dice qué capas |
-| «fully ACP compatible» | «fully» es indemostrable: 86 de 124 requisitos no son de schema |
+| «fully ACP compatible» | «fully» es indemostrable: 93 de 143 requisitos no son de schema |
 | «ACP certified» | No existe autoridad de certificación (§17) |
 | «ACP ready» | No significa nada |
 | Cualquier claim sin versión de Core, schema, perfil, binding y suite | Cada omisión es una forma de exagerar |
@@ -279,61 +279,85 @@ ACP Conformance
 
 | Prefijo | Qué es | A quién obliga | Dónde vive |
 |---|---|---|---|
-| `ACP-CONF-<AREA>-nnn` | Requisito de conformidad: algo que una **implementación de ACP** debe satisfacer | a la implementación bajo prueba | `requirements.yml` (115) |
-| `CONF-nnn` | Regla normativa de esta especificación: algo que **la suite, sus casos, sus informes y quien emite un claim** deben cumplir | a la suite y a sus usuarios | este documento (34) |
+| `ACP-CONF-<AREA>-nnn` | Requisito de conformidad: algo que una **implementación de ACP** debe satisfacer | a la implementación bajo prueba | `requirements.yml` (143 activos) |
+| `CONF-nnn` | Regla normativa de esta especificación: algo que **la suite, sus casos, sus informes y quien emite un claim** deben cumplir | a la suite y a sus usuarios | este documento (38) |
 
 Un ejemplo de la diferencia: `ACP-CONF-SCHEMA-003` obliga a que el validador tenga la asersión de `format` activada; `CONF-016` obliga a que todo verdict distinto de `PASS` lleve una razón. El primero se comprueba ejecutando la suite; el segundo se comprueba leyéndola.
 
-`requirements.yml` contiene **115** requisitos con ID estable. Campos: `id`, `title`, `layer`, `source`, `source_section`, `normative_text`, `category`, `testability`, `severity`, `required_for`, `inputs`, `expected_result`, `failure_class`, `external_dependencies`, `notes`.
+`requirements.yml` contiene **143** requisitos activos con ID estable, más **1 retirado** que conserva su ID para que un informe antiguo siga siendo interpretable. Campos: `id`, `title`, `layer`, `source`, `source_section`, `normative_text`, `category`, `testability`, `severity`, `required_for`, `inputs`, `expected_result`, `failure_class`, `external_dependencies`, `notes`, y `status` con `deprecated_by` cuando se retira.
 
 ### 4.1 Distribución
 
 | Capa | Reqs | | Componente external | Reqs | | Origen | Reqs | | Pack | Reqs |
 |---|---|---|---|---|---|---|---|---|---|---|
-| L0 | 8 | | `profile-linter` | 8 | | `normative` (ACP-1.1) | 63 | | `core-pack` | 50 |
-| L1 | 22 | | `event-log-semantic-validator` | 15 | | `binding-normative` | 32 | | `binding-github-pack` | 22 |
-| L2 | 15 | | `binding-verifier` | 9 | | `implementation-normative` | 13 | | `profile-pack` | 15 |
-| L3 | 21 | | `identity-verifier` | 8 | | `informative-only` | 11 | | `projection-pack` | 12 |
-| L4 | 21 | | `evidence-artifact-verifier` | 7 | | `suite-native` | 5 | | `gate-pack` | 12 |
+| L0 | 9 | | `profile-linter` | 9 | | `normative` (ACP-1.1) | 81 | | `core-pack` | 66 |
+| L1 | 34 | | `event-log-semantic-validator` | 18 | | `binding-normative` | 34 | | `binding-github-pack` | 24 |
+| L2 | 16 | | `binding-verifier` | 9 | | `implementation-normative` | 12 | | `profile-pack` | 16 |
+| L3 | 24 | | `identity-verifier` | 9 | | `informative-only` | 11 | | `projection-pack` | 12 |
+| L4 | 23 | | `evidence-artifact-verifier` | 9 | | `suite-native` | 5 | | `gate-pack` | 12 |
 | L5 | 12 | | `lease-reconciliation-engine` | 14 | | | | | `resilience-pack` | 12 |
 | L6 | 12 | | `projection-engine` | 12 | | | | | `all` | 1 |
 | L7 | 13 | | `gate-authorization-evaluator` | 12 | | | | | | |
-| **Total** | **124** | | `reader-compatibility-layer` | 1 | | **Total** | **124** | | | |
+| **Total** | **143** | | `reader-compatibility-layer` | 1 | | **Total** | **143** | | | |
 
-**CONF-035.** Todo requisito cuya `testability` no sea `schema` **DEBE** nombrar su componente responsable. Son **86**, y **ninguno de los nueve componentes existe**.
+**CONF-035.** Todo requisito cuya `testability` no sea `schema` **DEBE** nombrar su componente responsable. Son **93**, y **ninguno de los nueve componentes existe**.
 
 **CONF-036.** Todo requisito **DEBE** declarar `normative_sources` con referencias resolubles —documento, SHA y sección o `schema_path`— y `traceability_status`. Los **11** cuya única base era un borrador informativo llevan `normative_sources: []`, su borrador en `supporting_sources` y `source_status: informative-only`: **un borrador no adoptado no es norma**, y presentarlo como tal era el defecto F3.
 
-### 4.2 Por qué 124 requisitos frente a 113 filas de origen
+### 4.2 Por qué 143 requisitos frente a 113 filas de origen
 
 Las dos cifras miden cosas distintas y **ninguna sustituye a la otra**:
 
 | | Qué cuenta | Total |
 |---|---|---|
 | **113 / 60 / 53** | **Filas de `TRACEABILITY.md`**: requisitos de las fuentes reconciliadas, y si el schema los exige o son external | 113 filas |
-| **124 / 38 / 86** | **Requirements de esta suite**: unidades verificables con dueño, capa, pack y evidencia esperada | 124 requisitos |
+| **143 / 50 / 93** | **Requirements de esta suite**: unidades verificables con dueño, capa, pack y evidencia esperada | 143 requisitos |
 
 La reconciliación exacta, verificable contra [`traceability-map.yml`](traceability-map.yml):
 
 ```
 113 filas de origen
-  ├─ 39  one-to-one    una fila → un requirement
-  ├─ 64  many-to-one   varias filas → un requirement canónico
-  └─ 10  one-to-many   una fila → varios requirements verificables por separado
+  ├─ 49  one-to-one    una fila → un requirement
+  ├─ 47  many-to-one   varias filas → un requirement canónico (nunca más de 3 filas)
+  └─ 17  one-to-many   una fila → varios requirements verificables por separado
   = 113 cubiertas, 0 sin cubrir
 
-124 requirements de la suite
-  ├─ 72  derivados de al menos una fila     (traceability_status: source-derived)
-  └─ 52  propios de la suite, sin fila fuente (traceability_status: suite-native)
+143 requirements activos de la suite
+  ├─ 92  derivados de al menos una fila     (traceability_status: source-derived)
+  └─ 51  propios de la suite, sin fila fuente (traceability_status: suite-native)
+
++ 1 requirement retirado (ACP-CONF-SCHEMA-014), sin filas, conservado por trazabilidad
 ```
 
-**Por qué 86 no equivale a 53.** Las 53 filas external son requisitos *de las fuentes* que el schema no puede exigir. Los 86 requisitos no-schema de la suite incluyen además: los propios de la suite —formato de informe, reglas de agregación, claims, packs, seguridad de ejecución— y los desdoblamientos de una fila external en varias comprobaciones con dueños distintos. **53 ⊂ 86, no 53 = 86.**
+**Por qué 93 no equivale a 53.** Las 53 filas external son requisitos *de las fuentes* que el schema no puede exigir. Los 93 requisitos no-schema de la suite incluyen además: los propios de la suite —formato de informe, reglas de agregación, claims, packs, seguridad de ejecución— y los desdoblamientos de una fila external en varias comprobaciones con dueños distintos. **53 ⊂ 93, no 53 = 93.**
 
-**Por qué 38 no equivale a 60.** Las 60 filas schema-enforced las cubren 38 requisitos porque muchas comparten un requirement canónico —`ACP-CONF-SCHEMA-014` cubre por sí solo las reglas condicionales de una docena de filas— y porque la suite añade requisitos de schema que no son de las fuentes, como que ambos schemas compilen o que la asersión de `format` esté activada.
+**Por qué 50 no equivale a 60.** Las 60 filas schema-enforced las cubren 50 requisitos porque algunas comparten un requirement canónico —siempre 2 o 3 filas que se comprueban por el mismo mecanismo— y porque la suite añade requisitos de schema que no son de las fuentes, como que ambos schemas compilen o que la asersión de `format` esté activada.
 
-**Lectura importante:** solo **38 de 124** requisitos son comprobables por JSON Schema. Los **86 restantes** se reparten entre los nueve componentes de la tabla, y **ninguno existe hoy**.
+**Lectura importante:** solo **50 de 143** requisitos son comprobables por JSON Schema. Los **93 restantes** se reparten entre los nueve componentes de la tabla, y **ninguno existe hoy**.
 
-### 4.2 Trazabilidad de origen
+### 4.3 Cobertura nominal frente a cobertura discriminante
+
+**113/113 filas cubiertas no significa que la suite compruebe 113 obligaciones.** Significa que ninguna fila se quedó sin destino. Son dos afirmaciones distintas, y confundirlas es exactamente el defecto que la verificación independiente encontró en esta suite.
+
+`ACP-CONF-SCHEMA-014` —«las reglas condicionales se aplican según lo especificado»— llegó a cubrir **27 filas de origen** con una única obligación genérica: la estructura de `basis`, la forma de `touches`, los miembros exigidos de `claim`, `review`, `submit`, `validate`, `revalidate`, `authorize` y `question`, la forma de los identificadores de Core y la de los registros de riesgo, deuda y bloqueo. Todas producen *invalid* cuando fallan, y de ahí venía la agrupación: mismo síntoma, no mismo mecanismo.
+
+El problema no es estético. Un requirement así **admite un PASS falso**: una implementación puede rechazar un `claim` sin `lease` y aceptar un `authorize` sin `limits`, y el informe seguirá diciendo `PASS` en SCHEMA-014, porque «alguna regla condicional se aplicó». El PASS no demostraba ninguna de las 27 filas en particular. La cobertura era real como contabilidad y vacía como verificación.
+
+**Regla de discriminancia.** Un requirement puede cubrir varias filas de origen **solo** si todas se comprueban por un mismo mecanismo, de modo que un PASS demuestre cada una de ellas. Enunciado en la forma en que se comprueba:
+
+> Una implementación cumple todos los demás requirements y falla exactamente esta obligación. Si el informe no queda en FAIL en este requirement, y en ninguno más, el requirement no discrimina y debe descomponerse.
+
+**CONF-037.** Todo requirement que cubra más de una fila de origen **DEBE** documentar en `notes` qué mecanismo comparten esas filas y por qué un PASS las demuestra todas. Ningún requirement **PUEDE** cubrir más de **3** filas de origen. Ningún requirement **PUEDE** agrupar obligaciones heterogéneas por el solo hecho de que todas produzcan el mismo resultado —*invalid*, *violation*, *reject*—: el síntoma compartido no es mecanismo compartido.
+
+**CONF-038.** Una fila de origen con una parte de forma y una parte de juicio **DEBE** repartirse entre un requirement de schema y un requirement external con su componente responsable nombrado, y **NO PUEDE** fundirse en una sola obligación mixta. Un PASS de schema no demuestra el juicio, y un verificador external no puede alegar la forma.
+
+**Qué se hizo con SCHEMA-014.** Se **retiró** —`status: deprecated`, sin filas, con `deprecated_by` apuntando a sus sustitutos— y sus 27 filas se repartieron entre requirements con mecanismo propio: `SCHEMA-023` (estructura de `basis`), `SCHEMA-024` (forma de `touches` y justificación del comodín), `SCHEMA-025` (`claim`), `SCHEMA-026` (`review` y sus condicionales), `SCHEMA-027` (`submit`), `SCHEMA-028` (`validate`), `SCHEMA-029` (`revalidate` y `scope_diff`), `SCHEMA-030` (miembros de `authorize`), `SCHEMA-035` (`authorize` sin default silencioso), `SCHEMA-031` (`question`), `SCHEMA-032` (forma de los identificadores en Core), `SCHEMA-033` (gramática de URN y modificadores), `SCHEMA-034` (forma de los registros de riesgo, deuda y bloqueo), `LOG-022` (adecuación de `scope` y `environment`), `LOG-023` (que una URN resuelva y un modificador corresponda al estado real) y `LOG-024` (que un riesgo se revise de verdad, que quien firma una deuda tenga autoridad y que la condición de desbloqueo sea comprobable). El ID se conserva retirado: **no se renumeró nada**, y un informe emitido contra la versión anterior sigue siendo interpretable.
+
+**Auditoría del resto de agregados.** Se revisaron todos los requirements que cubren más de una fila. Cuatro incumplían la regla y se descompusieron: `BIND-GH-014` mezclaba completitud de evidencia con correspondencia diff↔alcance e integridad referencial (ahora `BIND-GH-014`, `BIND-GH-022` y `BIND-GH-023`); `PROFILE-013` mezclaba una comprobación de schema con un juicio de linter (ahora `PROFILE-013` y `PROFILE-016`); `LOG-023` y `SCHEMA-030` cubrían 5 y 4 filas heterogéneas. Estado tras la auditoría: **el agregado mayor cubre 3 filas**, **ninguno mezcla obligaciones de schema y external como cobertura única**, y las 17 filas con parte de forma y parte de juicio están explícitamente partidas (`mapping: one-to-many`).
+
+**Lo que sigue sin estar demostrado.** La discriminancia está enunciada y auditada sobre el mapa; **no está ejecutada**. Ningún requirement nuevo tiene todavía un caso de referencia que lo aísle, y los nueve componentes external siguen sin existir. Que un requirement *pueda* discriminar no prueba que un ejecutor lo haga: eso exige el corpus de casos, y el corpus no está escrito.
+
+### 4.4 Trazabilidad de origen
 
 **CONF-010.** Todo requisito **DEBE** citar su fuente y su sección, y **DEBE** declarar si la fuente es normativa, candidata o informativa. No se inventan requisitos por inferencia: los que derivan de borradores informativos (los doce de L5) lo dicen.
 
@@ -382,6 +406,17 @@ Los tres defectos High que bloqueaban esta suite están resueltos en los SHA can
 | **H1** `delivery.kind` | Enum normativo de ACP-1.1 §6.1: **`pull-request`, `merge-request`, `branch`, `patch`**. El vocabulario genérico (`change-request`, `commit`, `artifact`, `external`) es **solo una propuesta para ACP-1.2** y ninguna implementación puede anticiparlo. Requisito `ACP-CONF-SCHEMA-017` |
 | **H2** `violation.rule` | **23 códigos**, los de ACP-1.1 §15.1, incluidos los ocho que antes no podían emitirse. Requisito `ACP-CONF-SCHEMA-018` |
 | **H3** checkpoint | **`item`** y **`program`** con reglas diferenciadas: `state` y `gates` **obligatorios en item y prohibidos en programa**; `from`/`to` **exclusivos de programa y siempre en pareja**, describiendo el rango de migración (ACP-1.1 §11.3.1). Requisito `ACP-CONF-SCHEMA-019`, más el external `ACP-CONF-LOG-021` para `from == to` |
+
+### 5.4.1 N1 y N2: cerrados en esta suite
+
+La verificación independiente posterior a `5578e99a` dio el veredicto *suite estructuralmente válida — refinamiento de mapping requerido*, con dos hallazgos:
+
+| # | Hallazgo | Cierre |
+|---|---|---|
+| **N1** | `ACP-CONF-SCHEMA-014` era **overbroad**: una sola obligación genérica cubría 27 filas de origen heterogéneas, de modo que un PASS no demostraba ninguna en particular | **Cerrado.** SCHEMA-014 retirado y sus filas repartidas entre 16 requirements con mecanismo propio; auditados y descompuestos otros cuatro agregados. §4.3 |
+| **N2** | La documentación afirmaba «113/113 cubiertas» sin distinguir cobertura nominal de cobertura discriminante | **Cerrado.** §4.3 y `README.md` §4 declaran la diferencia, la regla (`CONF-037`, `CONF-038`) y lo que sigue sin demostrarse |
+
+**Discrepancia con el brief de verificación, declarada:** el hallazgo describía «24 filas, TRACE-037…TRACE-060». Lo medido sobre `traceability-map.yml` en `5578e99a` son **27 filas y no forman un rango contiguo**: TRACE-029, 030, 031, 034, 035, 038, 045, 046, 047, 049, 052, 055, 056, 057, 061, 062, 063, 064, 067, 068, 073, 076, 105, 106, 107, 108 y 109. Además **mezclaban clases**: 25 schema-enforced y 2 external puras, más cinco filas con parte de forma y parte de juicio. El defecto era real y algo mayor de lo enunciado; el cierre se hizo sobre lo medido, no sobre el rango del brief.
 
 ### 5.5 Conflictos: no se arbitran aquí
 
@@ -805,7 +840,7 @@ Trece, sin decidir: **no hay evidencia para decidirlas y esta suite no arbitra.*
 
 ### Riesgos de esta especificación
 
-1. **Ninguno de los nueve componentes de verificación existe.** 86 de 124 requisitos no tienen quién los compruebe.
+1. **Ninguno de los nueve componentes de verificación existe.** 93 de 143 requisitos no tienen quién los compruebe.
 2. **Un conflicto abierto** entre fuentes (C2, digest de evidencia). C1 y C3 se cerraron en la reconciliación.
 3. **L5 deriva de un borrador informativo** y no puede ser `CONFORMING` hasta que su especificación se adopte.
 4. **Cero casos escritos.** Están definidos como obligación, no como material.
@@ -816,7 +851,7 @@ Trece, sin decidir: **no hay evidencia para decidirlas y esta suite no arbitra.*
 
 > ### ACP CONFORMANCE SUITE 0.1 PREPARADA PARA REVISIÓN INDEPENDIENTE
 
-La suite **define conformidad de forma trazable**: 124 requisitos con ID estable, fuentes estructuradas y resolubles, componente responsable nombrado y correspondencia bidireccional con las 113 filas de origen (113/113 cubiertas, 0 sin cubrir); 8 capas con lo que cada una permite y no permite afirmar; 7 clases y un formato de claim que prohíbe la vaguedad; 2 formatos declarativos validados bajo Draft 2020-12 con las reglas de agregación **impuestas por el schema**, no solo documentadas; 19 familias, 39 casos obligatorios y una cadena de trazabilidad recorrible en ambos sentidos.
+La suite **define conformidad de forma trazable**: 143 requisitos con ID estable, fuentes estructuradas y resolubles, componente responsable nombrado y correspondencia bidireccional con las 113 filas de origen (113/113 cubiertas, 0 sin cubrir); 8 capas con lo que cada una permite y no permite afirmar; 7 clases y un formato de claim que prohíbe la vaguedad; 2 formatos declarativos validados bajo Draft 2020-12 con las reglas de agregación **impuestas por el schema**, no solo documentadas; 19 familias, 39 casos obligatorios y una cadena de trazabilidad recorrible en ambos sentidos.
 
 Lo que **no** está resuelto está declarado: los conflictos, los componentes ausentes, las capas que no pueden conformar todavía y las trece decisiones abiertas. Nada de eso impide que un revisor independiente juzgue si la definición de conformidad es correcta, que es exactamente lo que esta versión necesita ahora.
 

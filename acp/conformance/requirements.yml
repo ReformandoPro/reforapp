@@ -1,15 +1,21 @@
 # ACP Conformance Suite 0.1 - requirement catalogue
 #
-# Stable, citable conformance requirements. Every requirement declares:
+# Every requirement declares:
 #   normative_sources   structured, resolvable references (document + sha + section)
 #   supporting_sources  informative material, never a sole normative basis
 #   source_status       normative | implementation-normative | binding-normative
 #                       | suite-native | informative-only
 #   traceability_refs   TRACE-nnn rows of acp/schema/TRACEABILITY.md it covers
-#   traceability_status source-derived | suite-native
+#   traceability_status source-derived | suite-native | deprecated
 #
-# This file defines WHAT must hold and WHO can test it. No test cases, no
-# fixtures, nothing executable.
+# DISCRIMINANCE RULE. A requirement may cover several source rows only when all
+# of them share ONE verifiable mechanism, so that a PASS demonstrates every row
+# assigned to it. An implementation that satisfies everything else and breaks a
+# single assigned obligation must leave exactly this requirement in FAIL.
+# SCHEMA-014 violated that rule with 27 heterogeneous rows and is deprecated.
+#
+# This file defines WHAT must hold and WHO can test it. No cases, no fixtures,
+# nothing executable.
 suite:
   name: ACP Conformance Suite
   version: 0.1.0-draft
@@ -426,7 +432,9 @@ requirements:
   expected_result: unknown type rejected
   failure_class: unknown-event-type
   external_dependencies: none
-  notes: ''
+  notes: 'Agregado auditado: cubre 3 filas de origen (TRACE-004, TRACE-054, TRACE-093)
+    que comparten un unico mecanismo verificable por schema; un PASS aqui demuestra
+    cada una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-004
   - TRACE-054
@@ -494,7 +502,10 @@ requirements:
   failure_class: alias-type
   external_dependencies: none
   notes: 'F4. La grafia pre-A7 de la capacidad, `specify`, esta incluida: es alias
-    prohibido como TIPO, no capacidad vigente. Fixtures invalidas 69-77, una por alias.'
+    prohibido como TIPO, no capacidad vigente. Fixtures invalidas 69-77, una por alias.
+    Agregado auditado: cubre 2 filas de origen (TRACE-005, TRACE-102) que comparten
+    un unico mecanismo verificable por schema; un PASS aqui demuestra cada una de
+    ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-005
   - TRACE-102
@@ -607,7 +618,9 @@ requirements:
   expected_result: short or uppercase rejected
   failure_class: invalid-basis
   external_dependencies: none
-  notes: ''
+  notes: 'Agregado auditado: cubre 3 filas de origen (TRACE-024, TRACE-025, TRACE-026)
+    que comparten un unico mecanismo verificable por schema; un PASS aqui demuestra
+    cada una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-024
   - TRACE-025
@@ -645,7 +658,6 @@ requirements:
   notes: ''
   traceability_refs:
   - TRACE-012
-  - TRACE-013
   traceability_status: source-derived
   normative_sources:
   - document: acp/schema/README.md
@@ -656,54 +668,27 @@ requirements:
   - traceability_ref: TRACE-012
     document: acp/schema/TRACEABILITY.md
     sha: 42091572dafe3400ce16fb26039210d8c0c30a42
-  - traceability_ref: TRACE-013
-    document: acp/schema/TRACEABILITY.md
-    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   source_status: implementation-normative
 - id: ACP-CONF-SCHEMA-014
-  title: Conditional rules fire as specified
+  title: DEPRECATED - Conditional rules fire as specified (overbroad)
   layer: L1
   source: Schema V3 envelope 0.3.0
   source_section: README 4.4
-  normative_text: Las reglas condicionales del tipo se aplican tal como se declaran.
+  normative_text: RETIRADO. Agregaba 27 obligaciones heterogeneas bajo una sola exigencia
+    generica, de modo que un PASS no demostraba ninguna de ellas en particular.
   category: implementation
   testability: schema
-  severity: blocking
+  severity: minor
   required_for: core-pack
   inputs: envelope
   expected_result: each condition enforced
   failure_class: missing-conditional
   external_dependencies: none
-  notes: ''
-  traceability_refs:
-  - TRACE-029
-  - TRACE-030
-  - TRACE-031
-  - TRACE-034
-  - TRACE-035
-  - TRACE-038
-  - TRACE-045
-  - TRACE-046
-  - TRACE-047
-  - TRACE-049
-  - TRACE-052
-  - TRACE-055
-  - TRACE-056
-  - TRACE-057
-  - TRACE-061
-  - TRACE-062
-  - TRACE-063
-  - TRACE-064
-  - TRACE-067
-  - TRACE-068
-  - TRACE-073
-  - TRACE-076
-  - TRACE-105
-  - TRACE-106
-  - TRACE-107
-  - TRACE-108
-  - TRACE-109
-  traceability_status: source-derived
+  notes: 'N-1 de la verificacion independiente: cajon. El ID se conserva para no renumerar
+    y para que un informe antiguo siga siendo interpretable; no cubre ninguna fila
+    y no debe usarse.'
+  traceability_refs: []
+  traceability_status: deprecated
   normative_sources:
   - document: acp/schema/README.md
     sha: 42091572dafe3400ce16fb26039210d8c0c30a42
@@ -792,6 +777,24 @@ requirements:
     document: acp/schema/TRACEABILITY.md
     sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   source_status: implementation-normative
+  status: deprecated
+  deprecated_by:
+  - ACP-CONF-LOG-022
+  - ACP-CONF-LOG-023
+  - ACP-CONF-LOG-024
+  - ACP-CONF-SCHEMA-023
+  - ACP-CONF-SCHEMA-024
+  - ACP-CONF-SCHEMA-025
+  - ACP-CONF-SCHEMA-026
+  - ACP-CONF-SCHEMA-027
+  - ACP-CONF-SCHEMA-028
+  - ACP-CONF-SCHEMA-029
+  - ACP-CONF-SCHEMA-030
+  - ACP-CONF-SCHEMA-031
+  - ACP-CONF-SCHEMA-032
+  - ACP-CONF-SCHEMA-033
+  - ACP-CONF-SCHEMA-034
+  - ACP-CONF-SCHEMA-035
 - id: ACP-CONF-SCHEMA-015
   title: unverified key present, empty array admissible
   layer: L1
@@ -922,7 +925,9 @@ requirements:
   expected_result: absolute expires rejected
   failure_class: invalid-time-model
   external_dependencies: none
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-039, TRACE-077) que comparten
+    un unico mecanismo verificable por schema; un PASS aqui demuestra cada una de
+    ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-039
   - TRACE-077
@@ -953,7 +958,9 @@ requirements:
   expected_result: valid or rejected
   failure_class: invalid-profile
   external_dependencies: none
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-079, TRACE-090) que comparten
+    un unico mecanismo verificable por schema; un PASS aqui demuestra cada una de
+    ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-079
   - TRACE-090
@@ -1010,7 +1017,9 @@ requirements:
   failure_class: unauthorized
   external_dependencies: none
   external_component: profile-linter
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-080, TRACE-094) que comparten
+    un unico mecanismo verificable por profile-linter; un PASS aqui demuestra cada
+    una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-080
   - TRACE-094
@@ -1298,7 +1307,6 @@ requirements:
   notes: ''
   traceability_refs:
   - TRACE-086
-  - TRACE-087
   traceability_status: source-derived
   normative_sources:
   - document: acp/ACP-1.md
@@ -1306,9 +1314,6 @@ requirements:
     section: '13.6'
     anchor: section 13.6
   - traceability_ref: TRACE-086
-    document: acp/schema/TRACEABILITY.md
-    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
-  - traceability_ref: TRACE-087
     document: acp/schema/TRACEABILITY.md
     sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   source_status: normative
@@ -1384,7 +1389,9 @@ requirements:
   failure_class: dangling-pointer
   external_dependencies: log-reader
   external_component: event-log-semantic-validator
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-014, TRACE-017) que comparten
+    un unico mecanismo verificable por semantic-validator; un PASS aqui demuestra
+    cada una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-014
   - TRACE-017
@@ -1467,9 +1474,12 @@ requirements:
   failure_class: duplicate-root
   external_dependencies: log-reader
   external_component: event-log-semantic-validator
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-022, TRACE-103) que comparten
+    un unico mecanismo verificable por semantic-validator; un PASS aqui demuestra
+    cada una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-022
+  - TRACE-103
   traceability_status: source-derived
   normative_sources:
   - document: acp/ACP-1.md
@@ -1477,6 +1487,9 @@ requirements:
     section: 5.4.1
     anchor: section 5.4.1
   - traceability_ref: TRACE-022
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-103
     document: acp/schema/TRACEABILITY.md
     sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   source_status: normative
@@ -1494,7 +1507,9 @@ requirements:
   expected_result: other types rejected
   failure_class: invalid-root
   external_dependencies: none
-  notes: ''
+  notes: 'Agregado auditado: cubre 3 filas de origen (TRACE-019, TRACE-020, TRACE-103)
+    que comparten un unico mecanismo verificable por schema; un PASS aqui demuestra
+    cada una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-019
   - TRACE-020
@@ -1752,7 +1767,11 @@ requirements:
   failure_class: invalid-question
   external_dependencies: none
   external_component: event-log-semantic-validator
-  notes: 'CONFLICT abierto: Schema V3 no impone ni uniqueItems. Ver F-03 de la reconciliacion.'
+  notes: 'CONFLICT abierto: Schema V3 no impone ni uniqueItems. Ver F-03 de la reconciliacion.
+    Agregado auditado: cubre 3 filas de origen (TRACE-070, TRACE-071, TRACE-113) que
+    comparten un unico mecanismo verificable por semantic-validator; un PASS aqui
+    demuestra cada una de ellas, y el fallo de cualquiera deja este requirement en
+    FAIL.'
   traceability_refs:
   - TRACE-070
   - TRACE-071
@@ -2059,7 +2078,9 @@ requirements:
   failure_class: dangling-pointer
   external_dependencies: github-read
   external_component: binding-verifier
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-016, TRACE-017) que comparten
+    un unico mecanismo verificable por binding-verifier; un PASS aqui demuestra cada
+    una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-016
   - TRACE-017
@@ -2263,8 +2284,8 @@ requirements:
   layer: L4
   source: GitHub Binding 0.1.0-draft
   source_section: '11.4'
-  normative_text: Se verifica existencia, repositorio y asociacion al SHA antes de
-    contar la evidencia para un gate.
+  normative_text: Un artefacto de evidencia debe declarar el repositorio y el SHA
+    a los que pertenece, junto al comando y el entorno que lo produjeron.
   category: binding
   testability: binding-verifier
   severity: blocking
@@ -2276,26 +2297,14 @@ requirements:
   external_component: evidence-artifact-verifier
   notes: ''
   traceability_refs:
-  - TRACE-036
   - TRACE-050
-  - TRACE-060
-  - TRACE-110
   traceability_status: source-derived
   normative_sources:
   - document: acp/bindings/github.md
     sha: ca978ac6736cf6b8c43753d46a07ee6002e9522d
     section: '11.4'
     anchor: section 11.4
-  - traceability_ref: TRACE-036
-    document: acp/schema/TRACEABILITY.md
-    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   - traceability_ref: TRACE-050
-    document: acp/schema/TRACEABILITY.md
-    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
-  - traceability_ref: TRACE-060
-    document: acp/schema/TRACEABILITY.md
-    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
-  - traceability_ref: TRACE-110
     document: acp/schema/TRACEABILITY.md
     sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   source_status: binding-normative
@@ -2386,7 +2395,9 @@ requirements:
   failure_class: untrusted-clock
   external_dependencies: github-read
   external_component: binding-verifier
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-016, TRACE-078) que comparten
+    un unico mecanismo verificable por binding-verifier; un PASS aqui demuestra cada
+    una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-016
   - TRACE-078
@@ -2824,7 +2835,9 @@ requirements:
   failure_class: stale-gate
   external_dependencies: github-read
   external_component: gate-authorization-evaluator
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-033, TRACE-059) que comparten
+    un unico mecanismo verificable por gate-evaluator; un PASS aqui demuestra cada
+    una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-033
   - TRACE-059
@@ -3072,7 +3085,10 @@ requirements:
   traceability_refs:
   - TRACE-053
   traceability_status: source-derived
-  normative_sources: []
+  normative_sources:
+  - traceability_ref: TRACE-053
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   supporting_sources:
   - document: docs/agents/projection-engine-draft.md
     sha: fb40920202cdff804f4fe1c72f656870bfab5997
@@ -3217,7 +3233,9 @@ requirements:
   failure_class: undetected-race
   external_dependencies: log-reader
   external_component: lease-reconciliation-engine
-  notes: ''
+  notes: 'Agregado auditado: cubre 2 filas de origen (TRACE-037, TRACE-044) que comparten
+    un unico mecanismo verificable por resilience-test; un PASS aqui demuestra cada
+    una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-037
   - TRACE-044
@@ -3352,7 +3370,10 @@ requirements:
   external_dependencies: none
   external_component: lease-reconciliation-engine
   notes: 'CONFLICT abierto: Schema V3 acepta 1.x y puede rechazar un 1.2 valido por
-    campos desconocidos.'
+    campos desconocidos. Agregado auditado: cubre 2 filas de origen (TRACE-002, TRACE-111)
+    que comparten un unico mecanismo verificable por resilience-test; un PASS aqui
+    demuestra cada una de ellas, y el fallo de cualquiera deja este requirement en
+    FAIL.'
   traceability_refs:
   - TRACE-002
   - TRACE-111
@@ -3501,13 +3522,17 @@ requirements:
   notes: 'N-3. The schema checks the grammar of both and their presence as a pair,
     NOT that they differ. Gate effect: blocks any gate depending on the announced
     transition.'
-  traceability_refs: []
-  traceability_status: suite-native
+  traceability_refs:
+  - TRACE-100
+  traceability_status: source-derived
   normative_sources:
   - document: acp/ACP-1.md
     sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
     section: 11.3.1
     anchor: section 11.3.1
+  - traceability_ref: TRACE-100
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   source_status: normative
 - id: ACP-CONF-SCHEMA-020
   title: 'Writer-strict protocol version: v equals exactly 1.1'
@@ -3525,7 +3550,10 @@ requirements:
   failure_class: unsupported-version
   external_dependencies: none
   notes: 'F2-A. Owner: schema. Reader tolerance towards a later minor is a separate
-    layer and lives in OPS-013. Fixtures: valid all; invalid 34, 82, 83, 84, 85.'
+    layer and lives in OPS-013. Fixtures: valid all; invalid 34, 82, 83, 84, 85. Agregado
+    auditado: cubre 2 filas de origen (TRACE-001, TRACE-101) que comparten un unico
+    mecanismo verificable por schema; un PASS aqui demuestra cada una de ellas, y
+    el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-001
   - TRACE-101
@@ -3588,7 +3616,9 @@ requirements:
   external_dependencies: none
   notes: 'F2-E. Owner: schema. from != to es semantico y NO se mezcla aqui: vive en
     LOG-021. Fixtures: valid 62; invalid 88 (from sin to), 89 (formato), 86 (item
-    y program).'
+    y program). Agregado auditado: cubre 2 filas de origen (TRACE-099, TRACE-100)
+    que comparten un unico mecanismo verificable por schema; un PASS aqui demuestra
+    cada una de ellas, y el fallo de cualquiera deja este requirement en FAIL.'
   traceability_refs:
   - TRACE-099
   - TRACE-100
@@ -3605,3 +3635,696 @@ requirements:
     document: acp/schema/TRACEABILITY.md
     sha: 42091572dafe3400ce16fb26039210d8c0c30a42
   source_status: normative
+- id: ACP-CONF-SCHEMA-023
+  title: Basis internal structure is enforced
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '6.1'
+  normative_text: basis.base es {ref, sha} estructurada; scope es una lista de patrones;
+    environment es una cadena no vacia.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: basis object
+  expected_result: structured base accepted, string form rejected
+  failure_class: invalid-basis
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (fila TRACE-029). Discriminancia: una implementacion
+    que cumpla todo lo demas y falle solo esta obligacion queda en FAIL aqui y en
+    ningun otro requirement. Fixture negativa pendiente: `base` en la forma antigua
+    main@sha.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '6.1'
+    anchor: section 6.1
+  - traceability_ref: TRACE-029
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-029
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-024
+  title: touches structure and wildcard justification
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '10.2'
+  normative_text: touches es no vacio y sin duplicados; un comodin desnudo exige touches_rationale
+    en el mismo evento.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: spec or claim envelope
+  expected_result: empty, duplicated or unjustified wildcard rejected
+  failure_class: invalid-basis
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-034, TRACE-035): un solo mecanismo, la forma
+    de touches. Discriminancia: una implementacion que cumpla todo lo demas y falle
+    solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '10.2'
+    anchor: section 10.2
+  - traceability_ref: TRACE-034
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-035
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-034
+  - TRACE-035
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-025
+  title: claim required members
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '5.3'
+  normative_text: claim exige lease, touches e intent.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: claim envelope
+  expected_result: absence of any of the three rejected
+  failure_class: missing-conditional
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-038). Discriminancia: una implementacion que
+    cumpla todo lo demas y falle solo esta obligacion queda en FAIL aqui y en ningun
+    otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '5.3'
+    anchor: section 5.3
+  - traceability_ref: TRACE-038
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-038
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-026
+  title: review required members and verdict conditionals
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '5.3'
+  normative_text: review exige basis, verdict, adversarial y unverified; adversarial
+    true exige falsified; un veredicto distinto de approve exige would_change_my_mind.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: review envelope
+  expected_result: each conditional fires independently
+  failure_class: missing-conditional
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-045, 046, 047): un solo mecanismo, el contrato
+    de review y sus condicionales. Discriminancia: una implementacion que cumpla todo
+    lo demas y falle solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '5.3'
+    anchor: section 5.3
+  - traceability_ref: TRACE-045
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-046
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-047
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-045
+  - TRACE-046
+  - TRACE-047
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-027
+  title: submit evidence or an explicit reason
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '5.3'
+  normative_text: submit exige basis, touches, evidence y unverified; evidence vacia
+    solo con no_evidence_reason.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: submit envelope
+  expected_result: empty evidence without a reason rejected
+  failure_class: missing-conditional
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-049). Discriminancia: una implementacion que
+    cumpla todo lo demas y falle solo esta obligacion queda en FAIL aqui y en ningun
+    otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '5.3'
+    anchor: section 5.3
+  - traceability_ref: TRACE-049
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-049
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-028
+  title: validate required members
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '5.3'
+  normative_text: validate exige check, result y basis.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: validate envelope
+  expected_result: absence rejected
+  failure_class: missing-conditional
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-052). Discriminancia: una implementacion que
+    cumpla todo lo demas y falle solo esta obligacion queda en FAIL aqui y en ningun
+    otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '5.3'
+    anchor: section 5.3
+  - traceability_ref: TRACE-052
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-052
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-029
+  title: revalidate structure and scope_diff
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '6.3'
+  normative_text: revalidate exige revalidates, old_basis, new_basis y scope_diff;
+    paths no vacio; outside_scope false exige revalidated_claims.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: revalidate envelope
+  expected_result: each part enforced separately
+  failure_class: missing-conditional
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-055, 056, 057): un solo mecanismo, la estructura
+    de revalidate. Discriminancia: una implementacion que cumpla todo lo demas y falle
+    solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '6.3'
+    anchor: section 6.3
+  - traceability_ref: TRACE-055
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-056
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-057
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-055
+  - TRACE-056
+  - TRACE-057
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-030
+  title: authorize required members and structured scope
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '13.5'
+  normative_text: authorize exige target, scope estructurada con accion concreta,
+    basis, limits no vacios y expires.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: authorize envelope
+  expected_result: each part enforced separately
+  failure_class: unauthorized-action
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-061, 062, 063, 064): un solo mecanismo, el
+    contrato de authorize. Discriminancia: una implementacion que cumpla todo lo demas
+    y falle solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '13.5'
+    anchor: section 13.5
+  - traceability_ref: TRACE-061
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-062
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-063
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-061
+  - TRACE-062
+  - TRACE-063
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-031
+  title: question structure and authorization default
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '13.6'
+  normative_text: question exige to, question, options, default_if_silent y expires;
+    con kind authorization el default debe ser exactamente deny.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: question envelope
+  expected_result: both parts enforced separately
+  failure_class: invalid-question
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-067, 068). Discriminancia: una implementacion
+    que cumpla todo lo demas y falle solo esta obligacion queda en FAIL aqui y en
+    ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '13.6'
+    anchor: section 13.6
+  - traceability_ref: TRACE-067
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-068
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-067
+  - TRACE-068
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-032
+  title: Core identifier shapes carry no naming policy
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '4.2'
+  normative_text: El identificador de work item y los de riesgo, deuda y decision
+    son tokens opacos estables en Core; el patron concreto es del perfil.
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: envelope
+  expected_result: generic token accepted, whitespace or empty rejected
+  failure_class: invalid-work-item-id
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (TRACE-073, TRACE-076): un solo mecanismo, la forma
+    del identificador en Core. Discriminancia: una implementacion que cumpla todo
+    lo demas y falle solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '4.2'
+    anchor: section 4.2
+  - traceability_ref: TRACE-073
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-076
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-073
+  - TRACE-076
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-033
+  title: Entity reference and state modifier grammar
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '4.1'
+  normative_text: Las URN de entidad y los modificadores de estado tienen gramatica
+    cerrada.
+  category: normative
+  testability: schema
+  severity: major
+  required_for: core-pack
+  inputs: envelope
+  expected_result: malformed urn or modifier rejected
+  failure_class: invalid-extension
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (parte de schema de TRACE-105, TRACE-106). La resolucion
+    real de la URN y la correspondencia del modificador con el estado son external
+    y viven en LOG-023. Discriminancia: una implementacion que cumpla todo lo demas
+    y falle solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '4.1'
+    anchor: section 4.1
+  - traceability_ref: TRACE-105
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-106
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-105
+  - TRACE-106
+  traceability_status: source-derived
+- id: ACP-CONF-SCHEMA-034
+  title: Risk, debt and block record structure
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '13.2'
+  normative_text: 'Los objetos risk y debt y el evento block exigen sus campos: signal
+    y status; authorized_by y payoff_trigger; unblock_when, escalate_after y workaround.'
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: risk, debt or block envelope
+  expected_result: each record enforced separately
+  failure_class: missing-conditional
+  external_dependencies: none
+  notes: 'Descompone SCHEMA-014 (parte de schema de TRACE-107, 108, 109). La autoridad
+    del firmante y la verificabilidad real son external y viven en LOG-023. Discriminancia:
+    una implementacion que cumpla todo lo demas y falle solo esta obligacion queda
+    en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '13.2'
+    anchor: section 13.2
+  - traceability_ref: TRACE-107
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-108
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-109
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-107
+  - TRACE-108
+  - TRACE-109
+  traceability_status: source-derived
+- id: ACP-CONF-LOG-022
+  title: Basis scope and environment are adequate to the claim
+  layer: L3
+  source: ACP-1.1 candidate
+  source_section: '6.1'
+  normative_text: scope debe cubrir de verdad la afirmacion, y environment debe describir
+    el entorno real cuando el perfil lo exige.
+  category: normative
+  testability: semantic-validator
+  severity: major
+  required_for: core-pack
+  inputs: assertion plus its diff and environment
+  expected_result: adequate, or flagged
+  failure_class: invalid-basis
+  external_dependencies: event-log-semantic-validator
+  notes: 'Descompone SCHEMA-014 (TRACE-030, TRACE-031), ambas external. Juicio, no
+    forma: el schema comprueba que los campos existen, no que digan la verdad. Discriminancia:
+    una implementacion que cumpla todo lo demas y falle solo esta obligacion queda
+    en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '6.1'
+    anchor: section 6.1
+  - traceability_ref: TRACE-030
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-031
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-030
+  - TRACE-031
+  traceability_status: source-derived
+  external_component: event-log-semantic-validator
+- id: ACP-CONF-LOG-023
+  title: Entity references resolve and modifiers match real state
+  layer: L3
+  source: ACP-1.1 candidate
+  source_section: '13.2'
+  normative_text: Una URN de entidad debe resolver a una entidad existente y un modificador
+    de estado debe corresponder al estado real de esa entidad.
+  category: normative
+  testability: semantic-validator
+  severity: major
+  required_for: core-pack
+  inputs: event log plus profile
+  expected_result: resolvable and coherent, or violation
+  failure_class: dangling-target
+  external_dependencies: event-log-semantic-validator
+  notes: 'Descompone SCHEMA-014 (parte external de TRACE-105 a TRACE-109). Discriminancia:
+    una implementacion que cumpla todo lo demas y falle solo esta obligacion queda
+    en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: '13.2'
+    anchor: section 13.2
+  - traceability_ref: TRACE-105
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-106
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-105
+  - TRACE-106
+  traceability_status: source-derived
+  external_component: event-log-semantic-validator
+- id: ACP-CONF-CORE-009
+  title: Core field names are a single global namespace
+  layer: L0
+  source: ACP-1.1 candidate
+  source_section: 5.2.2
+  normative_text: Un nombre de campo tiene un solo significado en todo el protocolo;
+    un tipo nuevo no puede reutilizarlo con otra semantica.
+  category: normative
+  testability: manual-review
+  severity: major
+  required_for: core-pack
+  inputs: event catalogue plus a candidate field name
+  expected_result: no collision, or rejection at review
+  failure_class: field-leak
+  external_dependencies: identity-verifier
+  notes: 'Separa TRACE-013 de SCHEMA-013, que asi queda con un unico mecanismo: el
+    aislamiento de campos por tipo. Politica de proceso, no de formato. Discriminancia:
+    una implementacion que cumpla todo lo demas y falle solo esta obligacion queda
+    en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section: 5.2.2
+    anchor: section 5.2.2
+  - traceability_ref: TRACE-013
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-013
+  traceability_status: source-derived
+  external_component: identity-verifier
+- id: ACP-CONF-SCHEMA-035
+  title: authorize carries no silent default
+  layer: L1
+  source: ACP-1.1 candidate
+  source_section: '13.5'
+  normative_text: 'Un evento authorize no puede llevar default_if_silent: una autorizacion
+    no se concede por omision.'
+  category: normative
+  testability: schema
+  severity: blocking
+  required_for: core-pack
+  inputs: authorize envelope
+  expected_result: each part enforced separately
+  failure_class: unauthorized-action
+  external_dependencies: none
+  notes: 'Separado de SCHEMA-030 en la auditoria de agregados: es una propiedad prohibida,
+    no un miembro exigido, y falla por un mecanismo distinto. Discriminancia: una
+    implementacion que cumpla todo lo demas y falle solo esta obligacion queda en
+    FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section:
+    - '13.5'
+    - section 13.5
+    anchor: section 13.5
+  - traceability_ref: TRACE-064
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-064
+  traceability_status: source-derived
+- id: ACP-CONF-LOG-024
+  title: Risk, debt and block records mean what they claim
+  layer: L3
+  source: ACP-1.1 candidate
+  source_section: '13.2'
+  normative_text: Un riesgo debe revisarse de verdad; quien firma una deuda debe tener
+    autoridad para ello; la condicion de desbloqueo debe ser comprobable por un tercero.
+  category: normative
+  testability: semantic-validator
+  severity: major
+  required_for: core-pack
+  inputs: event log plus profile
+  expected_result: resolvable and coherent, or violation
+  failure_class: dangling-target
+  external_dependencies: event-log-semantic-validator
+  notes: 'Separado de LOG-023 en la auditoria de agregados: la resolucion de una referencia
+    y la veracidad de un registro son mecanismos distintos. La forma de estos registros
+    es SCHEMA-034. Discriminancia: una implementacion que cumpla todo lo demas y falle
+    solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section:
+    - '13.2'
+    - section 13.2
+    anchor: section 13.2
+  - traceability_ref: TRACE-107
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-108
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-109
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  traceability_refs:
+  - TRACE-107
+  - TRACE-108
+  - TRACE-109
+  traceability_status: source-derived
+  external_component: event-log-semantic-validator
+- id: ACP-CONF-BIND-GH-022
+  title: The real diff stays inside the declared surface
+  layer: L4
+  source: GitHub Binding 0.1.0-draft
+  source_section: '10.2'
+  normative_text: El diff entregado debe caer dentro de touches, y un diff declarado
+    fuera del alcance revisado debe estar de verdad fuera.
+  category: binding
+  testability: binding-verifier
+  severity: blocking
+  required_for: binding-github-pack
+  inputs: evidence, platform
+  expected_result: association verified
+  failure_class: forged-evidence
+  external_dependencies: github-read
+  external_component: evidence-artifact-verifier
+  notes: 'Separado de BIND-GH-014 en la auditoria de agregados: un mecanismo unico,
+    comparar rutas del diff con el alcance declarado. Discriminancia: una implementacion
+    que cumpla todo lo demas y falle solo esta obligacion queda en FAIL aqui y en
+    ningun otro requirement.'
+  traceability_refs:
+  - TRACE-036
+  - TRACE-060
+  traceability_status: source-derived
+  normative_sources:
+  - document: acp/bindings/github.md
+    sha: ca978ac6736cf6b8c43753d46a07ee6002e9522d
+    section:
+    - '10.2'
+    - section 10.2
+    anchor: section 10.2
+  - traceability_ref: TRACE-036
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  - traceability_ref: TRACE-060
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: binding-normative
+- id: ACP-CONF-BIND-GH-023
+  title: Cross-references resolve at both ends
+  layer: L4
+  source: GitHub Binding 0.1.0-draft
+  source_section: '12.1'
+  normative_text: Un enlace entre eventos, entidades o proyecciones debe resolver
+    en ambos sentidos, sin extremos colgantes.
+  category: binding
+  testability: binding-verifier
+  severity: blocking
+  required_for: binding-github-pack
+  inputs: evidence, platform
+  expected_result: association verified
+  failure_class: forged-evidence
+  external_dependencies: github-read
+  external_component: evidence-artifact-verifier
+  notes: 'Separado de BIND-GH-014 en la auditoria de agregados: integridad referencial,
+    no completitud de evidencia. Discriminancia: una implementacion que cumpla todo
+    lo demas y falle solo esta obligacion queda en FAIL aqui y en ningun otro requirement.'
+  traceability_refs:
+  - TRACE-110
+  traceability_status: source-derived
+  normative_sources:
+  - document: acp/bindings/github.md
+    sha: ca978ac6736cf6b8c43753d46a07ee6002e9522d
+    section:
+    - '12.1'
+    - section 12.1
+    anchor: section 12.1
+  - traceability_ref: TRACE-110
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: binding-normative
+- id: ACP-CONF-PROFILE-016
+  title: never_default_actions vocabulary is resolvable
+  layer: L2
+  source: ACP-1.1 candidate
+  source_section: '13.5'
+  normative_text: Cada entrada de never_default_actions debe nombrar una accion o
+    tipo de evento que exista de verdad en el catalogo.
+  category: normative
+  testability: profile-linter
+  severity: blocking
+  required_for: profile-pack
+  inputs: profile
+  expected_result: missing value rejected
+  failure_class: weakened-core-invariant
+  external_dependencies: none
+  notes: 'Separado de PROFILE-013 en la auditoria de agregados: PROFILE-013 comprueba
+    que authorize esta en la lista (schema); esto comprueba que la lista no nombra
+    acciones inexistentes (linter). Discriminancia: una implementacion que cumpla
+    todo lo demas y falle solo esta obligacion queda en FAIL aqui y en ningun otro
+    requirement.'
+  traceability_refs:
+  - TRACE-087
+  traceability_status: source-derived
+  normative_sources:
+  - document: acp/ACP-1.md
+    sha: 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+    section:
+    - '13.5'
+    - section 13.5
+    anchor: section 13.5
+  - traceability_ref: TRACE-087
+    document: acp/schema/TRACEABILITY.md
+    sha: 42091572dafe3400ce16fb26039210d8c0c30a42
+  source_status: normative
+  external_component: profile-linter

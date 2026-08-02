@@ -88,3 +88,9 @@ Las trece de la especificación §17. Las cuatro que más bloquean:
 De `docs/agents/conformance-suite-draft.md` se conserva íntegra la arquitectura de ocho capas, la separación entre verdicts de caso y de capa, la neutralidad del core respecto al binding, la lista de negativos obligatorios y la postura de seguridad ante fixtures.
 
 **No hay discrepancia sustantiva con ese borrador.** Se añade lo que faltaba para que sea usable: IDs estables, catálogo de requisitos con fuente y comprobabilidad, los dos formatos declarativos, las reglas de agregación impuestas por schema, los siete packs, la clasificación honesta de automatización y la cadena de trazabilidad bidireccional.
+
+## Nota histórica — retirada de `ACP-CONF-SCHEMA-014`
+
+Las cifras de este documento son las del momento en que se tomó cada decisión y **no se actualizan retroactivamente**; las vigentes están en la especificación §4.1.
+
+Una verificación independiente posterior encontró que `ACP-CONF-SCHEMA-014` agregaba **27 filas de origen heterogéneas** bajo una obligación genérica, de modo que su PASS no demostraba ninguna de ellas. Se retiró —`status: deprecated`, sin filas, con `deprecated_by`— y sus filas se repartieron entre requirements con mecanismo propio. El ID **no se reutiliza y no se renumeró nada**, para que un informe emitido antes siga siendo interpretable. La regla que impide repetir el error es `CONF-037` y `CONF-038` (especificación §4.3).

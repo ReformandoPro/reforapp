@@ -14,8 +14,8 @@
 | Fichero | Qué es | Normativo |
 |---|---|---|
 | [`ACP-CONFORMANCE-0.1.md`](ACP-CONFORMANCE-0.1.md) | La especificación: 8 capas, 7 clases, claims, agregación, packs, seguridad, gates de adopción | **sí** |
-| [`requirements.yml`](requirements.yml) | Catálogo de **124** requisitos: fuentes estructuradas y resolubles, comprobabilidad, componente responsable y filas de origen que cubre | **sí** |
-| [`traceability-map.yml`](traceability-map.yml) | Correspondencia bidireccional `TRACE-001…113` ↔ requisitos. **113/113 cubiertas, 0 sin cubrir** | **sí** |
+| [`requirements.yml`](requirements.yml) | Catálogo de **143** requisitos activos (+1 retirado): fuentes estructuradas y resolubles, comprobabilidad, componente responsable, filas de origen que cubre y por qué su PASS las demuestra | **sí** |
+| [`traceability-map.yml`](traceability-map.yml) | Correspondencia bidireccional `TRACE-001…113` ↔ requisitos. **113/113 cubiertas, 0 sin cubrir, ningún agregado de más de 3 filas** | **sí** |
 | [`case-format.schema.json`](case-format.schema.json) | Formato declarativo de un caso de conformidad (Draft 2020-12) | **sí** |
 | [`report-format.schema.json`](report-format.schema.json) | Formato del informe de ejecución y del claim (Draft 2020-12) | **sí** |
 | [`catalogue.yml`](catalogue.yml) | 7 packs, 19 familias, 39 casos obligatorios, clases de automatización | **sí** |
@@ -38,15 +38,17 @@
 | Saber qué falta por probar | spec §15.2 y §18 |
 | Decidir si adoptar algo | spec §16 |
 
-## Las tres cosas que conviene saber antes de usar esto
+## Las cinco cosas que conviene saber antes de usar esto
 
-1. **38 de los 124 requisitos son comprobables por JSON Schema.** Los otros **86** nombran uno de nueve componentes responsables —profile linter, validador semántico del log, verificador de binding, verificador de identidad, verificador de evidencia, motor de leases, motor de proyección, evaluador de gates y capa de compatibilidad de lectura—. **Ninguno de los nueve existe hoy.**
+1. **50 de los 143 requisitos son comprobables por JSON Schema.** Los otros **93** nombran uno de nueve componentes responsables —profile linter, validador semántico del log, verificador de binding, verificador de identidad, verificador de evidencia, motor de leases, motor de proyección, evaluador de gates y capa de compatibilidad de lectura—. **Ninguno de los nueve existe hoy.**
 
 2. **Queda un conflicto abierto entre las fuentes** (spec §5.5): C2, el digest de evidencia. C1 y C3 se cerraron en la reconciliación, y con ellos los cinco requisitos que describían violaciones no emitibles. La suite marca `CONFLICT` y **no arbitra**.
 
-3. **113/60/53 y 124/38/86 miden cosas distintas y ninguna sustituye a la otra.** Las primeras son filas de `TRACEABILITY.md`, requisitos de las fuentes; las segundas son requisitos de esta suite, unidades verificables con dueño y pack. La reconciliación exacta —39 one-to-one, 64 many-to-one, 10 one-to-many, 72 derivados y 52 propios— está en la spec §4.2 y es verificable contra `traceability-map.yml`.
+3. **113/60/53 y 143/50/93 miden cosas distintas y ninguna sustituye a la otra.** Las primeras son filas de `TRACEABILITY.md`, requisitos de las fuentes; las segundas son requisitos de esta suite, unidades verificables con dueño y pack. La reconciliación exacta —49 one-to-one, 47 many-to-one, 17 one-to-many, 92 derivados y 51 propios— está en la spec §4.2 y es verificable contra `traceability-map.yml`.
 
-4. **Las cifras de origen han cambiado dos veces.** Se publicaron 78/26, se midieron 95/39 al congelar esta suite, y las canónicas tras la reconciliación son **113 filas, 60 con regla de schema y 53 external**, con 78 y 63 filas cubiertas por fixture válida e inválida. Corpus del Schema V3: **63 + 90 = 153**. La suite mapea contra las canónicas y conserva la historia (spec §5.2). De ahí `CONF-033` y `CONF-034`: ninguna cifra publicada debe copiarse a mano.
+4. **«113/113 cubiertas» es cobertura nominal, no cobertura demostrada.** Dice que ninguna fila de origen se quedó sin destino; **no** dice que la suite compruebe 113 obligaciones distintas. Para que signifique algo, cada agrupación tiene que ser materialmente discriminante: un PASS debe demostrar cada fila que ese requirement cubre. `ACP-CONF-SCHEMA-014` no lo era —cubría **27 filas heterogéneas** bajo «las reglas condicionales se aplican», de modo que una implementación podía fallar una de ellas y aun así pasar el requirement— y por eso se ha **retirado** y repartido entre 16 requirements con mecanismo propio. Tras auditar el resto, **ningún requirement cubre más obligaciones heterogéneas de las que un solo PASS puede demostrar**: el agregado mayor cubre 3 filas que comparten mecanismo, y las filas con parte de forma y parte de juicio están partidas entre un requirement de schema y uno external. La regla y su auditoría están en la spec §4.3 (`CONF-037`, `CONF-038`). Sigue pendiente lo que ninguna de estas cifras cubre: **ningún requirement tiene todavía un caso que lo aísle en ejecución**.
+
+5. **Las cifras de origen han cambiado dos veces.** Se publicaron 78/26, se midieron 95/39 al congelar esta suite, y las canónicas tras la reconciliación son **113 filas, 60 con regla de schema y 53 external**, con 78 y 63 filas cubiertas por fixture válida e inválida. Corpus del Schema V3: **63 + 90 = 153**. La suite mapea contra las canónicas y conserva la historia (spec §5.2). De ahí `CONF-033` y `CONF-034`: ninguna cifra publicada debe copiarse a mano.
 
 ## Lo que está prohibido
 
