@@ -105,6 +105,8 @@ jobs:
       - name: Configure read-only SSH
         shell: bash
         env:
+          APP_BETA_SSH_HOST: ${{ secrets.APP_BETA_SSH_HOST }}
+          APP_BETA_SSH_PORT: ${{ secrets.APP_BETA_SSH_PORT }}
           APP_BETA_SSH_PRIVATE_KEY: ${{ secrets.APP_BETA_SSH_PRIVATE_KEY }}
           APP_BETA_SSH_KNOWN_HOSTS: ${{ secrets.APP_BETA_SSH_KNOWN_HOSTS }}
         run: |
@@ -114,6 +116,16 @@ jobs:
           printf '%s\n' "$APP_BETA_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/ssh/key"
           printf '%s\n' "$APP_BETA_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
           chmod 600 "$RUNNER_TEMP/ssh/key" "$RUNNER_TEMP/ssh/known_hosts"
+          if [ "$APP_BETA_SSH_PORT" = "22" ]; then
+            known_host_lookup="$APP_BETA_SSH_HOST"
+          else
+            known_host_lookup="[$APP_BETA_SSH_HOST]:$APP_BETA_SSH_PORT"
+          fi
+          if ! ssh-keygen -F "$known_host_lookup" \
+            -f "$RUNNER_TEMP/ssh/known_hosts" >/dev/null; then
+            echo "::error::known_hosts does not contain the effective SSH host and port"
+            exit 1
+          fi
 
       - name: Runtime evidence over SSH (read-only)
         shell: bash
