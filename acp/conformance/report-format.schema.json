@@ -5,32 +5,88 @@
   "description": "Format of the evidence an execution of the ACP Conformance Suite must produce. A report is the ONLY admissible basis for a conformance claim: a claim without a report, or with a report whose digest does not match, asserts nothing. The report records what was tested, what was not, and what could not be decided, and it is designed so that omissions are visible rather than absent.",
   "type": "object",
   "required": [
-    "suite_version", "implementation", "implementation_version", "protocol_version",
-    "schema_version", "environment", "started_at", "finished_at", "counts",
-    "layer_results", "limitations", "claim"
+    "suite_version",
+    "implementation",
+    "implementation_version",
+    "protocol_version",
+    "schema_version",
+    "environment",
+    "started_at",
+    "finished_at",
+    "counts",
+    "layer_results",
+    "limitations",
+    "claim"
   ],
   "properties": {
-    "suite_version": { "$ref": "#/$defs/version" },
-    "implementation": { "type": "string", "minLength": 1, "maxLength": 120 },
-    "implementation_version": { "$ref": "#/$defs/version" },
-    "implementation_sha": { "$ref": "#/$defs/fullSha" },
-    "protocol_version": { "$ref": "#/$defs/version" },
-    "schema_version": { "$ref": "#/$defs/version" },
-    "profile_version": { "$ref": "#/$defs/version" },
-    "binding_version": { "$ref": "#/$defs/version" },
+    "suite_version": {
+      "$ref": "#/$defs/version"
+    },
+    "implementation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "implementation_version": {
+      "$ref": "#/$defs/version"
+    },
+    "implementation_sha": {
+      "$ref": "#/$defs/fullSha"
+    },
+    "protocol_version": {
+      "$ref": "#/$defs/version"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/version"
+    },
+    "profile_version": {
+      "$ref": "#/$defs/version"
+    },
+    "binding_version": {
+      "$ref": "#/$defs/version"
+    },
     "combination_supported": {
       "description": "Whether this combination of protocol, schema, profile, binding and suite versions is declared supported. If false, every layer result MUST be INCONCLUSIVE and no claim may be issued.",
       "type": "boolean"
     },
     "environment": {
       "type": "object",
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "properties": {
-        "kind": { "type": "string", "enum": ["offline", "mock", "sandbox", "live-read-only"] },
-        "platform": { "type": "string", "minLength": 1 },
-        "clock": { "type": "string", "enum": ["pinned", "platform", "wall"] },
-        "network": { "type": "string", "enum": ["none", "allowlist", "open"] },
-        "notes": { "type": "string" }
+        "kind": {
+          "type": "string",
+          "enum": [
+            "offline",
+            "mock",
+            "sandbox",
+            "live-read-only"
+          ]
+        },
+        "platform": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clock": {
+          "type": "string",
+          "enum": [
+            "pinned",
+            "platform",
+            "wall"
+          ]
+        },
+        "network": {
+          "type": "string",
+          "enum": [
+            "none",
+            "allowlist",
+            "open"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     },
@@ -38,31 +94,73 @@
       "description": "Every tool whose behaviour affects the verdict, including whether format assertion was enabled.",
       "type": "object",
       "minProperties": 1,
-      "propertyNames": { "pattern": "^[a-z][a-z0-9._-]{1,47}$" },
-      "additionalProperties": { "type": "string", "minLength": 1 }
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9._-]{1,47}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "format_assertion_enabled": {
       "description": "Required by ACP-CONF-SCHEMA-003. If false, L1 cannot be CONFORMING: some checks silently disappear.",
       "type": "boolean"
     },
-    "started_at": { "type": "string", "format": "date-time" },
-    "finished_at": { "type": "string", "format": "date-time" },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "fixture_digest": {
       "description": "Digest of the case corpus actually executed. Without it a report cannot be reproduced.",
       "$ref": "#/$defs/digest"
     },
-    "requirements_digest": { "$ref": "#/$defs/digest" },
+    "requirements_digest": {
+      "$ref": "#/$defs/digest"
+    },
     "counts": {
       "type": "object",
-      "required": ["cases_total", "passed", "failed", "not_applicable", "not_implemented", "inconclusive", "error"],
+      "required": [
+        "cases_total",
+        "passed",
+        "failed",
+        "not_applicable",
+        "not_implemented",
+        "inconclusive",
+        "error"
+      ],
       "properties": {
-        "cases_total": { "type": "integer", "minimum": 0 },
-        "passed": { "type": "integer", "minimum": 0 },
-        "failed": { "type": "integer", "minimum": 0 },
-        "not_applicable": { "type": "integer", "minimum": 0 },
-        "not_implemented": { "type": "integer", "minimum": 0 },
-        "inconclusive": { "type": "integer", "minimum": 0 },
-        "error": { "type": "integer", "minimum": 0 }
+        "cases_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_applicable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_implemented": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inconclusive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "type": "integer",
+          "minimum": 0
+        }
       },
       "additionalProperties": false
     },
@@ -70,37 +168,54 @@
       "description": "One entry per layer attempted. A layer absent from this map is UNTESTED and MUST be reported as such in the claim.",
       "type": "object",
       "minProperties": 1,
-      "propertyNames": { "pattern": "^L[0-7]$" },
-      "additionalProperties": { "$ref": "#/$defs/layerResult" }
+      "propertyNames": {
+        "pattern": "^L[0-7]$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/layerResult"
+      }
     },
     "case_results": {
       "type": "array",
-      "items": { "$ref": "#/$defs/caseResult" }
+      "items": {
+        "$ref": "#/$defs/caseResult"
+      }
     },
     "failures": {
       "description": "Every FAIL and ERROR, in full. A report that summarises failures without listing them is not auditable.",
       "type": "array",
-      "items": { "$ref": "#/$defs/failureRecord" }
+      "items": {
+        "$ref": "#/$defs/failureRecord"
+      }
     },
     "limitations": {
       "description": "What this execution could NOT establish. Mandatory and non-empty: no execution of this suite establishes everything, and a report claiming otherwise is wrong on its face.",
       "type": "array",
-      "items": { "type": "string", "minLength": 1 },
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
       "minItems": 1
     },
     "untested_requirements": {
       "type": "array",
-      "items": { "$ref": "#/$defs/requirementId" },
+      "items": {
+        "$ref": "#/$defs/requirementId"
+      },
       "uniqueItems": true
     },
     "report_digest": {
       "description": "Digest of this report with this field removed. A claim cites it; a mismatch voids the claim.",
       "$ref": "#/$defs/digest"
     },
-    "claim": { "$ref": "#/$defs/claim" },
+    "claim": {
+      "$ref": "#/$defs/claim"
+    },
     "extensions": {
       "type": "object",
-      "propertyNames": { "pattern": "^x-[a-z0-9][a-z0-9-]*$" },
+      "propertyNames": {
+        "pattern": "^x-[a-z0-9][a-z0-9-]*$"
+      },
       "minProperties": 1
     }
   },
@@ -108,139 +223,533 @@
   "allOf": [
     {
       "$comment": "An unsupported version combination cannot yield a claim of conformance.",
-      "if": { "type": "object", "properties": { "combination_supported": { "const": false } }, "required": ["combination_supported"] },
-      "then": { "properties": { "claim": { "type": "object", "properties": { "conforming_layers": { "type": "array", "maxItems": 0 } } } } }
+      "if": {
+        "type": "object",
+        "properties": {
+          "combination_supported": {
+            "const": false
+          }
+        },
+        "required": [
+          "combination_supported"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "type": "object",
+            "properties": {
+              "conforming_layers": {
+                "type": "array",
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
     },
     {
       "$comment": "L1 cannot be CONFORMING without format assertion (ACP-CONF-SCHEMA-003).",
       "if": {
         "type": "object",
-        "required": ["format_assertion_enabled", "layer_results"],
+        "required": [
+          "format_assertion_enabled",
+          "layer_results"
+        ],
         "properties": {
-          "format_assertion_enabled": { "const": false },
-          "layer_results": { "type": "object", "required": ["L1"] }
+          "format_assertion_enabled": {
+            "const": false
+          },
+          "layer_results": {
+            "type": "object",
+            "required": [
+              "L1"
+            ]
+          }
         }
       },
-      "then": { "properties": { "layer_results": { "type": "object", "properties": { "L1": { "type": "object", "properties": { "verdict": { "not": { "const": "CONFORMING" } } } } } } } }
+      "then": {
+        "properties": {
+          "layer_results": {
+            "type": "object",
+            "properties": {
+              "L1": {
+                "type": "object",
+                "properties": {
+                  "verdict": {
+                    "not": {
+                      "const": "CONFORMING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
       "$comment": "A live environment must be read-only in suite 0.1.",
-      "if": { "type": "object", "properties": { "environment": { "type": "object", "properties": { "kind": { "const": "live-read-only" } }, "required": ["kind"] } }, "required": ["environment"] },
-      "then": { "properties": { "environment": { "type": "object", "properties": { "network": { "enum": ["allowlist"] } } } } }
+      "if": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "live-read-only"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "environment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "environment": {
+            "type": "object",
+            "properties": {
+              "network": {
+                "enum": [
+                  "allowlist"
+                ]
+              }
+            }
+          }
+        }
+      }
     },
     {
       "$comment": "Any binding layer claim requires a binding version.",
-      "if": { "type": "object", "properties": { "layer_results": { "type": "object", "required": ["L4"] } }, "required": ["layer_results"] },
-      "then": { "required": ["binding_version"] }
+      "if": {
+        "type": "object",
+        "properties": {
+          "layer_results": {
+            "type": "object",
+            "required": [
+              "L4"
+            ]
+          }
+        },
+        "required": [
+          "layer_results"
+        ]
+      },
+      "then": {
+        "required": [
+          "binding_version"
+        ]
+      }
     }
   ],
   "$defs": {
-    "version": { "type": "string", "minLength": 1, "maxLength": 60 },
-    "fullSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
-    "requirementId": { "type": "string", "pattern": "^ACP-CONF-(CORE|SCHEMA|PROFILE|LOG|BIND-[A-Z]{2,6}|PROJ|GATE|OPS)-[0-9]{3}$" },
-    "caseId": { "type": "string", "pattern": "^ACP-L[0-7]-[A-Z][A-Z0-9]{2,15}-[0-9]{3}$" },
-    "caseVerdict": { "type": "string", "enum": ["PASS", "FAIL", "NOT_APPLICABLE", "NOT_IMPLEMENTED", "INCONCLUSIVE", "ERROR"] },
-    "layerVerdict": { "type": "string", "enum": ["CONFORMING", "NON_CONFORMING", "PARTIAL", "UNTESTED", "INCONCLUSIVE"] },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "fullSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "requirementId": {
+      "type": "string",
+      "pattern": "^ACP-CONF-(CORE|SCHEMA|PROFILE|LOG|BIND-[A-Z]{2,6}|PROJ|GATE|OPS)-[0-9]{3}$"
+    },
+    "caseId": {
+      "type": "string",
+      "pattern": "^ACP-L[0-7]-[A-Z][A-Z0-9]{2,15}-[0-9]{3}$"
+    },
+    "caseVerdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_APPLICABLE",
+        "NOT_IMPLEMENTED",
+        "INCONCLUSIVE",
+        "ERROR"
+      ]
+    },
+    "layerVerdict": {
+      "type": "string",
+      "enum": [
+        "CONFORMING",
+        "NON_CONFORMING",
+        "PARTIAL",
+        "UNTESTED",
+        "INCONCLUSIVE"
+      ]
+    },
     "caseResult": {
       "type": "object",
-      "required": ["case", "verdict"],
+      "required": [
+        "case",
+        "verdict"
+      ],
       "properties": {
-        "case": { "$ref": "#/$defs/caseId" },
-        "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirementId" }, "minItems": 1, "uniqueItems": true },
-        "verdict": { "$ref": "#/$defs/caseVerdict" },
-        "reason": { "type": "string", "minLength": 1 },
-        "observed": { "type": "string", "minLength": 1 },
-        "manual_reviewer": { "type": "string", "minLength": 1 },
-        "duration_ms": { "type": "integer", "minimum": 0 },
-        "evidence_digest": { "$ref": "#/$defs/digest" }
+        "case": {
+          "$ref": "#/$defs/caseId"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requirementId"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "verdict": {
+          "$ref": "#/$defs/caseVerdict"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manual_reviewer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_digest": {
+          "$ref": "#/$defs/digest"
+        }
       },
       "additionalProperties": false,
       "allOf": [
         {
           "$comment": "Every non-PASS verdict must say why. A bare FAIL or INCONCLUSIVE is not evidence.",
-          "if": { "type": "object", "properties": { "verdict": { "enum": ["FAIL", "NOT_APPLICABLE", "NOT_IMPLEMENTED", "INCONCLUSIVE", "ERROR"] } }, "required": ["verdict"] },
-          "then": { "required": ["reason"] }
+          "if": {
+            "type": "object",
+            "properties": {
+              "verdict": {
+                "enum": [
+                  "FAIL",
+                  "NOT_APPLICABLE",
+                  "NOT_IMPLEMENTED",
+                  "INCONCLUSIVE",
+                  "ERROR"
+                ]
+              }
+            },
+            "required": [
+              "verdict"
+            ]
+          },
+          "then": {
+            "required": [
+              "reason"
+            ]
+          }
         },
         {
           "$comment": "A manually reviewed case names its reviewer: otherwise nobody is accountable for the judgement.",
-          "if": { "type": "object", "properties": { "verdict": { "const": "PASS" } }, "required": ["verdict"] },
+          "if": {
+            "type": "object",
+            "properties": {
+              "verdict": {
+                "const": "PASS"
+              }
+            },
+            "required": [
+              "verdict"
+            ]
+          },
           "then": true
         }
       ]
     },
     "layerResult": {
       "type": "object",
-      "required": ["verdict", "cases_total", "passed"],
+      "required": [
+        "verdict",
+        "cases_total",
+        "passed"
+      ],
       "properties": {
-        "verdict": { "$ref": "#/$defs/layerVerdict" },
-        "cases_total": { "type": "integer", "minimum": 0 },
-        "passed": { "type": "integer", "minimum": 0 },
-        "failed": { "type": "integer", "minimum": 0 },
-        "blocking_failures": { "type": "integer", "minimum": 0 },
-        "inconclusive": { "type": "integer", "minimum": 0 },
-        "not_implemented": { "type": "integer", "minimum": 0 },
+        "verdict": {
+          "$ref": "#/$defs/layerVerdict"
+        },
+        "cases_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocking_failures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inconclusive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_implemented": {
+          "type": "integer",
+          "minimum": 0
+        },
         "coverage": {
           "description": "Fraction of this layer's requirements exercised by at least one executed case.",
           "type": "number",
           "minimum": 0,
           "maximum": 1
         },
-        "depends_on": { "type": "array", "items": { "type": "string", "pattern": "^L[0-7]$" }, "uniqueItems": true },
-        "reason": { "type": "string", "minLength": 1 }
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^L[0-7]$"
+          },
+          "uniqueItems": true
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false,
       "allOf": [
         {
           "$comment": "A blocking failure forces NON_CONFORMING. Aggregation rule 1.",
-          "if": { "type": "object", "properties": { "blocking_failures": { "type": "integer", "minimum": 1 } }, "required": ["blocking_failures"] },
-          "then": { "properties": { "verdict": { "const": "NON_CONFORMING" } } }
+          "if": {
+            "type": "object",
+            "properties": {
+              "blocking_failures": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "blocking_failures"
+            ]
+          },
+          "then": {
+            "properties": {
+              "verdict": {
+                "const": "NON_CONFORMING"
+              }
+            }
+          }
         },
         {
           "$comment": "An inconclusive case can never be counted as a pass. Aggregation rule 3.",
-          "if": { "type": "object", "properties": { "inconclusive": { "type": "integer", "minimum": 1 }, "verdict": { "const": "CONFORMING" } }, "required": ["inconclusive", "verdict"] },
+          "if": {
+            "type": "object",
+            "properties": {
+              "inconclusive": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "verdict": {
+                "const": "CONFORMING"
+              }
+            },
+            "required": [
+              "inconclusive",
+              "verdict"
+            ]
+          },
           "then": false
         },
         {
           "$comment": "Anything short of full coverage cannot be CONFORMING.",
-          "if": { "type": "object", "properties": { "verdict": { "const": "CONFORMING" } }, "required": ["verdict"] },
-          "then": { "properties": { "not_implemented": { "const": 0 }, "failed": { "const": 0 } } }
+          "if": {
+            "type": "object",
+            "properties": {
+              "verdict": {
+                "const": "CONFORMING"
+              }
+            },
+            "required": [
+              "verdict"
+            ]
+          },
+          "then": {
+            "properties": {
+              "not_implemented": {
+                "const": 0
+              },
+              "failed": {
+                "const": 0
+              }
+            }
+          }
         },
         {
           "$comment": "A non-CONFORMING or INCONCLUSIVE verdict must be explained.",
-          "if": { "type": "object", "properties": { "verdict": { "enum": ["NON_CONFORMING", "PARTIAL", "INCONCLUSIVE", "UNTESTED"] } }, "required": ["verdict"] },
-          "then": { "required": ["reason"] }
+          "if": {
+            "type": "object",
+            "properties": {
+              "verdict": {
+                "enum": [
+                  "NON_CONFORMING",
+                  "PARTIAL",
+                  "INCONCLUSIVE",
+                  "UNTESTED"
+                ]
+              }
+            },
+            "required": [
+              "verdict"
+            ]
+          },
+          "then": {
+            "required": [
+              "reason"
+            ]
+          }
         }
       ]
     },
     "failureRecord": {
       "type": "object",
-      "required": ["case", "requirements", "verdict", "failure_class", "reason"],
+      "required": [
+        "case",
+        "requirements",
+        "verdict",
+        "failure_class",
+        "reason"
+      ],
       "properties": {
-        "case": { "$ref": "#/$defs/caseId" },
-        "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirementId" }, "minItems": 1 },
-        "verdict": { "type": "string", "enum": ["FAIL", "ERROR"] },
-        "failure_class": { "type": "string", "minLength": 1 },
-        "severity": { "type": "string", "enum": ["blocking", "major", "minor"] },
-        "reason": { "type": "string", "minLength": 1 },
-        "observed": { "type": "string", "minLength": 1 },
-        "minimal_example": { "type": "string", "minLength": 1 }
+        "case": {
+          "$ref": "#/$defs/caseId"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requirementId"
+          },
+          "minItems": 1
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "FAIL",
+            "ERROR"
+          ]
+        },
+        "failure_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "blocking",
+            "major",
+            "minor"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minimal_example": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
     "claim": {
       "description": "The only permitted form of a conformance claim. Every field is mandatory because each omission is a way to overstate what was proven.",
       "type": "object",
-      "required": ["core_version", "schema_version", "suite_version", "conforming_layers", "untested_layers", "issued_at", "report_digest_ref"],
+      "required": [
+        "core_version",
+        "core_sha",
+        "schema_version",
+        "schema_sha",
+        "suite_version",
+        "implementation_sha",
+        "conforming_layers",
+        "untested_layers",
+        "issued_at",
+        "report_digest_ref"
+      ],
       "properties": {
-        "core_version": { "$ref": "#/$defs/version" },
-        "schema_version": { "$ref": "#/$defs/version" },
-        "profile": { "type": "string", "minLength": 1 },
-        "binding": { "type": "string", "minLength": 1 },
-        "suite_version": { "$ref": "#/$defs/version" },
-        "conforming_layers": { "type": "array", "items": { "type": "string", "pattern": "^L[0-7]$" }, "uniqueItems": true },
-        "partial_layers": { "type": "array", "items": { "type": "string", "pattern": "^L[0-7]$" }, "uniqueItems": true },
-        "untested_layers": { "type": "array", "items": { "type": "string", "pattern": "^L[0-7]$" }, "uniqueItems": true },
+        "core_version": {
+          "$ref": "#/$defs/version"
+        },
+        "core_sha": {
+          "description": "Exact commit of the ACP-1.1 source the run verified against. A version name without a SHA is not reproducible: 'Core 1.1 candidate' designated three different trees in four days.",
+          "$ref": "#/$defs/fullSha"
+        },
+        "schema_version": {
+          "$ref": "#/$defs/version"
+        },
+        "schema_sha": {
+          "description": "Exact commit of the Schema V3 source the run verified against.",
+          "$ref": "#/$defs/fullSha"
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "binding": {
+          "type": "string",
+          "minLength": 1
+        },
+        "binding_sha": {
+          "description": "Exact commit of the binding source, when a binding layer is claimed.",
+          "$ref": "#/$defs/fullSha"
+        },
+        "suite_version": {
+          "$ref": "#/$defs/version"
+        },
+        "implementation_sha": {
+          "description": "Exact commit of the implementation under test.",
+          "$ref": "#/$defs/fullSha"
+        },
+        "conforming_layers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^L[0-7]$"
+          },
+          "uniqueItems": true
+        },
+        "partial_layers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^L[0-7]$"
+          },
+          "uniqueItems": true
+        },
+        "untested_layers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^L[0-7]$"
+          },
+          "uniqueItems": true
+        },
         "conformance_classes": {
           "type": "array",
           "items": {
@@ -257,10 +766,21 @@
           },
           "uniqueItems": true
         },
-        "environment": { "type": "string", "minLength": 1 },
-        "issued_at": { "type": "string", "format": "date-time" },
-        "issued_by": { "type": "string", "minLength": 1 },
-        "report_digest_ref": { "$ref": "#/$defs/digest" },
+        "environment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "issued_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "report_digest_ref": {
+          "$ref": "#/$defs/digest"
+        },
         "prohibited_phrasing_acknowledged": {
           "description": "The issuer states that this claim uses no unqualified phrasing such as ACP compliant, fully ACP compatible or ACP certified.",
           "type": "boolean",

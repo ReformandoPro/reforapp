@@ -11,24 +11,31 @@ suite:
   name: "ACP Conformance Suite"
   version: "0.1.0-draft"
   status: "conformance-suite candidate - not adopted"
+  # Unfrozen after the independent verdict
+  #   ACP-1.1 AND SCHEMA V3 RECONCILED - READY TO UNFREEZE CONFORMANCE SUITE
+  # Reconciliation of the sources is NOT adoption of them, and neither is it
+  # adoption of this suite. Both remain candidates.
+  sources_reconciled: true
+  sources_adopted: false
+  previous_revision: "b34f70ff6b112267609f268ffe037e804e9499ec"
 
 sources:
   core:
     name: "ACP-1.1 amendment candidate"
     branch: "feat/acp-1-1-normative-amendments"
-    sha: "1bda3e997291e337cc1a3956462e643219d71547"
+    sha: "983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad"
     normative: candidate
   envelope_schema:
     name: "Schema V3 envelope"
     version: "0.3.0"
     branch: "feat/acp-envelope-schema"
-    sha: "ae3e4f5e35924e470ad909d63d5a9de55c351df0"
+    sha: "42091572dafe3400ce16fb26039210d8c0c30a42"
     normative: candidate
   profile_schema:
     name: "Schema V3 profile"
     version: "0.3.0"
     branch: "feat/acp-envelope-schema"
-    sha: "ae3e4f5e35924e470ad909d63d5a9de55c351df0"
+    sha: "42091572dafe3400ce16fb26039210d8c0c30a42"
     normative: candidate
   binding_github:
     name: "ACP GitHub Binding"
@@ -61,6 +68,20 @@ layers:
   L5: "Projection determinism and integrity"
   L6: "Gate and authorization evaluation"
   L7: "Operational resilience and recovery"
+
+# Every requirement whose testability is not `schema` names the component that
+# must perform the check. These are the nine components the 53 external
+# TRACEABILITY rows map onto; none of them exists yet.
+external_components:
+  - profile-linter
+  - event-log-semantic-validator
+  - binding-verifier
+  - identity-verifier
+  - evidence-artifact-verifier
+  - lease-reconciliation-engine
+  - projection-engine
+  - gate-authorization-evaluator
+  - reader-compatibility-layer
 
 testability_values:
   - schema
@@ -145,13 +166,14 @@ requirements:
     expected_result: "identical digest on repeat"
     failure_class: non-reproducible-digest
     external_dependencies: "none"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-CORE-005
     title: "Protocol version is declared and supported"
     layer: L0
     source: "ACP-1.1 candidate"
     source_section: "16.1"
-    normative_text: "v es la cadena mayor.menor; un mayor distinto se falla cerrado."
+    normative_text: "v es exactamente la cadena 1.1 en un escritor conforme. Un mayor distinto, un minor posterior y las grafias no canonicas se fallan cerrado."
     category: normative
     testability: schema
     severity: blocking
@@ -175,6 +197,7 @@ requirements:
     expected_result: "no execution path exists"
     failure_class: unsafe-input-handling
     external_dependencies: "none"
+    external_component: identity-verifier
     notes: ""
   - id: ACP-CONF-CORE-007
     title: "Marked events are distinguishable from conversation"
@@ -190,6 +213,7 @@ requirements:
     expected_result: "event / conversation partition"
     failure_class: misclassified-event
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: "La sintaxis literal de las dos marcas es una pregunta abierta del binding."
   - id: ACP-CONF-CORE-008
     title: "Unicode and canonicalization are deterministic"
@@ -310,6 +334,7 @@ requirements:
     expected_result: "digests identical"
     failure_class: catalogue-drift
     external_dependencies: "none"
+    external_component: identity-verifier
     notes: ""
   - id: ACP-CONF-SCHEMA-008
     title: "Prohibited aliases are rejected"
@@ -431,6 +456,51 @@ requirements:
     failure_class: missing-uncertainty
     external_dependencies: "none"
     notes: "La honestidad del contenido no es comprobable en ninguna capa."
+  - id: ACP-CONF-SCHEMA-017
+    title: "delivery.kind uses the normative enum of the specification"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "6.1"
+    normative_text: "El puntero de entrega es {kind, id} con kind en {pull-request, merge-request, branch, patch}. El vocabulario generico es una propuesta para ACP-1.2 y no debe anticiparse."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "submit envelope"
+    expected_result: "non-normative kind rejected"
+    failure_class: masked-rejection
+    external_dependencies: "none"
+    notes: "H1. Schema 0.3.0 had replaced the enum unilaterally; reverted at 42091572. Fixtures: valid 09, 51, 52, 53; invalid 78, 79, 80, 81."
+  - id: ACP-CONF-SCHEMA-018
+    title: "violation.rule accepts the 23 codes of the specification"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "15.1"
+    normative_text: "El catalogo de violaciones tiene 23 codigos; los ocho que ACP-1.1 introdujo deben poder emitirse."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "violation envelope"
+    expected_result: "the 23 accepted, an invented code rejected"
+    failure_class: unknown-event-type
+    external_dependencies: "none"
+    notes: "H2. Fixtures: valid 32, 46, 54-61; invalid 91."
+  - id: ACP-CONF-SCHEMA-019
+    title: "Checkpoint subject determines its mandatory members"
+    layer: L1
+    source: "ACP-1.1 candidate"
+    source_section: "11.3.1"
+    normative_text: "Un checkpoint de item DEBE llevar state y gates; uno de programa NO DEBE llevarlos y usa from/to para el rango de migracion, siempre en pareja y solo en programa."
+    category: normative
+    testability: schema
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "checkpoint envelope"
+    expected_result: "item and programme forms distinguished"
+    failure_class: missing-conditional
+    external_dependencies: "none"
+    notes: "H3. Fixtures: valid 30 item, 62 programme; invalid 86, 87, 88, 89, 90."
   - id: ACP-CONF-SCHEMA-016
     title: "Authored durations only, no absolute instants"
     layer: L1
@@ -475,6 +545,7 @@ requirements:
     expected_result: "unknown actor rejected"
     failure_class: unauthorized
     external_dependencies: "none"
+    external_component: profile-linter
     notes: ""
   - id: ACP-CONF-PROFILE-003
     title: "Actor holds the capability for the event type"
@@ -490,6 +561,7 @@ requirements:
     expected_result: "capability enforced"
     failure_class: unauthorized
     external_dependencies: "none"
+    external_component: profile-linter
     notes: ""
   - id: ACP-CONF-PROFILE-004
     title: "Work item id matches the profile pattern"
@@ -505,6 +577,7 @@ requirements:
     expected_result: "non-matching id rejected"
     failure_class: invalid-work-item-id
     external_dependencies: "none"
+    external_component: profile-linter
     notes: "Coste declarado de A12: hoy ninguna implementacion aplica esta comprobacion."
   - id: ACP-CONF-PROFILE-005
     title: "Reserved identifiers are rejected as subjects"
@@ -520,6 +593,7 @@ requirements:
     expected_result: "reserved id rejected"
     failure_class: reserved-id
     external_dependencies: "none"
+    external_component: profile-linter
     notes: ""
   - id: ACP-CONF-PROFILE-006
     title: "Profile referential integrity"
@@ -535,6 +609,7 @@ requirements:
     expected_result: "all references resolve"
     failure_class: dangling-profile-reference
     external_dependencies: "none"
+    external_component: profile-linter
     notes: "Verificado a mano contra el perfil real: 0 referencias rotas en ese SHA."
   - id: ACP-CONF-PROFILE-007
     title: "Agent ids unique by logical identity"
@@ -550,6 +625,7 @@ requirements:
     expected_result: "duplicate id rejected"
     failure_class: duplicate-agent
     external_dependencies: "none"
+    external_component: profile-linter
     notes: ""
   - id: ACP-CONF-PROFILE-008
     title: "approve_gates reference declared gates"
@@ -565,6 +641,7 @@ requirements:
     expected_result: "unknown gate rejected"
     failure_class: dangling-gate-reference
     external_dependencies: "none"
+    external_component: profile-linter
     notes: ""
   - id: ACP-CONF-PROFILE-009
     title: "Permissions default deny"
@@ -655,6 +732,7 @@ requirements:
     expected_result: "level present and consistent"
     failure_class: undeclared-assurance
     external_dependencies: "none"
+    external_component: profile-linter
     notes: "Por debajo de 3, independence_guaranteed debe ser false."
   - id: ACP-CONF-PROFILE-015
     title: "Automation enabled requires a named implementation"
@@ -685,6 +763,7 @@ requirements:
     expected_result: "resolution or flag"
     failure_class: dangling-pointer
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-002
     title: "Causal pointer is namespaced and platform-produced"
@@ -715,6 +794,7 @@ requirements:
     expected_result: "cycle detected and rejected"
     failure_class: causal-cycle
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-004
     title: "Exactly one root per thread"
@@ -730,6 +810,7 @@ requirements:
     expected_result: "second root rejected"
     failure_class: duplicate-root
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-005
     title: "Root eligibility limited to spec, reconcile, programme-decide"
@@ -775,6 +856,7 @@ requirements:
     expected_result: "fork reported"
     failure_class: causal-fork
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-008
     title: "Reconcile resolves a fork without erasing history"
@@ -790,6 +872,7 @@ requirements:
     expected_result: "fork closed, history intact"
     failure_class: unresolved-fork
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-009
     title: "Order is derived from the causal graph, not timestamps alone"
@@ -805,6 +888,7 @@ requirements:
     expected_result: "graph order used"
     failure_class: order-confusion
     external_dependencies: "none"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-010
     title: "Lease ownership and expiry computed from platform timestamps"
@@ -820,6 +904,7 @@ requirements:
     expected_result: "live/expired verdict"
     failure_class: lease-miscalculation
     external_dependencies: "clock, log-reader"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-LOG-011
     title: "heartbeat references a live owned claim"
@@ -835,6 +920,7 @@ requirements:
     expected_result: "reference validated"
     failure_class: orphan-heartbeat
     external_dependencies: "log-reader"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-LOG-012
     title: "release references an owned claim and ends it"
@@ -850,6 +936,7 @@ requirements:
     expected_result: "lease closed"
     failure_class: orphan-release
     external_dependencies: "log-reader"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-LOG-013
     title: "Preemption requires an expired lease and prior work read"
@@ -880,6 +967,7 @@ requirements:
     expected_result: "rejection"
     failure_class: invalid-question
     external_dependencies: "none"
+    external_component: event-log-semantic-validator
     notes: "CONFLICT abierto: Schema V3 no impone ni uniqueItems. Ver F-03 de la reconciliacion."
   - id: ACP-CONF-LOG-015
     title: "assume by timeout cites an actually expired question"
@@ -895,6 +983,7 @@ requirements:
     expected_result: "expiry verified"
     failure_class: invalid-assumption
     external_dependencies: "clock, log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-016
     title: "supersede and revoke targets exist and are eligible"
@@ -910,6 +999,7 @@ requirements:
     expected_result: "rejection when absent"
     failure_class: dangling-target
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-017
     title: "Checkpoint coverage is valid and hides no fork"
@@ -925,6 +1015,7 @@ requirements:
     expected_result: "coverage validated"
     failure_class: misleading-checkpoint
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-018
     title: "Idempotent duplicates produce no new effect"
@@ -940,6 +1031,7 @@ requirements:
     expected_result: "deduplicated"
     failure_class: duplicate-effect
     external_dependencies: "log-reader"
+    external_component: event-log-semantic-validator
     notes: ""
   - id: ACP-CONF-LOG-019
     title: "Review independence is evaluated, not assumed"
@@ -955,6 +1047,7 @@ requirements:
     expected_result: "independence verdict or inconclusive"
     failure_class: self-approval
     external_dependencies: "identity"
+    external_component: event-log-semantic-validator
     notes: "Con nivel de garantia inferior a 3 el resultado correcto es INCONCLUSIVE, no PASS."
   - id: ACP-CONF-BIND-GH-001
     title: "Observed actor is compared against declared actor"
@@ -970,6 +1063,7 @@ requirements:
     expected_result: "match / mismatch / indeterminate"
     failure_class: identity-mismatch
     external_dependencies: "github-read, identity"
+    external_component: identity-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-002
     title: "Attribution uses the account id, not the login"
@@ -985,6 +1079,7 @@ requirements:
     expected_result: "id-based attribution"
     failure_class: renamed-login-confusion
     external_dependencies: "github-read"
+    external_component: identity-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-003
     title: "Observed identity never appears in the authored envelope"
@@ -1015,6 +1110,7 @@ requirements:
     expected_result: "INCONCLUSIVE"
     failure_class: false-independence-claim
     external_dependencies: "identity"
+    external_component: identity-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-005
     title: "on_behalf_of does not inherit capabilities"
@@ -1030,6 +1126,7 @@ requirements:
     expected_result: "capability from actor only"
     failure_class: privilege-escalation
     external_dependencies: "identity"
+    external_component: identity-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-006
     title: "Event pointer exists and resolves in the same thread"
@@ -1045,6 +1142,7 @@ requirements:
     expected_result: "resolution"
     failure_class: dangling-pointer
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-007
     title: "Edited events are detected and voided"
@@ -1060,6 +1158,7 @@ requirements:
     expected_result: "VOID verdict"
     failure_class: mutated-event
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-008
     title: "Deleted events are detected via gaps and seals"
@@ -1075,6 +1174,7 @@ requirements:
     expected_result: "detection and violation"
     failure_class: deleted-event
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-009
     title: "Minimizing an event does not change its effect"
@@ -1090,6 +1190,7 @@ requirements:
     expected_result: "effect unchanged"
     failure_class: hidden-event
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-010
     title: "Repository identity is the numeric id"
@@ -1105,6 +1206,7 @@ requirements:
     expected_result: "rename survives"
     failure_class: renamed-repository
     external_dependencies: "github-read"
+    external_component: identity-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-011
     title: "Basis SHA exists and its relation to the ref is verified"
@@ -1120,6 +1222,7 @@ requirements:
     expected_result: "exists / stale / unreachable"
     failure_class: nonexistent-sha
     external_dependencies: "github-read"
+    external_component: evidence-artifact-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-012
     title: "A branch name never anchors evidence"
@@ -1135,6 +1238,7 @@ requirements:
     expected_result: "ref-only basis rejected"
     failure_class: invalid-basis
     external_dependencies: "none"
+    external_component: evidence-artifact-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-013
     title: "Execution evidence identifies the run, not only the SHA"
@@ -1150,6 +1254,7 @@ requirements:
     expected_result: "run identifier required"
     failure_class: ambiguous-evidence
     external_dependencies: "github-read"
+    external_component: evidence-artifact-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-014
     title: "Evidence belongs to the right repository and SHA"
@@ -1165,6 +1270,7 @@ requirements:
     expected_result: "association verified"
     failure_class: forged-evidence
     external_dependencies: "github-read"
+    external_component: evidence-artifact-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-015
     title: "Expired artifact degrades to digest-only evidence"
@@ -1180,6 +1286,7 @@ requirements:
     expected_result: "retrievable / digest-only"
     failure_class: unretrievable-evidence
     external_dependencies: "github-read"
+    external_component: evidence-artifact-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-016
     title: "UI state never generates an ACP event"
@@ -1195,6 +1302,7 @@ requirements:
     expected_result: "no event derived"
     failure_class: ui-state-as-truth
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-017
     title: "A PR review is evidence, not an ACP review"
@@ -1210,6 +1318,7 @@ requirements:
     expected_result: "classified as evidence"
     failure_class: ui-state-as-truth
     external_dependencies: "github-read"
+    external_component: evidence-artifact-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-018
     title: "Timestamps come from platform metadata only"
@@ -1225,6 +1334,7 @@ requirements:
     expected_result: "platform clock used"
     failure_class: untrusted-clock
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-019
     title: "Failed reads are recorded as unverified, never inferred"
@@ -1240,6 +1350,7 @@ requirements:
     expected_result: "explicit unverified"
     failure_class: inferred-fact
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-020
     title: "Events live only in the container of their subject"
@@ -1255,6 +1366,7 @@ requirements:
     expected_result: "misplacement rejected"
     failure_class: misplaced-event
     external_dependencies: "github-read"
+    external_component: binding-verifier
     notes: ""
   - id: ACP-CONF-BIND-GH-021
     title: "Sealing makes retroactive edits evident"
@@ -1270,6 +1382,7 @@ requirements:
     expected_result: "discrepancy detected"
     failure_class: undetected-mutation
     external_dependencies: "none"
+    external_component: evidence-artifact-verifier
     notes: "Sin sellos la ventana de mutacion no detectada es infinita."
   - id: ACP-CONF-PROJ-001
     title: "Identical inputs produce an equivalent projection"
@@ -1285,6 +1398,7 @@ requirements:
     expected_result: "identical projection"
     failure_class: non-deterministic-projection
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-002
     title: "Evaluation time is explicit, never wall clock"
@@ -1300,6 +1414,7 @@ requirements:
     expected_result: "explicit input required"
     failure_class: implicit-clock
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-003
     title: "No network reads during reduction"
@@ -1315,6 +1430,7 @@ requirements:
     expected_result: "no reads"
     failure_class: impure-reduction
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-004
     title: "Source digest, profile revision and engine version recorded"
@@ -1330,6 +1446,7 @@ requirements:
     expected_result: "all three present"
     failure_class: unattributable-projection
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-005
     title: "Checkpoint-accelerated replay equals full replay"
@@ -1345,6 +1462,7 @@ requirements:
     expected_result: "equal projections"
     failure_class: checkpoint-divergence
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-006
     title: "Projection drift is detected"
@@ -1360,6 +1478,7 @@ requirements:
     expected_result: "drift reported"
     failure_class: silent-drift
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-007
     title: "Nothing authoritative exists only in a projection"
@@ -1375,6 +1494,7 @@ requirements:
     expected_result: "full reconstruction"
     failure_class: projection-as-truth
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-008
     title: "Partial retrieval yields partial state, not false certainty"
@@ -1390,6 +1510,7 @@ requirements:
     expected_result: "explicit partial verdict"
     failure_class: false-certainty
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-009
     title: "Unresolved causal conflict blocks sensitive state"
@@ -1405,6 +1526,7 @@ requirements:
     expected_result: "sensitive state withheld"
     failure_class: conflict-ignored
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-010
     title: "Stale reviews and validations are marked, not dropped"
@@ -1420,6 +1542,7 @@ requirements:
     expected_result: "stale marked"
     failure_class: evidence-loss
     external_dependencies: "github-read"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-011
     title: "Ledgers for risk, debt and blocks are kept separate"
@@ -1435,6 +1558,7 @@ requirements:
     expected_result: "separate ledgers"
     failure_class: conflated-ledgers
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-PROJ-012
     title: "Violations and uncertainty survive projection"
@@ -1450,6 +1574,7 @@ requirements:
     expected_result: "preserved"
     failure_class: evidence-erasure
     external_dependencies: "none"
+    external_component: projection-engine
     notes: ""
   - id: ACP-CONF-GATE-001
     title: "Gate requirements reference existing profile gates"
@@ -1465,6 +1590,7 @@ requirements:
     expected_result: "references resolve"
     failure_class: dangling-gate-reference
     external_dependencies: "none"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-002
     title: "Freshness is recomputed at crossing time"
@@ -1480,6 +1606,7 @@ requirements:
     expected_result: "recomputed"
     failure_class: stale-gate
     external_dependencies: "github-read"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-003
     title: "Stale evidence is excluded from gate satisfaction"
@@ -1495,6 +1622,7 @@ requirements:
     expected_result: "excluded"
     failure_class: stale-gate
     external_dependencies: "none"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-004
     title: "Independent review requirement satisfied or inconclusive"
@@ -1510,6 +1638,7 @@ requirements:
     expected_result: "satisfied / inconclusive"
     failure_class: self-approval
     external_dependencies: "identity"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-005
     title: "Authorization matches action, target, scope, limits, basis and expiry"
@@ -1525,6 +1654,7 @@ requirements:
     expected_result: "full match required"
     failure_class: unauthorized-action
     external_dependencies: "clock"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-006
     title: "Revoked or expired authorization is excluded"
@@ -1540,6 +1670,7 @@ requirements:
     expected_result: "excluded"
     failure_class: stale-authorization
     external_dependencies: "clock"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-007
     title: "Authorization on a different SHA does not apply"
@@ -1555,6 +1686,7 @@ requirements:
     expected_result: "no application"
     failure_class: unauthorized-action
     external_dependencies: "github-read"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-008
     title: "An authorization is never inferred"
@@ -1570,6 +1702,7 @@ requirements:
     expected_result: "explicit event required"
     failure_class: inferred-authorization
     external_dependencies: "none"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-009
     title: "Silence never authorizes a sensitive action"
@@ -1585,6 +1718,7 @@ requirements:
     expected_result: "blocked"
     failure_class: silent-authorization
     external_dependencies: "none"
+    external_component: gate-authorization-evaluator
     notes: "El caso disfrazado exige clasificacion semantica; el formato solo cubre el kind declarado."
   - id: ACP-CONF-GATE-010
     title: "unverified acknowledgement is required where the gate demands it"
@@ -1600,6 +1734,7 @@ requirements:
     expected_result: "ack present"
     failure_class: unacknowledged-uncertainty
     external_dependencies: "none"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-011
     title: "Gate output explains every pass, fail and blocker"
@@ -1615,6 +1750,7 @@ requirements:
     expected_result: "explanation present"
     failure_class: opaque-gate
     external_dependencies: "none"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-GATE-012
     title: "Unknown or conflicting state fails closed"
@@ -1630,6 +1766,7 @@ requirements:
     expected_result: "closed failure"
     failure_class: fail-open
     external_dependencies: "none"
+    external_component: gate-authorization-evaluator
     notes: ""
   - id: ACP-CONF-OPS-001
     title: "Cold start from the platform alone"
@@ -1645,6 +1782,7 @@ requirements:
     expected_result: "state reconstructed"
     failure_class: unreconstructible-state
     external_dependencies: "github-read"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-002
     title: "Read budget is respected or the agent stops"
@@ -1660,6 +1798,7 @@ requirements:
     expected_result: "stop or checkpoint"
     failure_class: budget-overrun
     external_dependencies: "none"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-003
     title: "Recovery with partial platform availability is explicit"
@@ -1675,6 +1814,7 @@ requirements:
     expected_result: "partial verdict"
     failure_class: false-complete-recovery
     external_dependencies: "github-read"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-004
     title: "Missing information never becomes inferred information"
@@ -1690,6 +1830,7 @@ requirements:
     expected_result: "explicit gaps"
     failure_class: inferred-fact
     external_dependencies: "none"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-005
     title: "Concurrent claim race is detected after the fact"
@@ -1705,6 +1846,7 @@ requirements:
     expected_result: "detection"
     failure_class: undetected-race
     external_dependencies: "log-reader"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-006
     title: "Expired lease returns the item to the pool"
@@ -1720,6 +1862,7 @@ requirements:
     expected_result: "item reclaimable"
     failure_class: stuck-lease
     external_dependencies: "clock"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-007
     title: "Force push and rebase invalidate anchored assertions"
@@ -1735,6 +1878,7 @@ requirements:
     expected_result: "assertions invalidated"
     failure_class: undetected-staleness
     external_dependencies: "github-read"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-008
     title: "Repository rename does not orphan the basis"
@@ -1750,6 +1894,7 @@ requirements:
     expected_result: "references intact"
     failure_class: renamed-repository
     external_dependencies: "github-read"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-009
     title: "Notification failure does not stop the clock"
@@ -1765,6 +1910,7 @@ requirements:
     expected_result: "default applied and recorded"
     failure_class: stalled-protocol
     external_dependencies: "clock"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-010
     title: "Unsupported protocol minor fails closed for that event"
@@ -1780,6 +1926,7 @@ requirements:
     expected_result: "correct per-case behaviour"
     failure_class: version-mishandling
     external_dependencies: "none"
+    external_component: lease-reconciliation-engine
     notes: "CONFLICT abierto: Schema V3 acepta 1.x y puede rechazar un 1.2 valido por campos desconocidos."
   - id: ACP-CONF-OPS-011
     title: "Profile revision migration is explicit"
@@ -1795,6 +1942,7 @@ requirements:
     expected_result: "explicit migration"
     failure_class: silent-migration
     external_dependencies: "none"
+    external_component: lease-reconciliation-engine
     notes: ""
   - id: ACP-CONF-OPS-012
     title: "The suite performs no mutation"
@@ -1810,4 +1958,53 @@ requirements:
     expected_result: "dry-run only"
     failure_class: unauthorized-side-effect
     external_dependencies: "none"
+    external_component: identity-verifier
     notes: ""
+  - id: ACP-CONF-OPS-013
+    title: "Reader tolerance to unknown fields of a later minor"
+    layer: L7
+    source: "ACP-1.1 candidate"
+    source_section: "16.2"
+    normative_text: "Un lector conforme acepta un evento del mismo mayor con miembros desconocidos, los ignora y los PRESERVA al reescribir o proyectar."
+    category: normative
+    testability: resilience-test
+    severity: blocking
+    required_for: "resilience-pack"
+    inputs: "envelope carrying a later-minor member, plus the reader supported version"
+    expected_result: "event accepted with unknown members preserved, or explicit rejection by version"
+    failure_class: version-mishandling
+    external_dependencies: "reader-compatibility-layer"
+    external_component: reader-compatibility-layer
+    notes: "N-3. The writer schema CANNOT cover this: it is const 1.1 by design. Failure mode: silently dropping the members yields an incomplete projection that looks complete. Gate effect: indirect but real, since a gate evaluated over lost data evaluates less than there was. No implementation exists."
+  - id: ACP-CONF-LOG-020
+    title: "Extension shadowing of a normative field is rejected"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "5.2.3"
+    normative_text: "Una clave de extensions que duplica un campo normativo es violation:shadowed-field."
+    category: normative
+    testability: semantic-validator
+    severity: blocking
+    required_for: "core-pack"
+    inputs: "envelope plus the normative field catalogue of its type"
+    expected_result: "conforming, or violation:shadowed-field"
+    failure_class: unauthorized
+    external_dependencies: "event-log-semantic-validator"
+    external_component: event-log-semantic-validator
+    notes: "N-3. Fail closed for that event: a normative field bypassed by an extension makes the event assert something other than it appears to. Gate effect: the event counts for no gate until resolved. The container makes shadowing visible; it does not detect it."
+  - id: ACP-CONF-LOG-021
+    title: "A programme checkpoint declaring from == to is rejected"
+    layer: L3
+    source: "ACP-1.1 candidate"
+    source_section: "11.3.1"
+    normative_text: "from y to describen el rango de migracion o transicion; un rango nulo no describe transicion alguna."
+    category: normative
+    testability: semantic-validator
+    severity: major
+    required_for: "core-pack"
+    inputs: "programme checkpoint carrying from and to"
+    expected_result: "valid range, or rejection"
+    failure_class: misleading-checkpoint
+    external_dependencies: "event-log-semantic-validator"
+    external_component: event-log-semantic-validator
+    notes: "N-3. The schema checks the grammar of both and their presence as a pair, NOT that they differ. Gate effect: blocks any gate depending on the announced transition."

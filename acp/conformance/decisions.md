@@ -54,9 +54,15 @@ Qué se decidió al formalizar la suite, con su razón, y qué se dejó sin deci
 
 ### D9 · Mapear contra las cifras medidas, no contra las publicadas
 
-**Decisión.** La suite mapea contra **95** filas de trazabilidad y **39** marcas external, no contra los 78 y 26 que circulan, y registra la discrepancia.
+**Decisión.** La suite mapea contra las cifras del SHA canónico que declara, no contra las que circulan, y conserva la historia de las que sustituye. Al congelarse eran 95 y 39; tras la reconciliación son **113 filas, 60 con regla de schema y 53 external**.
 
 **Razón.** Propagar una cifra incorrecta habría hecho que la cobertura de la suite fuera inauditable desde el primer día. `CONF-033` generaliza la lección: ninguna cifra publicada debe copiarse a mano.
+
+### D11 · Descongelar actualizando, no reescribiendo
+
+**Decisión.** La suite avanza con un commit encima de `b34f70ff`, que se conserva intacto como antecedente.
+
+**Razón.** La primera revisión se redactó sobre fuentes con divergencias confirmadas. Reescribir la historia habría ocultado ese hecho, y el hecho importa: es la prueba de que una suite de conformidad puede estar perfectamente formada y apuntar a fuentes defectuosas. La tabla de §5.2 conserva las tres generaciones de cifras por el mismo motivo.
 
 ### D10 · La fiabilidad de un LLM como autor es un problema distinto
 

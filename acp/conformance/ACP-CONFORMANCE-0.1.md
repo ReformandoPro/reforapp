@@ -8,27 +8,29 @@
 | Versión | **`0.1.0-draft`** |
 | Estado | **`conformance-suite candidate — not adopted`** |
 | Capa | Conformance (transversal a Core, Profile, Binding e Implementation) |
-| Requisitos | **115** (`requirements.yml`) |
+| Requisitos | **121** (`requirements.yml`) |
 | Capas de conformidad | **8** (L0–L7) |
 | Packs | **7** |
 | Familias de casos | **19** |
 | Casos de referencia obligatorios | **39** |
 | Automatización | **Ninguna.** No hay harness, ni scripts, ni CI, ni casos ejecutables |
+| Revisión | Descongelada tras el veredicto `ACP-1.1 AND SCHEMA V3 RECONCILED — READY TO UNFREEZE CONFORMANCE SUITE`. Revisión congelada anterior: `b34f70ff` |
 
 > ### Advertencia
 >
 > Esta especificación **no implementa la suite**, **no ejecuta nada** y **no autoriza ninguna operación**. Define requisitos, formatos declarativos y obligaciones. Los dos JSON Schema que acompaña describen el formato de casos e informes; **no ejecutan casos**.
 >
-> Las fuentes que vincula son **candidatas sin aprobar**. Ninguna implementación puede declararse conforme hoy, porque no existe todavía ni un caso.
+> Las fuentes que vincula están **reconciliadas entre sí y siguen sin aprobar**. **Reconciliación no es adopción**: ni de ACP-1.1, ni de Schema V3, ni de esta suite. Ninguna implementación puede declararse conforme hoy, porque no existe todavía ni un caso.
 
 ### Fuentes
 
 | Fuente | Rama | SHA | Carácter |
 |---|---|---|---|
-| ACP-1.1 candidate | `feat/acp-1-1-normative-amendments` | `1bda3e997291e337cc1a3956462e643219d71547` | **candidata normativa** |
-| Schema V3 (envelope 0.3.0, profile 0.3.0) | `feat/acp-envelope-schema` | `ae3e4f5e35924e470ad909d63d5a9de55c351df0` | **candidata normativa** |
+| ACP-1.1 candidate | `feat/acp-1-1-normative-amendments` | `983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad` | **candidata normativa, reconciliada** |
+| Schema V3 (envelope 0.3.0, profile 0.3.0) | `feat/acp-envelope-schema` | `42091572dafe3400ce16fb26039210d8c0c30a42` | **candidata normativa, reconciliada** |
 | GitHub Binding 0.1.0-draft | `feat/acp-github-binding` | `ca978ac6736cf6b8c43753d46a07ee6002e9522d` | **candidata normativa** (solo pack GitHub) |
 | Reconciliación ACP-1.1 ↔ V3 | `chore/acp-1-1-v3-reconciliation` | `3c884d75e2ea394f438dcb8ba2c729fd2b58574c` | informativa |
+| Revisión congelada de esta suite | `feat/acp-conformance-suite` | `b34f70ff6b112267609f268ffe037e804e9499ec` | antecedente histórico |
 | Borradores de arquitectura | `chore/agent-protocol-mvp` | `fb40920202cdff804f4fe1c72f656870bfab5997` | **informativos, no normativos** |
 | `origin/main` al publicar | `main` | `48049b05a88c423f305f32bc70e66f4451f008a1` | — |
 
@@ -49,7 +51,7 @@
 
 > «Pasa el JSON Schema, luego cumple ACP.»
 
-Es falsa, y es la forma más probable en que ACP se degradará. De los 115 requisitos de conformidad, **32 son comprobables por JSON Schema**. Los otros **83 no lo son**, y entre ellos están casi todos los que sostienen los gates: que el actor sea quien dice, que el lease haya caducado, que el SHA exista, que la review sea independiente, que la evidencia no esté fabricada.
+Es falsa, y es la forma más probable en que ACP se degradará. De los 121 requisitos de conformidad, **35 son comprobables por JSON Schema**. Los otros **86 no lo son**, y entre ellos están casi todos los que sostienen los gates: que el actor sea quien dice, que el lease haya caducado, que el SHA exista, que la review sea independiente, que la evidencia no esté fabricada.
 
 **CONF-001.** Una implementación **NO DEBE** afirmar conformidad con ACP sin nombrar las capas superadas. «ACP compliant» sin capas es una afirmación vacía y esta suite la declara no conforme (§3.3).
 
@@ -230,15 +232,16 @@ Estructura común: propósito · entradas · requisitos · precondiciones · res
 
 ### 3.2 Formato de claim
 
-**CONF-006.** Un claim **DEBE** tener exactamente esta forma, con todos los campos presentes, y **DEBE** citar el digest del informe que lo respalda:
+**CONF-006.** Un claim **DEBE** tener exactamente esta forma, con todos los campos presentes —incluidos los **SHA de las fuentes** contra las que se verificó y el **SHA de la implementación**— y **DEBE** citar el digest del informe que lo respalda. Un claim que nombre versiones sin SHA no es reproducible: «Core 1.1 candidate» ha designado tres árboles distintos en cuatro días.
 
 ```
 ACP Conformance
-  Core            1.1 candidate
-  Schema          0.3.0
+  Core            1.1 candidate @ 983c3a4aeb4a5dc758cbc4a92a7343eaf83a7bad
+  Schema          0.3.0 @ 42091572dafe3400ce16fb26039210d8c0c30a42
   Profile         Reformando 1.1-candidate
-  Binding         GitHub 0.1.0-draft
+  Binding         GitHub 0.1.0-draft @ ca978ac6736cf6b8c43753d46a07ee6002e9522d
   Suite           0.1.0-draft
+  Implementation  <name> <version> @ <40-hex sha>
   Layers L0-L4    conforming
   Layers L5-L7    untested
   Environment     mock, pinned clock, no network
@@ -255,7 +258,7 @@ ACP Conformance
 | Prohibido | Por qué |
 |---|---|
 | «ACP compliant» | No dice qué capas |
-| «fully ACP compatible» | «fully» es indemostrable: 67 de 115 requisitos no son de schema |
+| «fully ACP compatible» | «fully» es indemostrable: 86 de 121 requisitos no son de schema |
 | «ACP certified» | No existe autoridad de certificación (§17) |
 | «ACP ready» | No significa nada |
 | Cualquier claim sin versión de Core, schema, perfil, binding y suite | Cada omisión es una forma de exagerar |
@@ -282,20 +285,21 @@ Un ejemplo de la diferencia: `ACP-CONF-SCHEMA-003` obliga a que el validador ten
 
 ### 4.1 Distribución
 
-| Capa | Requisitos | | Categoría | Requisitos | | Severidad | Requisitos |
-|---|---|---|---|---|---|---|---|
-| L0 | 8 | | normative | 57 | | blocking | 84 |
-| L1 | 16 | | binding | 31 | | major | 29 |
-| L2 | 15 | | implementation | 24 | | minor | 2 |
-| L3 | 19 | | security | 3 | | | |
-| L4 | 21 | | | | | | |
-| L5 | 12 | | **Testability** | | | | |
-| L6 | 12 | | schema | 32 | | semantic-validator | 16 |
-| L7 | 12 | | binding-verifier | 21 | | gate-evaluator | 12 |
-| | | | projection-engine | 11 | | resilience-test | 11 |
-| | | | profile-linter | 8 | | manual-review | 4 |
+| Capa | Requisitos | | Componente external responsable | Requisitos |
+|---|---|---|---|---|
+| L0 | 8 | | `profile-linter` | 8 |
+| L1 | 19 | | `event-log-semantic-validator` | 15 |
+| L2 | 15 | | `binding-verifier` | 9 |
+| L3 | 21 | | `identity-verifier` | 8 |
+| L4 | 21 | | `evidence-artifact-verifier` | 7 |
+| L5 | 12 | | `lease-reconciliation-engine` | 14 |
+| L6 | 12 | | `projection-engine` | 12 |
+| L7 | 13 | | `gate-authorization-evaluator` | 12 |
+| **Total** | **121** | | `reader-compatibility-layer` | 1 |
 
-**Lectura importante:** solo **32 de 115** requisitos son comprobables por JSON Schema. Los **83 restantes** necesitan un linter de perfil, un validador semántico, un verificador de binding, un motor de proyección, un evaluador de gates, pruebas de resiliencia o **juicio humano**. Ninguno de esos siete componentes existe hoy.
+**CONF-035.** Todo requisito cuya `testability` no sea `schema` **DEBE** nombrar en `requirements.yml` el componente external responsable. Son **86**, repartidos entre nueve componentes de los que **no existe ninguno**.
+
+**Lectura importante:** solo **35 de 121** requisitos son comprobables por JSON Schema. Los **86 restantes** se reparten entre los nueve componentes de la tabla, y **ninguno existe hoy**.
 
 ### 4.2 Trazabilidad de origen
 
@@ -311,39 +315,52 @@ Un ejemplo de la diferencia: `ACP-CONF-SCHEMA-003` obliga a que el validador ten
 | Fuente | Elementos | Cómo se mapean |
 |---|---|---|
 | **ACP-1.1** | 136 requisitos de la matriz de reconciliación (`ACP11-REQ-001…136`) | Los normativos comprobables se convierten en requisitos de conformidad L0–L3, L6, L7 |
-| **TRACEABILITY.md del Schema V3** | **95 filas** | Las 56 con regla de schema alimentan L1; las 39 marcadas external se reparten entre L2–L7 |
+| **TRACEABILITY.md del Schema V3** | **113 filas** | Las **60** con regla de schema alimentan L1; las **53** marcadas external se reparten entre L2–L7 y nombran su componente responsable |
 | **BIND-001…054** | 54 requisitos de binding | 21 se convierten en `ACP-CONF-BIND-GH-*` (L4); el resto son arquitectura sin caso propio |
 | **INV-01…26** | 26 invariantes de plataforma | Se incorporan como texto normativo de requisitos L4 y L7 |
 | **F1…F20** | 20 modos de fallo | Alimentan los escenarios de L7 y las clases de fallo del formato de caso |
 | **Projection Engine draft** | Pipeline y determinismo | 12 requisitos L5, **marcados informativos** |
 | **Perfil Reformando** | Gates, permisos, identidad | Requisitos L2 y L6 |
 
-### 5.2 Corrección de cifras heredadas
+### 5.2 Cifras canónicas tras la reconciliación
 
-Este encargo cita «78 filas de TRACEABILITY» y «26 requisitos external». **Ambas cifras son incorrectas y las he vuelto a medir:**
+La primera revisión de esta suite se redactó sobre fuentes con divergencias confirmadas y mapeaba contra cifras que ya no son las vigentes. Historia completa, para que nadie tenga que reconstruirla:
 
-| Cifra citada | Valor real medido |
-|---|---|
-| 78 filas de TRACEABILITY | **95 filas** |
-| 26 requisitos external | **39 filas con marca external** (y 32 con estado `EXTERNAL` en la matriz de reconciliación) |
+| Momento | Filas | Schema | External | Con fixture válida | Con inválida |
+|---|---|---|---|---|---|
+| Publicado en `TRACEABILITY.md` (incorrecto) | 78 | 52 | 26 | — | — |
+| Medido al congelar esta suite (`b34f70ff`) | 95 | 56 | 39 | — | — |
+| **Canónico tras la reconciliación (`42091572`)** | **113** | **60** | **53** | **78** | **63** |
 
-Es el hallazgo **F-09** de la reconciliación, que sigue abierto: las cifras se publicaron en `TRACEABILITY.md` y se repitieron en el README del schema y en dos informes de entrega. **Esta suite mapea contra los valores reales**, no contra los publicados, y registra la discrepancia en lugar de propagarla.
+Corpus de fixtures del Schema V3: **63 válidas + 90 inválidas = 153**. La revisión congelada citaba 50 / 67 / 117.
+
+**CONF-034.** Esta suite **DEBE** mapear contra las cifras del SHA canónico que declara en su tabla de fuentes, y **DEBE** conservar visible la historia de las que sustituye. Copiar una cifra sin recalcularla es lo que produjo las dos filas superiores.
 
 ### 5.3 Requisito canónico y fuentes múltiples
 
 **CONF-011.** Cuando dos fuentes expresan lo mismo, existe **un** requisito canónico con varias fuentes citadas. Ejemplo: «solo el SHA completo ancla evidencia» aparece en ACP-1.1 §6.1, en `INV-01` del binding y en `ACP11-REQ-036`; el requisito canónico es `ACP-CONF-SCHEMA-012`, con `ACP-CONF-BIND-GH-012` cubriendo la parte que solo el binding puede verificar.
 
-### 5.4 Conflictos: no se arbitran aquí
+### 5.4 H1, H2 y H3: cerrados en las fuentes
+
+Los tres defectos High que bloqueaban esta suite están resueltos en los SHA canónicos, y la suite los refleja:
+
+| # | Estado vigente que la suite asume |
+|---|---|
+| **H1** `delivery.kind` | Enum normativo de ACP-1.1 §6.1: **`pull-request`, `merge-request`, `branch`, `patch`**. El vocabulario genérico (`change-request`, `commit`, `artifact`, `external`) es **solo una propuesta para ACP-1.2** y ninguna implementación puede anticiparlo. Requisito `ACP-CONF-SCHEMA-017` |
+| **H2** `violation.rule` | **23 códigos**, los de ACP-1.1 §15.1, incluidos los ocho que antes no podían emitirse. Requisito `ACP-CONF-SCHEMA-018` |
+| **H3** checkpoint | **`item`** y **`program`** con reglas diferenciadas: `state` y `gates` **obligatorios en item y prohibidos en programa**; `from`/`to` **exclusivos de programa y siempre en pareja**, describiendo el rango de migración (ACP-1.1 §11.3.1). Requisito `ACP-CONF-SCHEMA-019`, más el external `ACP-CONF-LOG-021` para `from == to` |
+
+### 5.5 Conflictos: no se arbitran aquí
 
 **CONF-012.** Cuando dos fuentes se contradicen, el requisito se marca `CONFLICT` y **la suite no decide**. Tres conflictos abiertos, todos de la reconciliación:
 
 | # | Conflicto | Requisito afectado | Decisión requerida de |
 |---|---|---|---|
-| C1 | ACP-1.1 §15.1 define 23 códigos de `violation`; Schema V3 admite 15 | `ACP-CONF-LOG-*` que dependen de códigos ausentes (`identity-mismatch`, `unscoped-event`, `duplicate-root`, `dangling-pointer`, `shadowed-field`) | Schema (añadir 8 cadenas al enum) |
-| C2 | ACP-1.1 §12.3 exige digest en la evidencia; Schema V3 no lo requiere | `ACP-CONF-BIND-GH-014` | Spec o schema |
-| C3 | Schema V3 acepta `v: 1.x` con x≥1 | `ACP-CONF-OPS-010` | Spec y README del schema |
+| C1 | ~~ACP-1.1 §15.1 define 23 códigos; Schema V3 admite 15~~ | — | **CERRADO en `42091572`**: los 23 están en el enum |
+| C2 | ACP-1.1 §12.3 exige digest en la evidencia; Schema V3 no lo requiere | `ACP-CONF-BIND-GH-014` | **Sigue abierto.** Spec o schema |
+| C3 | ~~Schema V3 acepta `v: 1.x`~~ | `ACP-CONF-OPS-010`, `ACP-CONF-OPS-013` | **CERRADO en `42091572`**: `v` es `const "1.1"`. Lo que queda no es conflicto sino hueco: la capa de lectura tolerante **no existe** |
 
-**Consecuencia operativa:** mientras C1 esté abierto, cinco requisitos de conformidad describen violaciones que ninguna implementación conforme puede emitir. Un caso que exija emitir `identity-mismatch` reportará `NOT_IMPLEMENTED` por defecto de las fuentes, no de la implementación.
+**Consecuencia operativa:** C1 y C3 cerrados; los cinco requisitos que describían violaciones no emitibles ya lo son. **C2 sigue abierto**: un caso que exija digest de evidencia reportará `NOT_IMPLEMENTED` por defecto de las fuentes, no de la implementación.
 
 ---
 
@@ -555,6 +572,8 @@ Siete, definidos en `catalogue.yml`. Cada uno declara capas, prefijos de requisi
 | Eje | Compatibilidad de la suite 0.1 |
 |---|---|
 | Core | `1.1` candidate únicamente. `1.0` no está soportado: la suite asume `actor` obligatorio y sujeto único |
+| Escritor | El writer schema acepta **exclusivamente `v: "1.1"`** (`const`). Un documento `1.2` **no debe validarse con Schema V3**: una versión futura exige un schema futuro |
+| Lector | La tolerancia hacia adelante es **una capa separada** (`reader-compatibility-layer`), fuera del writer schema y **sin implementación** |
 | Envelope schema | `0.3.0`. Con `0.2.0` los requisitos L1 no aplican |
 | Profile schema | `0.3.0` |
 | Binding | `github@0.1.0-draft` para el pack GitHub. Otros bindings requieren su propio pack |
@@ -682,10 +701,10 @@ Seis gates. Cada uno con requisitos, evidencia, responsable y condiciones bloque
 
 | | |
 |---|---|
-| **Requisitos** | Gate A; C1 y C2 cerrados; corpus 117/117 con keyword previsto; asersión de format declarada |
+| **Requisitos** | Gate A; C1 y C2 cerrados; corpus 153/153 con keyword previsto (63 válidas, 90 inválidas); asersión de format declarada |
 | **Evidencia** | Ejecución reproducible con versión de validador; digest del corpus |
 | **Responsable** | Revisor independiente, no el autor del schema |
-| **Bloqueantes** | F-01 abierto (8 códigos no emitibles); cifras de `TRACEABILITY` sin corregir (F-09) |
+| **Bloqueantes** | ~~F-01~~ y ~~F-09~~ cerrados en `42091572`. Queda **C2**, el digest de evidencia |
 
 ### Gate C — Adoptar el GitHub Binding
 
@@ -753,8 +772,8 @@ Trece, sin decidir: **no hay evidencia para decidirlas y esta suite no arbitra.*
 
 ### Riesgos de esta especificación
 
-1. **Ninguno de los siete componentes de verificación existe.** 83 de 115 requisitos no tienen quién los compruebe.
-2. **Tres conflictos abiertos** entre fuentes; cinco requisitos describen violaciones no emitibles.
+1. **Ninguno de los nueve componentes de verificación existe.** 86 de 121 requisitos no tienen quién los compruebe.
+2. **Un conflicto abierto** entre fuentes (C2, digest de evidencia). C1 y C3 se cerraron en la reconciliación.
 3. **L5 deriva de un borrador informativo** y no puede ser `CONFORMING` hasta que su especificación se adopte.
 4. **Cero casos escritos.** Están definidos como obligación, no como material.
 5. **El riesgo estructural**: que alguien ejecute el core pack, lo vea verde y escriba «ACP compliant». Los requisitos `CONF-001`, `CONF-003`, `CONF-008` y `CONF-009` existen solo para eso, y son papel: nada obliga a nadie a cumplirlos salvo la revisión.
@@ -764,7 +783,7 @@ Trece, sin decidir: **no hay evidencia para decidirlas y esta suite no arbitra.*
 
 > ### ACP CONFORMANCE SUITE 0.1 PREPARADA PARA REVISIÓN INDEPENDIENTE
 
-La suite **define conformidad de forma trazable**: 115 requisitos con ID estable y fuente citada; 8 capas con lo que cada una permite y no permite afirmar; 7 clases y un formato de claim que prohíbe la vaguedad; 2 formatos declarativos validados bajo Draft 2020-12 con las reglas de agregación **impuestas por el schema**, no solo documentadas; 19 familias, 39 casos obligatorios y una cadena de trazabilidad recorrible en ambos sentidos.
+La suite **define conformidad de forma trazable**: 121 requisitos con ID estable, fuente citada y —los external— componente responsable nombrado; 8 capas con lo que cada una permite y no permite afirmar; 7 clases y un formato de claim que prohíbe la vaguedad; 2 formatos declarativos validados bajo Draft 2020-12 con las reglas de agregación **impuestas por el schema**, no solo documentadas; 19 familias, 39 casos obligatorios y una cadena de trazabilidad recorrible en ambos sentidos.
 
 Lo que **no** está resuelto está declarado: los conflictos, los componentes ausentes, las capas que no pueden conformar todavía y las trece decisiones abiertas. Nada de eso impide que un revisor independiente juzgue si la definición de conformidad es correcta, que es exactamente lo que esta versión necesita ahora.
 
